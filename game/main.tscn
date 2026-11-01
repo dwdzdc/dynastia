@@ -19,7 +19,19 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.08, 0.1, 0.2, 1)
+color = Color(0.07, 0.09, 0.18, 1)
+
+[node name="UIWorld" type="CanvasLayer" parent="."]
+layer = 5
+
+[node name="Shade" type="ColorRect" parent="UIWorld"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0.1, 0)
 
 [node name="UI" type="CanvasLayer" parent="."]
 layer = 10
@@ -37,20 +49,20 @@ offset_left = 16.0
 offset_top = 12.0
 offset_right = 640.0
 offset_bottom = 42.0
-theme_override_font_sizes/font_size = 22
+theme_override_font_sizes/font_size = 24
 
 [node name="SeasonLabel" type="Label" parent="UI/Hud"]
 offset_left = 16.0
-offset_top = 42.0
+offset_top = 44.0
 offset_right = 640.0
-offset_bottom = 66.0
+offset_bottom = 68.0
 theme_override_font_sizes/font_size = 18
 
 [node name="DayBar" type="ProgressBar" parent="UI/Hud"]
 offset_left = 16.0
-offset_top = 72.0
+offset_top = 74.0
 offset_right = 316.0
-offset_bottom = 88.0
+offset_bottom = 90.0
 min_value = 0.0
 max_value = 1.0
 step = 0.001
@@ -58,14 +70,24 @@ show_percentage = false
 
 [node name="SpeedLabel" type="Label" parent="UI/Hud"]
 offset_left = 16.0
-offset_top = 92.0
-offset_right = 700.0
-offset_bottom = 114.0
-theme_override_font_sizes/font_size = 16
+offset_top = 94.0
+offset_right = 400.0
+offset_bottom = 118.0
+theme_override_font_sizes/font_size = 18
 
 [node name="AgentLabel" type="Label" parent="UI/Hud"]
 offset_left = 16.0
-offset_top = 120.0
+offset_top = 130.0
 offset_right = 560.0
-offset_bottom = 300.0
-theme_override_font_sizes/font_size = 16
+offset_bottom = 320.0
+theme_override_font_sizes/font_size = 17
+
+[node name="HelpLabel" type="Label" parent="UI/Hud"]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -520.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = 190.0
+theme_override_font_sizes/font_size = 14

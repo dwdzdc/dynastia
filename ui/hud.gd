@@ -7,6 +7,25 @@ const SimClock := preload("res://sim/time.gd")
 @onready var day_bar: ProgressBar = $DayBar
 @onready var speed_label: Label = $SpeedLabel
 @onready var agent_label: Label = $AgentLabel
+@onready var help_label: Label = $HelpLabel
+
+const HELP := """KAMERA: przeciągnij / WASD / strzałki · kółko = zoom
+CZAS: SPACE = pauza · 1/2/3 = tempo · T = przejęcie · ESC = anuluj
+Klik ludzika = szczegóły. Po przejęciu: klik w mapę = idź tam.
+
+KOLOR LUDZIKA: niebieski = śpi · pomarańcz = pracuje
+żółty = je · szary = wolny · jasnoniebieski = idzie · czerwony = przejęty
+
+BUDYNKI: domek z dachem = chata · kłody = tartak/leśny
+czerwone zadaszenie = targ · zielone trójkąty = drzewa"""
+
+
+func _ready() -> void:
+	var outline := Color(0.0, 0.0, 0.0, 0.85)
+	for lb in [time_label, season_label, speed_label, agent_label, help_label]:
+		lb.add_theme_color_override("font_outline_color", outline)
+		lb.add_theme_constant_override("outline_size", 4)
+	help_label.text = HELP
 
 
 func update_view(clock: SimClock) -> void:
@@ -18,7 +37,7 @@ func update_view(clock: SimClock) -> void:
 	]
 	day_bar.value = clock.time_of_day()
 	var spd := "PAUZA" if clock.speed == 0 else "%dx" % clock.speed
-	speed_label.text = "Prędkość: %s   [SPACE] pauza · [1/2/3] tempo · [T] przejęcie · [ESC] anuluj" % spd
+	speed_label.text = "Prędkość: %s" % spd
 
 
 func show_agent(info: Dictionary) -> void:

@@ -3,32 +3,37 @@ extends Node2D
 const DataLoader := preload("res://sim/data_loader.gd")
 const SimWorld := preload("res://sim/world.gd")
 const AgentNode := preload("res://game/agent_node.gd")
+const Gfx := preload("res://game/gfx.gd")
 
-const NIGHT := Color(0.08, 0.10, 0.20)
+const NIGHT := Color(0.07, 0.09, 0.18)
 const DAY := Color(0.72, 0.78, 0.86)
 const CLICK_RADIUS := 22.0
+
+const DIRT := Color(0.66, 0.53, 0.36)
+const GRASS := Color(0.46, 0.60, 0.34)
+const FOREST_GROUND := Color(0.33, 0.46, 0.26)
+const WOOD := Color(0.55, 0.37, 0.22)
+const ROOF := Color(0.42, 0.26, 0.14)
+const TREE := Color(0.20, 0.38, 0.14)
+const AWNING := Color(0.62, 0.24, 0.18)
 
 var world: SimWorld
 var move_speed: float = 90.0
 var map_data: Dictionary = {}
+var _place_by_id: Dictionary = {}
 
 var agent_nodes: Array = []
-var selected: RefCounted = null          # SimAgent
+var selected: RefCounted = null
 var _selected_node: Node2D = null
+var _hovered: Node2D = null
 var _manual_target: Vector2
 var _has_manual_target := false
 
 @onready var sky: ColorRect = $UIBackground/Sky
+@onready var shade: ColorRect = $UIWorld/Shade
 @onready var hud: Control = $UI/Hud
 @onready var camera: Camera2D = $Camera2D
 @onready var world_root: Node2D = $WorldRoot
-
-const PLACE_COLORS := {
-	"house": Color(0.55, 0.38, 0.22),
-	"work": Color(0.20, 0.55, 0.30),
-	"food": Color(0.55, 0.45, 0.38),
-}
-const PLACE_SIZES := { "house": 44.0, "work": 130.0, "food": 90.0 }
 
 
 func _ready() -> void:
@@ -37,44 +42,118 @@ func _ready() -> void:
 	world = SimWorld.new(int(balance["world_seed"]), balance, map_data)
 	move_speed = float(DataLoader.get_nested(balance, "movement.speed"))
 
+	for p in map_data["places"]:
+		_place_by_id[p["id"]] = p
+
 	_build_map()
 	_spawn_agents()
 	camera.make_current()
+	camera.position = _village_center()
 
 
 func _process(delta: float) -> void:
 	world.tick(delta)
 	_update_manual(delta)
 	_update_camera(delta)
+	_update_hover()
 
 	for an in agent_nodes:
 		an.refresh()
 
-	sky.color = NIGHT.lerp(DAY, world.clock.light_factor())
+	var light := world.clock.light_factor()
+	sky.color = NIGHT.lerp(DAY, light)
+	shade.color = Color(0.0, 0.0, 0.1, (1.0 - light) * 0.45)
 	hud.update_view(world.clock)
 	hud.show_agent(_selected_info())
 
 
+# --- Budowa mapy (placeholdery, ale czytelne) ---
+
 func _build_map() -> void:
 	var size: Array = map_data["world_size"]
-	var ground := Polygon2D.new()
-	ground.polygon = _rect(0.0, 0.0, float(size[0]), float(size[1]))
-	ground.color = Color(0.16, 0.18, 0.16)
-	world_root.add_child(ground)
+	var w := float(size[0])
+	var h := float(size[1])
+	world_root.add_child(Gfx.rect(0, 0, w, h, GRASS))
 
+	var forest := _pos("forest")
+	var market := _pos("market")
+	var village := _village_center()
+
+	# drogi najpierw (pod wszystkim)
+	world_root.add_child(Gfx.line(PackedVector2Array([village, forest]), DIRT, 22.0))
+	world_root.add_child(Gfx.line(PackedVector2Array([village, market]), DIRT, 22.0))
+
+	# plac wioski
+	world_root.add_child(Gfx.rect(village.x - 130, village.y - 90, village.x + 130, village.y + 90, DIRT))
+
+	# strefa lasu + drzewa
+	world_root.add_child(Gfx.rect(forest.x - 150, forest.y - 120, forest.x + 160, forest.y + 140, FOREST_GROUND))
+	for off in [
+		Vector2(-90, -70), Vector2(30, -90), Vector2(90, -40), Vector2(-40, 20),
+		Vector2(50, 40), Vector2(110, 10), Vector2(-110, 40), Vector2(0, 95),
+		Vector2(120, 95), Vector2(-80, -20),
+	]:
+		_draw_tree(forest + off, 1.0)
+
+	# budynki
 	for p in map_data["places"]:
 		var pos := Vector2(float(p["x"]), float(p["y"]))
-		var half: float = PLACE_SIZES.get(String(p["type"]), 40.0) * 0.5
-		var marker := Polygon2D.new()
-		marker.polygon = _rect(pos.x - half, pos.y - half, pos.x + half, pos.y + half)
-		marker.color = PLACE_COLORS.get(String(p["type"]), Color(0.5, 0.5, 0.5))
-		world_root.add_child(marker)
-
-		var lbl := Label.new()
-		lbl.text = String(p["name"])
-		lbl.position = pos + Vector2(-half, half + 4)
-		lbl.add_theme_font_size_override("font_size", 12)
+		match String(p["type"]):
+			"house":
+				_draw_house(pos)
+			"work":
+				_draw_lumber_camp(pos)
+			"food":
+				_draw_market(pos)
+		var lbl := Gfx.label(String(p["name"]), pos + Vector2(-22, 30), 15, Color(1, 1, 0.95))
 		world_root.add_child(lbl)
+
+
+func _draw_tree(at: Vector2, s: float) -> void:
+	var trunk := Gfx.rect(at.x - 2 * s, at.y - 4 * s, at.x + 2 * s, at.y + 8 * s, WOOD)
+	world_root.add_child(trunk)
+	var crown := Gfx.triangle(
+		Vector2(at.x, at.y - 40 * s), Vector2(at.x - 16 * s, at.y + 2 * s), Vector2(at.x + 16 * s, at.y + 2 * s), TREE)
+	world_root.add_child(crown)
+
+
+func _draw_house(at: Vector2) -> void:
+	var base := Gfx.rect(at.x - 26, at.y - 8, at.x + 26, at.y + 18, WOOD)
+	world_root.add_child(base)
+	var roof := Gfx.triangle(
+		Vector2(at.x - 30, at.y - 6), Vector2(at.x + 30, at.y - 6), Vector2(at.x, at.y - 30), ROOF)
+	world_root.add_child(roof)
+	var door := Gfx.rect(at.x - 5, at.y + 6, at.x + 5, at.y + 18, Color(0.32, 0.2, 0.1))
+	world_root.add_child(door)
+
+
+func _draw_lumber_camp(at: Vector2) -> void:
+	# składowane kłody
+	for i in 3:
+		world_root.add_child(Gfx.rect(at.x - 40, at.y + 4 + i * 10, at.x + 40, at.y + 10 + i * 10, WOOD))
+	world_root.add_child(Gfx.rect(at.x - 45, at.y - 10, at.x + 45, at.y + 44, Color(0.28, 0.19, 0.11)))
+
+
+func _draw_market(at: Vector2) -> void:
+	world_root.add_child(Gfx.rect(at.x - 45, at.y - 6, at.x + 45, at.y + 20, WOOD))
+	world_root.add_child(Gfx.rect(at.x - 52, at.y - 26, at.x + 52, at.y - 12, AWNING))
+	for i in 2:
+		world_root.add_child(Gfx.rect(at.x - 45 + i * 50, at.y + 6, at.x - 35 + i * 50, at.y + 20, Color(0.7, 0.6, 0.4)))
+
+
+func _pos(id: String) -> Vector2:
+	var p: Dictionary = _place_by_id[id]
+	return Vector2(float(p["x"]), float(p["y"]))
+
+
+func _village_center() -> Vector2:
+	var acc := Vector2.ZERO
+	var n := 0
+	for p in map_data["places"]:
+		if String(p["type"]) == "house":
+			acc += Vector2(float(p["x"]), float(p["y"]))
+			n += 1
+	return acc / float(n)
 
 
 func _spawn_agents() -> void:
@@ -91,6 +170,19 @@ func _agent_at(wp: Vector2) -> Node2D:
 			return an
 	return null
 
+
+func _update_hover() -> void:
+	var hov := _agent_at(get_global_mouse_position())
+	if hov == _hovered:
+		return
+	if _hovered != null:
+		_hovered.set_hovered(false)
+	_hovered = hov
+	if _hovered != null:
+		_hovered.set_hovered(true)
+
+
+# --- Wejście ---
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed:
@@ -203,9 +295,3 @@ func _selected_info() -> Dictionary:
 		"skills": selected.skills,
 		"controlled": selected.controlled,
 	}
-
-
-static func _rect(x1: float, y1: float, x2: float, y2: float) -> PackedVector2Array:
-	return PackedVector2Array([
-		Vector2(x1, y1), Vector2(x2, y1), Vector2(x2, y2), Vector2(x1, y2),
-	])
