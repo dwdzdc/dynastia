@@ -29,6 +29,7 @@ func _init(cfg: Dictionary = {}) -> void:
 	days_per_season = int(t.get("days_per_season", days_per_season))
 	days_per_year = int(t.get("days_per_year", days_per_year))
 	max_speed = int(t.get("max_speed", max_speed))
+	speed = int(t.get("default_speed", speed))
 	twilight = float(t.get("twilight", twilight))
 	if t.has("seasons"):
 		seasons = (t["seasons"] as Array).duplicate()

@@ -6,6 +6,7 @@ extends SceneTree
 const RNG_SCRIPT := preload("res://sim/rng.gd")
 const LOADER_SCRIPT := preload("res://sim/data_loader.gd")
 const CLOCK_SCRIPT := preload("res://sim/time.gd")
+const WORLD_SCRIPT := preload("res://sim/world.gd")
 
 var failures := 0
 var checks := 0
@@ -41,6 +42,9 @@ func _run_all() -> void:
 	_test_clock_pause_and_speed()
 	_test_winter_shorter_day()
 	_test_light_factor_day_night()
+	# Etap 2
+	_test_world_generation()
+	_test_world_autonomous_day()
 
 
 # --- Etap 0 ---
@@ -165,3 +169,72 @@ func _test_light_factor_day_night() -> void:
 	check("noon is full daylight", is_equal_approx(c.light_factor(), 1.0))
 	c.set_time(0, 0.02)  # głęboka noc
 	check("deep night is dark", c.light_factor() < 0.01)
+
+
+# --- Etap 2 ---
+
+func _map() -> Dictionary:
+	return LOADER_SCRIPT.load_json("res://data/map.json")
+
+
+func _test_world_generation() -> void:
+	var balance := _balance()
+	var world = WORLD_SCRIPT.new(12345, balance, _map())
+	check("population count matches", world.agents.size() == int(balance["population"]["count"]))
+
+	var all_homed := true
+	for i in world.agents.size():
+		if str(world.agents[i].home_place_id) == "":
+			all_homed = false
+	check("every agent has a home", all_homed)
+
+	var world2 = WORLD_SCRIPT.new(12345, balance, _map())
+	var same := true
+	for i in world.agents.size():
+		var a = world.agents[i]
+		var b = world2.agents[i]
+		if int(a.age) != int(b.age) or int(a.skills["lumber"]) != int(b.skills["lumber"]) \
+				or str(a.home_place_id) != str(b.home_place_id):
+			same = false
+	check("same seed -> same world", same)
+
+
+func _test_world_autonomous_day() -> void:
+	var balance := _balance()
+	var day_seconds := float(LOADER_SCRIPT.get_nested(balance, "time.day_seconds"))
+	var world = WORLD_SCRIPT.new(12345, balance, _map())
+	world.clock.speed = 1
+
+	var seen := {}
+	for i in world.agents.size():
+		seen[int(world.agents[i].id)] = {}
+
+	for step in 30:  # 3 doby w krokach 0.1 doby
+		world.tick(day_seconds / 10.0)
+		for i in world.agents.size():
+			var a = world.agents[i]
+			seen[int(a.id)][str(a.activity)] = true
+
+	var ok_needs := true
+	var ok_reason := true
+	var ok_stuck := true
+	for i in world.agents.size():
+		var a = world.agents[i]
+		if float(a.needs["sleep"]) < 0.0 or float(a.needs["sleep"]) > 100.0:
+			ok_needs = false
+		if float(a.needs["food"]) < 0.0 or float(a.needs["food"]) > 100.0:
+			ok_needs = false
+		if str(a.idle_reason) == "":
+			ok_reason = false
+		if float(a.commute_accum) >= day_seconds:
+			ok_stuck = false
+	check("needs stay in [0,100]", ok_needs)
+	check("idle_reason always set", ok_reason)
+	check("no agent stuck commuting (> 1 doba)", ok_stuck)
+
+	var cycled := true
+	for i in world.agents.size():
+		var d: Dictionary = seen[int(world.agents[i].id)]
+		if not (d.has("sleep") and d.has("work") and d.has("eat")):
+			cycled = false
+	check("every agent cycled sleep+work+eat", cycled)

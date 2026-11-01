@@ -1,0 +1,13 @@
+{
+  "world_size": [1600, 1200],
+  "places": [
+    { "id": "forest", "name": "Las", "type": "work", "x": 260, "y": 260 },
+    { "id": "market", "name": "Targ", "type": "food", "x": 1180, "y": 240 },
+    { "id": "house_a", "name": "Chata A", "type": "house", "x": 320, "y": 940 },
+    { "id": "house_b", "name": "Chata B", "type": "house", "x": 600, "y": 980 },
+    { "id": "house_c", "name": "Chata C", "type": "house", "x": 880, "y": 920 },
+    { "id": "house_d", "name": "Chata D", "type": "house", "x": 1120, "y": 980 },
+    { "id": "house_e", "name": "Chata E", "type": "house", "x": 680, "y": 640 },
+    { "id": "house_f", "name": "Chata F", "type": "house", "x": 1000, "y": 600 }
+  ]
+}

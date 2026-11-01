@@ -1,4 +1,5 @@
 {
+  "world_seed": 20261101,
   "time": {
     "day_seconds": 30.0,
     "days_per_season": 5,
@@ -22,5 +23,22 @@
       "adult": { "min": 16, "max": 60 },
       "elder": { "min": 60, "max": 999 }
     }
+  },
+  "movement": {
+    "speed": 90.0,
+    "arrive_radius": 24.0
+  },
+  "needs": {
+    "sleep": { "decay_day": 90.0, "recover_day": 260.0, "low": 20.0 },
+    "food": { "decay_day": 55.0, "recover_day": 220.0, "low": 25.0 }
+  },
+  "schedule": {
+    "wake": 0.30,
+    "sleep": 0.82,
+    "work_start": 0.35,
+    "work_end": 0.70
+  },
+  "population": {
+    "count": 8
   }
 }
