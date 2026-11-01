@@ -1,0 +1,3 @@
+# Render 3D izometryczny; sim zostaje 2D-agnistyczny
+
+Warstwa `game/` renderuje świat w rzuƳcie izometrycznym 3D (proste bryły: kapsuły, boxy, stożki; kolorowe `StandardMaterial3D`), w stylu Cultures — a nie płaski widok 2D z góry, jak pierwotnie zakładało `intro` (§12). Powód: płaskie kształty 2D były nieczytelne; rzut izo i czytelne bryły (wzorzec: osobny projekt `gierka`) dają od razu czytelny świat i aktorów. `sim/` pozostaje w 2D (pozycje `Vector2`), więc cała logika, determinizm i testy są nietknięte — render tylko mapuje `(x, y) → (X, Z)`. Konsekwencja: wysokości/obroty to czysty render, bez wpływu na symulację.

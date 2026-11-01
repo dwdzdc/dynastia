@@ -1,26 +1,25 @@
-# AgentNode — placeholder "ludzika" (głowa + ciało) z etykietą i dymkiem stanu.
-# Kolor ciała = stan agenta; hovering pokazuje powód bezczynności (idle_reason).
-extends Node2D
+# AgentNode3D — placeholder "ludzika" w 3D: kapsuła (ciało) + głowa + etykieta 3D.
+# Kolor ciała = stan; etykieta zawsze pokazuje imię i co robi. Selekcja = złoty krążek.
+extends Node3D
 
-const Gfx := preload("res://game/gfx.gd")
+const Gfx3D := preload("res://game/gfx3d.gd")
 
 var sim_agent
+var render_scale := 1.0
 
-var _body: Polygon2D
-var _head: Polygon2D
-var _ring: Polygon2D
-var _name_label: Label
-var _act_label: Label
-var _bubble: Node2D
+var _body: MeshInstance3D
+var _head: MeshInstance3D
+var _disc: MeshInstance3D
+var _label: Label3D
 
 const SKIN := Color(0.91, 0.78, 0.62)
 const STATE_COLORS := {
 	"sleep": Color(0.40, 0.50, 0.85),
-	"work": Color(0.85, 0.50, 0.20),
-	"eat": Color(0.85, 0.76, 0.16),
+	"work": Color(0.85, 0.50, 0.22),
+	"eat": Color(0.86, 0.76, 0.16),
 	"free": Color(0.62, 0.64, 0.66),
 	"commute": Color(0.42, 0.64, 0.85),
-	"manual": Color(0.85, 0.25, 0.25),
+	"manual": Color(0.85, 0.28, 0.28),
 }
 const STATE_TEXT := {
 	"sleep": "śpi", "work": "pracuje", "eat": "je",
@@ -29,28 +28,22 @@ const STATE_TEXT := {
 
 
 func _ready() -> void:
-	_body = Gfx.circle(Vector2.ZERO, 8.0, STATE_COLORS["free"])
+	_body = Gfx3D.capsule(0.42, 1.5, STATE_COLORS["free"])
+	_body.position = Vector3(0, 0.75, 0)
 	add_child(_body)
-	_head = Gfx.circle(Vector2(0, -9), 4.6, SKIN)
+
+	_head = Gfx3D.sphere(0.24, SKIN)
+	_head.position = Vector3(0, 1.62, 0)
 	add_child(_head)
 
-	_ring = Gfx.circle(Vector2.ZERO, 12.5, Color(1.0, 0.9, 0.25, 0.45))
-	_ring.visible = false
-	add_child(_ring)
+	_disc = Gfx3D.cylinder(0.85, 0.06, Color(1.0, 0.85, 0.2))
+	_disc.position = Vector3(0, 0.05, 0)
+	_disc.visible = false
+	add_child(_disc)
 
-	_name_label = Gfx.label(String(sim_agent.name), Vector2(-20, -34), 13, Color(1, 1, 1))
-	add_child(_name_label)
-	_act_label = Gfx.label("", Vector2(-14, -20), 10, Color(1, 0.92, 0.6))
-	add_child(_act_label)
-
-	_bubble = Node2D.new()
-	_bubble.position = Vector2(0, -52)
-	_bubble.visible = false
-	_bubble.add_child(Gfx.rect(-78, -9, 78, 9, Color(0.08, 0.08, 0.08, 0.9)))
-	var bt := Gfx.label("", Vector2(-74, -5), 11, Color(1, 1, 1), false)
-	bt.name = "BubbleText"
-	_bubble.add_child(bt)
-	add_child(_bubble)
+	_label = Gfx3D.label3d("", 26)
+	_label.position = Vector3(0, 2.3, 0)
+	add_child(_label)
 
 
 func _state_key() -> String:
@@ -60,23 +53,16 @@ func _state_key() -> String:
 
 
 func refresh() -> void:
-	position = sim_agent.position
+	position = Vector3(sim_agent.position.x * render_scale, 0.0, sim_agent.position.y * render_scale)
 	var k := _state_key()
-	_body.color = STATE_COLORS.get(k, STATE_COLORS["free"])
+	var mat: StandardMaterial3D = _body.mesh.material
+	mat.albedo_color = STATE_COLORS.get(k, STATE_COLORS["free"])
+	_label.text = "%s · %s" % [String(sim_agent.name), STATE_TEXT.get(k, "")]
 	if sim_agent.controlled:
-		_act_label.text = "▶ ręcznie"
-		_act_label.modulate = Color(1.0, 0.4, 0.4)
+		_label.modulate = Color(1.0, 0.5, 0.5)
 	else:
-		_act_label.text = STATE_TEXT.get(k, "")
-		_act_label.modulate = Color(1, 0.92, 0.6)
+		_label.modulate = Color(1, 1, 1)
 
 
 func set_selected(sel: bool) -> void:
-	_ring.visible = sel
-
-
-func set_hovered(hov: bool) -> void:
-	_bubble.visible = hov
-	if hov and _bubble.has_node("BubbleText"):
-		var bt := _bubble.get_node("BubbleText") as Label
-		bt.text = String(sim_agent.idle_reason)
+	_disc.visible = sel

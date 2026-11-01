@@ -238,3 +238,4 @@ func _test_world_autonomous_day() -> void:
 		if not (d.has("sleep") and d.has("work") and d.has("eat")):
 			cycled = false
 	check("every agent cycled sleep+work+eat", cycled)
+	check("wood accrues during work", float(world.resources["wood"]) > 0.0)

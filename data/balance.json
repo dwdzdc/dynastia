@@ -40,5 +40,8 @@
   },
   "population": {
     "count": 8
+  },
+  "production": {
+    "wood_per_worker_second": 0.5
   }
 }

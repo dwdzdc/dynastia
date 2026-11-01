@@ -18,6 +18,10 @@ var places: Dictionary = {}   # id -> { name, type, position: Vector2 }
 var move_speed: float
 var arrive_radius: float
 
+# Zasoby osady (prymitywny "znak życia" gospodarki, rozbudowa w Etapie 3/4).
+var resources: Dictionary = { "wood": 0.0 }
+var wood_rate: float = 0.0
+
 
 func _init(seed: int, balance: Dictionary, map: Dictionary) -> void:
 	clock = SimClock.new(balance)
@@ -31,6 +35,7 @@ func _init(seed: int, balance: Dictionary, map: Dictionary) -> void:
 
 	move_speed = float(balance["movement"]["speed"])
 	arrive_radius = float(balance["movement"]["arrive_radius"])
+	wood_rate = float(balance.get("production", {}).get("wood_per_worker_second", 0.0))
 
 	var houses := _ids_of_type("house")
 	var works := _ids_of_type("work")
@@ -104,6 +109,8 @@ func tick(delta_real: float) -> void:
 				a.position = a.position.move_toward(tpos, step)
 		else:
 			a.commute_accum = 0.0
+		if a.activity == "work" and not a.controlled:
+			resources["wood"] += wood_rate * delta_sim
 
 
 func find_agent(id: int) -> SimAgent:

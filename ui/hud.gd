@@ -6,23 +6,24 @@ const SimClock := preload("res://sim/time.gd")
 @onready var season_label: Label = $SeasonLabel
 @onready var day_bar: ProgressBar = $DayBar
 @onready var speed_label: Label = $SpeedLabel
+@onready var resources_label: Label = $ResourcesLabel
 @onready var agent_label: Label = $AgentLabel
 @onready var help_label: Label = $HelpLabel
 
-const HELP := """KAMERA: przeciągnij / WASD / strzałki · kółko = zoom
-CZAS: SPACE = pauza · 1/2/3 = tempo · T = przejęcie · ESC = anuluj
-Klik ludzika = szczegóły. Po przejęciu: klik w mapę = idź tam.
+const HELP := """KAMERA: przytrzymaj ŚPM i przeciągnij / WASD / strzałki · kółko = zoom
+LEWY KLIK na ludziku = zaznacz (info w panelu) · PRAWY KLIK na ziemi = każ iść
+SPACE = pauza · 1/2/3 = tempo · ESC = odznacz
 
-KOLOR LUDZIKA: niebieski = śpi · pomarańcz = pracuje
-żółty = je · szary = wolny · jasnoniebieski = idzie · czerwony = przejęty
+KOLOR LUDZIKA: niebieski = śpi · pomarańcz = pracuje · żółty = je
+szary = wolny · jasnoniebieski = idzie · czerwony = przejęty
 
-BUDYNKI: domek z dachem = chata · kłody = tartak/leśny
-czerwone zadaszenie = targ · zielone trójkąty = drzewa"""
+BUDYNKI: drewniany domek z dachem = chata · zielone stożki = las
+stos kłód = tartak · czerwone zadaszenie = targ"""
 
 
 func _ready() -> void:
 	var outline := Color(0.0, 0.0, 0.0, 0.85)
-	for lb in [time_label, season_label, speed_label, agent_label, help_label]:
+	for lb in [time_label, season_label, speed_label, resources_label, agent_label, help_label]:
 		lb.add_theme_color_override("font_outline_color", outline)
 		lb.add_theme_constant_override("outline_size", 4)
 	help_label.text = HELP
@@ -31,13 +32,14 @@ func _ready() -> void:
 func update_view(clock: SimClock) -> void:
 	var hm := clock.hour_minute()
 	time_label.text = "Dzień %d  ·  %02d:%02d" % [clock.day_index(), hm.x, hm.y]
-	season_label.text = "%s · Rok %d · Dzień sezonu %d/%d" % [
-		clock.current_season(), clock.current_year(),
-		clock.day_of_season() + 1, clock.days_per_season,
-	]
+	season_label.text = "%s · Rok %d" % [clock.current_season(), clock.current_year()]
 	day_bar.value = clock.time_of_day()
 	var spd := "PAUZA" if clock.speed == 0 else "%dx" % clock.speed
 	speed_label.text = "Prędkość: %s" % spd
+
+
+func show_resources(wood: float) -> void:
+	resources_label.text = "Drewno: %d" % int(wood)
 
 
 func show_agent(info: Dictionary) -> void:
