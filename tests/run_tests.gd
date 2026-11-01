@@ -5,6 +5,7 @@ extends SceneTree
 
 const RNG_SCRIPT := preload("res://sim/rng.gd")
 const LOADER_SCRIPT := preload("res://sim/data_loader.gd")
+const CLOCK_SCRIPT := preload("res://sim/time.gd")
 
 var failures := 0
 var checks := 0
@@ -28,12 +29,21 @@ func check(name: String, cond: bool) -> void:
 
 
 func _run_all() -> void:
+	# Etap 0
 	_test_rng_deterministic()
 	_test_rng_range_and_distribution()
 	_test_hash3_stable()
 	_test_hash3_sensitive_to_inputs()
 	_test_data_loader()
+	# Etap 1
+	_test_clock_advance_10_years()
+	_test_clock_season_rotation()
+	_test_clock_pause_and_speed()
+	_test_winter_shorter_day()
+	_test_light_factor_day_night()
 
+
+# --- Etap 0 ---
 
 func _test_rng_deterministic() -> void:
 	var a := RNG_SCRIPT.new(12345)
@@ -89,3 +99,69 @@ func _test_data_loader() -> void:
 	check("days_per_year == 4 * days_per_season",
 		int(LOADER_SCRIPT.get_nested(data, "time.days_per_year")) ==
 		4 * int(LOADER_SCRIPT.get_nested(data, "time.days_per_season")))
+
+
+# --- Etap 1 ---
+
+func _balance() -> Dictionary:
+	return LOADER_SCRIPT.load_json("res://data/balance.json")
+
+
+func _new_clock() -> RefCounted:
+	return CLOCK_SCRIPT.new(_balance())
+
+
+func _test_clock_advance_10_years() -> void:
+	var data := _balance()
+	var days_per_year := int(LOADER_SCRIPT.get_nested(data, "time.days_per_year"))
+	var day_seconds := float(LOADER_SCRIPT.get_nested(data, "time.day_seconds"))
+	var c := _new_clock()
+	c.speed = 1
+	for i in days_per_year * 10:
+		c.advance(day_seconds)
+	check("10 years -> correct day count", c.day_index() == days_per_year * 10)
+	check("10 years -> year == 10", c.current_year() == 10)
+
+
+func _test_clock_season_rotation() -> void:
+	var data := _balance()
+	var days_per_season := int(LOADER_SCRIPT.get_nested(data, "time.days_per_season"))
+	var day_seconds := float(LOADER_SCRIPT.get_nested(data, "time.day_seconds"))
+	var c := _new_clock()
+	c.speed = 1
+	check("starts in spring", c.current_season() == "spring")
+	for i in days_per_season:
+		c.advance(day_seconds)
+	check("after one season -> summer", c.current_season() == "summer")
+
+
+func _test_clock_pause_and_speed() -> void:
+	var data := _balance()
+	var day_seconds := float(LOADER_SCRIPT.get_nested(data, "time.day_seconds"))
+	var c := _new_clock()
+	c.speed = 3
+	c.advance(day_seconds)
+	check("3x covers 3 days", c.day_index() >= 2)
+	var d0: int = c.day_index()
+	c.toggle_pause()
+	check("toggle -> paused", c.speed == 0)
+	c.advance(day_seconds * 100)
+	check("paused clock frozen", c.day_index() == d0)
+	c.toggle_pause()
+	check("toggle resumes to 3x", c.speed == 3)
+
+
+func _test_winter_shorter_day() -> void:
+	var data := _balance()
+	var dl: Dictionary = LOADER_SCRIPT.get_nested(data, "time.daylight")
+	var summer := float(dl["summer"]["sunset"]) - float(dl["summer"]["sunrise"])
+	var winter := float(dl["winter"]["sunset"]) - float(dl["winter"]["sunrise"])
+	check("winter day window shorter than summer", winter < summer)
+
+
+func _test_light_factor_day_night() -> void:
+	var c := _new_clock()
+	c.set_time(0, 0.5)   # południe wiosną (sunrise 0.25, sunset 0.75)
+	check("noon is full daylight", is_equal_approx(c.light_factor(), 1.0))
+	c.set_time(0, 0.02)  # głęboka noc
+	check("deep night is dark", c.light_factor() < 0.01)

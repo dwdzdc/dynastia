@@ -5,7 +5,14 @@
     "days_per_year": 20,
     "seasons": ["spring", "summer", "autumn", "winter"],
     "default_speed": 1,
-    "max_speed": 3
+    "max_speed": 3,
+    "twilight": 0.06,
+    "daylight": {
+      "spring": { "sunrise": 0.25, "sunset": 0.75 },
+      "summer": { "sunrise": 0.20, "sunset": 0.82 },
+      "autumn": { "sunrise": 0.28, "sunset": 0.72 },
+      "winter": { "sunrise": 0.40, "sunset": 0.58 }
+    }
   },
   "aging": {
     "days_per_year_of_life": 4,
