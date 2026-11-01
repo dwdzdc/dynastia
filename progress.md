@@ -41,13 +41,13 @@ Kluczowe rozstrzygnięcia mające wpływ na kroki poniżej:
 
 Projekt Godot 4, struktura katalogów, loader JSON, `data/balance.json`, deterministyczny RNG, runner testów.
 
-- [ ] Utworzyć projekt Godot 4.x (`project.godot`)
-- [ ] Utworzyć strukturę katalogów: `sim/`, `data/`, `game/`, `ui/`, `tests/`
-- [ ] Dodać `data/balance.json` z kilkoma początkowymi stałymi
-- [ ] Zaimplementować loader JSON wczytywany do `sim/`
-- [ ] Zaimplementować deterministyczny RNG: `hash(seed, id, purpose)`
-- [ ] Dodać runner testów (GUT lub własny)
-- [ ] Test: ten sam `seed` → ten sam wynik
+- [x] Utworzyć projekt Godot 4.x (`project.godot`)
+- [x] Utworzyć strukturę katalogów: `sim/`, `data/`, `game/`, `ui/`, `tests/`
+- [x] Dodać `data/balance.json` z kilkoma początkowymi stałymi
+- [x] Zaimplementować loader JSON wczytywany do `sim/`
+- [x] Zaimplementować deterministyczny RNG: `hash(seed, id, purpose)`
+- [x] Dodać runner testów (własny, bez GUT)
+- [x] Test: ten sam `seed` → ten sam wynik
 
 **Akceptacja:** projekt się uruchamia; test sprawdza, że ten sam seed daje ten sam wynik.
 
@@ -57,13 +57,13 @@ Projekt Godot 4, struktura katalogów, loader JSON, `data/balance.json`, determi
 
 Zegar symulacji, doba, sezony, rok, długość światła per sezon, pauza i prędkości.
 
-- [ ] Klasa zegara symulacji (`sim/`) — własny zegar, niezależny od FPS
-- [ ] Doba / sezon / rok ze stałymi z `balance.json` (doba = N s, sezon = M dób, rok = 4 sezony)
-- [ ] Długość dnia/zmierzchu/nocy zależna od sezonu
-- [ ] Prędkości: pauza, 1x, 2x, 3x (+ auto-pauza wstawić dopiero w etapie 11 — tu tylko mechanizm)
-- [ ] Prosty widok: pasek czasu
-- [ ] Widok: zmiana oświetlenia wg pory dnia/sezonu
-- [ ] Test headless: przewinięcie 10 lat gry
+- [x] Klasa zegara symulacji (`sim/`) — własny zegar, niezależny od FPS
+- [x] Doba / sezon / rok ze stałymi z `balance.json` (doba = N s, sezon = M dób, rok = 4 sezony)
+- [x] Długość dnia/zmierzchu/nocy zależna od sezonu
+- [x] Prędkości: pauza, 1x, 2x, 3x
+- [x] Prosty widok: pasek czasu
+- [x] Widok: zmiana oświetlenia wg pory dnia/sezonu
+- [x] Test headless: przewinięcie 10 lat gry
 
 **Akceptacja:** test headless przewija 10 lat; wizualnie widać zmianę długości dnia między sezonami.
 
@@ -73,15 +73,15 @@ Zegar symulacji, doba, sezony, rok, długość światła per sezon, pauza i prę
 
 Mapa 2D, nawigacja, agenci według harmonogramów i potrzeb; przejęcie ręczne; `idle_reason`.
 
-- [ ] Mapa 2D z góry: wieś, las, miasteczko (placeholdery — kolorowe kształty)
-- [ ] Nawigacja agentów (`NavigationAgent2D`)
-- [ ] Agent anonimowy: tylko `id`, wiek, umiejętności, potrzeby (bez traitów, rodzin, więzi)
-- [ ] Harmonogram bloków (sen, praca, dom, wolne) + priorytety
-- [ ] Potrzeby (sen, jedzenie) sterujące zachowaniem (utility-based)
-- [ ] Ruch i praca agentów wg nawigacji
-- [ ] Przejęcie ręczne dowolnego agenta
-- [ ] `idle_reason` w stanie każdego agenta + widok po kliknięciu
-- [ ] Kamera i widok mapy
+- [x] Mapa 2D z góry: wieś, las, miasteczko (placeholdery — kolorowe kształty)
+- [ ] Nawigacja agentów (`NavigationAgent2D`) — przesunięta do Etapu 3 (razem z drogami/przeszkodami); teraz dojazd liniowy liczony deterministycznie w `sim/`
+- [x] Agent anonimowy: tylko `id`, wiek, umiejętności, potrzeby (bez traitów, rodzin, więzi)
+- [x] Harmonogram bloków (sen, praca, dom, wolne) — uproszczony do faz dnia; pełny utility-based w Etapie 3
+- [x] Potrzeby (sen, jedzenie) sterujące zachowaniem
+- [x] Ruch i praca agentów
+- [x] Przejęcie ręczne dowolnego agenta
+- [x] `idle_reason` w stanie każdego agenta + widok po kliknięciu
+- [x] Kamera i widok mapy
 
 **Akceptacja:** osada sama żyje dobę i noc; kliknięcie agenta mówi, co robi albo na co czeka.
 
