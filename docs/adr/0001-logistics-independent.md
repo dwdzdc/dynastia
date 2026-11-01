@@ -1,0 +1,3 @@
+# sim/logistics jest niezależny od rodziny, traitów i więzi
+
+Moduł `sim/logistics` zna tylko agentów, budynki, towary, drogi i zlecenia; nie wie nic o rodzinie, traitach ani więziach. Rodzina i cohesion to warstwa tożsamości nałożona nad nim. Powód: logistyka to filar o najwyższym ryzyku technicznym (korki, zakleszczenia, towar bez nosiciela), który musi powstać i zostać przetestowany zanim dojdzie tożsamość; a jednocześnie ten sam rdzeń ma w przyszłości obsłużyć inny scenariusz albo osobną grę (nowoczesne Cultures bez rodu). Konsekwencja: żadnych skrótów łączących nosicieli z członkami rodziny w środku modułu — to sprzężenie żyje wyłącznie w warstwie wyżej.

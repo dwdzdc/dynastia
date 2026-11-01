@@ -1,0 +1,19 @@
+{
+  "time": {
+    "day_seconds": 30.0,
+    "days_per_season": 5,
+    "days_per_year": 20,
+    "seasons": ["spring", "summer", "autumn", "winter"],
+    "default_speed": 1,
+    "max_speed": 3
+  },
+  "aging": {
+    "days_per_year_of_life": 4,
+    "stages": {
+      "child": { "min": 0, "max": 8 },
+      "teen": { "min": 8, "max": 16 },
+      "adult": { "min": 16, "max": 60 },
+      "elder": { "min": 60, "max": 999 }
+    }
+  }
+}

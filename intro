@@ -1,0 +1,203 @@
+Dynastia: opis projektu i plan implementacji (Godot)
+Roboczy tytuł. Dokument dla Claude Code: wizja, zasady, model danych, architektura i kroki implementacji z kryteriami akceptacji.
+1. Wizja w jednym akapicie
+Gra o rodzie, nie o jednym bohaterze. Zaczynasz jako biedna rodzina (robotnicy w szeregowcu albo drwale na odludziu) i przez pokolenia wspinasz się, spadasz albo stoisz w miejscu. Ludzie fizycznie chodzą po mapie i pracują jak w Cultures: 8th Wonder of the World, ale każdy ma tożsamość: wiek, pokrewieństwo, cechy, relacje. Sterujesz zamiarami i zadaniami (jak w Simsach i RimWorldzie), nie mikrozarządzaniem. Świat jest surowy: wypadki, wojny, więzienie, ciężkie porody, głód. Docelowo Europa i wiele epok (średniowiecze do współczesności), ale MVP to jeden region i jedna epoka.
+Czym to nie jest: nie Simsy (nikt nie myje się pod prysznicem dla zabawy), nie Crusader Kings (nie menu i tabelki), nie Bannerlord (nie jeden bohater). Pozycja rodziny w społeczeństwie jest głównym gameplayem.
+2. Filary designu
+1. Rodzina jako graf, uwaga jako zasób. Gracz nie ma nieskończonej kontroli. Im większa rodzina, tym mniej uwagi na osobę, i więzi słabną.
+2. Rodzina vs reszta świata to ta sama struktura. Każdy człowiek i każdy ród w świecie ma te same dane. Różni się tylko wierność symulacji (LOD).
+3. Ryzyko jest procesem, nie rzutem kością. Gracz widzi czynniki i może inwestować w sukces jednej osoby kosztem innych.
+4. Wiele dróg, żadna dominująca. Szare życie, rzemiosło, przedsięwzięcia, przestępczość, nauka, cwaniactwo.
+5. Interfejs przez świat. Klikasz obiekty i ludzi. Zero wyskakujących okien poza krytycznymi zdarzeniami.
+6. Wszystko do dostrojenia. Stałe w plikach danych, nie w kodzie.
+3. Czas i świat
+• Doba trwa N sekund realnych (stała). Sezon to M dób. Rok to cztery sezony. Wszystko w data/balance.json.
+• Światło: długość dnia, zmierzchu i nocy zależy od sezonu (jak w Don't Starve). Zima = krótki produktywny dzień. Światło jest mechaniką: bez lampy po zmroku produktywność spada, noc zwiększa ryzyko.
+• Starzenie: dni_na_rok_życia w configu, progi etapów (dziecko, nastolatek, dorosły, starzec) też w danych. Domyślnie życie ma się mieścić w kilku godzinach gry, tak by dało się dożyć wnuków.
+• Kalendarz widoczny: dni tygodnia i data płatności (czynsz co K dni). To jest pętla napięcia dla szarego życia.
+• Prędkości: pauza, 1x, 2x, 3x. Auto-pauza tylko przy krytycznych zdarzeniach (wypadek, śmierć, aresztowanie, propozycja ślubu).
+4. Model danych
+Wszystko poniżej to dane w warstwie symulacji. Warstwa wizualna tylko je czyta.
+4.1 Person
+id, seed, name, sex, birth_day, death_day?, mother_id?, father_id?, house_id (ród/nazwisko), household_id, traits[], skills{skill: level}, health, injuries[], needs{}, status (alive, jailed, away, dead), occupation?, location, lod (0 pełna sym., 1 zgrubna, 2 tylko dane), known_observations{}, notes_carried[].
+Cechy (traity) są danymi: id, wpływ na skille i szanse, wpływ na więzi (np. lojalny, ambitny, ciekawski, gaduła, aspołeczny, porywczy).
+4.2 Drzewo genealogiczne (fakty, niezmienne)
+Krawędzie: parent_of(parent, child) oraz Union(a, b, start_day, end_day?, kind). Nic nie jest kasowane. Rozstanie ustawia end_day. Rodzeństwo i dalsze pokrewieństwo wylicza się z krawędzi.
+4.3 Bond (więź skierowana)
+Bond(from, to) ma value (−100..100) i reasons[] (wydarzenia, które ją ukształtowały, do pokazania graczowi "dlaczego"). bond(A→B) to to, co A czuje do B. Są asymetryczne. Przechowywać rzadko (tylko pary, które mają jakąkolwiek historię), nie macierz N×N.
+4.4 House (ród) i Household (gospodarstwo)
+• House: nazwisko, reguła dziedziczenia nazwiska i prawa do roota (wg epoki), reputacja per sfera (reputation{sphere: value}: np. krawiectwo, półświatek, towarzystwo).
+• Household: kto mieszka razem, dwelling_id, czynsz/koszty stałe, spiżarnia, gotówka, dług.
+4.5 Place, Building, Workplace
+Place (region, wieś, dzielnica), Building (typ, właściciel: osoba/ród/nikt, sloty pracy, profil ryzyka, stan). Workplace nie należący do gracza jest czarną skrzynką (niski LOD): pracownik wchodzi i znika z mapy, gra liczy płacę, zmęczenie, rozwój umiejętności i ryzyko wypadku zbiorczo. Właściciel dostaje pełną symulację.
+4.6 Item/Product
+type, quality, maker_id, design_id?. Produkty mają jakość i autora, bo reputacja wynika ze sprzedaży konkretnych rzeczy.
+4.7 Wiedza
+• Observation: id, domain, requires_exposure (gdzie można ją zdobyć).
+• Concept: id, requires_observations[], requires_concepts[], requires_tools[], enables[].
+• Posiadanie: Person.known_observations{id: confidence}, nośniki (Notebook, Book) niosą koncepty i można je kraść, kupić, spalić.
+• Wiedza ginie, jeśli nie zapisana i nie przekazana.
+4.8 Region i agregaty
+Region: seed, populacja wg zawodów i klas, poziom wiedzy w dziedzinach, ceny bazowe, surowość prawa, gęstość policji, lista rodów (z lod). Agregaty są źródłem prawdy o świecie. Materializacja osoby pobiera ją z puli (suma musi się zgadzać).
+4.9 Order (zlecenie) i Event
+Order: verb, actor, target, params, state, cost. Event: typ, uczestnicy, dzień, ważność (decyduje o ikonie i auto-pauzie).
+5. Cohesion: kto jest rodziną
+Trzy odrębne rzeczy: drzewo (fakt), więź (stan emocjonalny), rdzeń (wynik obliczenia dla gracza).
+5.1 Rdzeń
+Punkt startowy to root (osoba aktualnie prowadzona przez gracza). Siła przynależności osoby do rdzenia liczona iteracyjnie:
+strength[root] = 1
+strength[u] = 1 - Π_v (1 - strength[v] * w(u→v)),   w(u→v) = clamp(bond(u→v)/100, 0, 1)
+Sumowanie po sąsiadach v grafu pokrewieństwa i małżeństw, powtarzane do stabilizacji (z tłumieniem). Efekty: liniowy łańcuch szybko słabnie, gęsta sieć (rodzeństwo, kuzyni, dziadkowie, wspólne przedsięwzięcia) trzyma. Brak limitu głębokości. Obliczenia tylko dla okolicy, gałęzie poniżej progu min_strength są przycinane.
+Progi (w configu) wyznaczają status osoby względem gracza:
+Status
+Znaczenie
+core
+Pełna kontrola, możesz wydawać zamiary i przejmować ręcznie
+attached
+Małżonek wżeniony. Kontrola ograniczona więzią, własne cele. Nie może być rootem
+worker
+Pracownik: przypisujesz miejsce, resztę robi sam
+independent
+Poza rdzeniem, steruje nim AI
+estranged
+Wyobcowany: AI, może konkurować o spadek
+Zasada: małżonek wnosi do rdzenia tylko siebie (i dzieci). Jego rodzice i rodzeństwo nie wchodzą. Rozstanie ustawia end_day i osoba wypada przez próg bez specjalnych przypadków.
+5.2 Uwaga i dryf
+Co dobę gracz ma budżet uwagi. Uwaga rozkłada się na rdzeń. Brak interakcji obniża bond(członek→rdzeń), tym szybciej, im większy rdzeń. Dryf obniża więź tylko do podłogi "obcy", nie do wrogości. Zerwanie wymaga zdarzenia (kłótnia o pieniądze, zdrada, ślub wbrew rodowi, krzywda). Efekt: mała rodzina jest stabilna, duża rozpada się sama.
+5.3 Root i sukcesja
+• Kandydat na roota: potomek krwi rodu zgodnie z regułą epoki (małżonkowie nigdy).
+• Gdy root umiera, gracz wybiera następcę spośród kandydatów, preferując tych o wysokiej więzi.
+• Bezpiecznik: jeśli w rdzeniu nie ma nikogo, kamera przechodzi na potomka krwi (nawet o zerowej więzi), a w drugiej kolejności na osobę z najwyższą siłą. Ród rozszczepia się zamiast znikać.
+• Game over tylko wtedy, gdy wygasa linia krwi bez potomka.
+• Świadoma zmiana roota jest możliwa, ale dawny rdzeń staje się peryferiami i dryfuje.
+5.4 Dziedziczenie
+Śmierć głowy uruchamia zdarzenie, które odpytuje graf więzi. Bliscy dzielą majątek pod kontrolą gracza. Wyobcowani (AI) mogą rościć prawa. Mechanika sporu o spadek jest poza MVP, ale model musi pozwalać ją dodać (zdarzenie spadku zapisuje uczestników i ich więzi).
+6. Sterowanie i interfejs
+• Autopilot: każdy ma harmonogram bloków (sen, praca, dom, wolne) i priorytety, jak w RimWorldzie.
+• Zamiary na ludziach: klik w osobę daje listę zamiarów ("zaprzyjaźnij się z X", "flirtuj z X", "unikaj X", "ucz się"), nie czynności. Gra rozstrzyga jak (traity, nastrój, relacje).
+• Zlecenia na obiektach: klik w obiekt (np. stół krawiecki) daje listę prac ("uszyj czapkę z wełny"). Zlecenie trafia do kolejki, bierze je wolny kompetentny człowiek.
+• Przejęcie ręczne: dowolny członek core może być prowadzony bezpośrednio. W krytycznych momentach daje to realnie lepsze wyniki niż autopilot (uwaga jako waluta).
+• Informacja: ikony nad głową/obiektem zamiast okien. Klik w ikonę przybliża kamerę. Dziennik zdarzeń jako oś czasu. Stan ludzi widoczny w zachowaniu i wyglądzie (zmęczony chodzi inaczej, wyobcowany je osobno).
+• Wieczór to główny moment decyzji: ograniczony czas wspólny rozdzielasz między lekcje, rozmowy o pieniądzach, pub, naukę. Każda opcja kosztuje i daje inną więź/umiejętność.
+• Kontekst wyboru ryzyka: czynniki wpływające na szansę są widoczne, wynik nie.
+Wymóg diagnostyczny: każdy agent trzyma w stanie powód bezczynności (idle_reason: brak surowca, brak ścieżki, brak narzędzia, brak pracy, głód, odpoczynek) i pokazuje go po kliknięciu. Żaden agent nie stoi bez widocznego powodu. To warunek użyteczności interfejsu i główne narzędzie debugowania logistyki.
+7. Ścieżki rozwoju
+Każdy czasownik w grze to zlecenie o czterech parametrach: kapitał na wejście, czas, ryzyko, co rośnie po drodze.
+Ścieżka
+Najdroższe
+Ryzyko
+Rośnie
+Szare życie
+czas (od pierwszego do pierwszego)
+zdrowie, utrata pracy
+prawie nic
+Rzemiosło
+umiejętność i cierpliwość
+mały rynek
+reputacja, marka
+Przedsięwzięcia
+kapitał
+bankructwo, rywale
+majątek, ludzie, wpływy
+Przestępczość
+zaufanie w półświatku
+więzienie, śmierć, zemsta
+respekt, kontakty
+Nauka
+ekspozycja i lata czasu
+długie bezowocne lata
+wiedza
+Cwaniactwo
+wiarygodność i wyczucie ludzi
+skandal, demaskacja
+pozycja, dostęp
+Zasada balansu: żadna ścieżka nie jest dominująca. Ścieżki nie są wyłączne, różne osoby w rodzinie idą różnymi drogami, a gracz wybiera, czyją ścieżkę wspiera kosztem czyjej.
+Emergentna tożsamość rodu: nie ma wyboru "zostań rodziną krawców". Mechanizmy działają osobno (umiejętność rośnie od praktyki, produkty mają jakość, sprzedaż buduje reputację w miejscu i grupie, reputacja daje klientów i kapitał, dzieci uczą się w warsztacie), a ród dostaje etykietę wynikającą z danych, która ma skutki.
+7a. Logistyka i osada
+Logistyka jest filarem gry, nie dodatkiem: osada żyje tym, że rzeczy trafiają tam, gdzie są potrzebne, a rodzina to tożsamość nałożona na ten mechanizm.
+• Zapotrzebowanie i nadwyżki. Budynek zgłasza, czego potrzebuje (wejścia produkcji, jedzenie, opał) i co ma do oddania. Gra paruje je i tworzy zlecenia transportu. Gracz nie wyznacza tras, tylko decyduje o układzie osady, magazynach i drogach.
+• Nosiciel to rola, nie typ jednostki. Towar może zanieść pracownik albo członek rodziny. Rodzina robiąca to sama oszczędza pieniądze, ale każda godzina noszenia to godzina niezużyta na rzemiosło, naukę, dzieci i budowanie więzi. Logistyka jest więc kosztem uwagi, nie tylko czasu.
+• Magazyny i bufory. Towar ma miejsce, w którym czeka. Bez magazynu leży na ziemi, psuje się albo ginie.
+• Drogi. Ścieżki się wydeptują i można je utwardzać. Koszt ruchu zależy od nawierzchni, sezonu (błoto wiosną, śnieg zimą) i pory dnia (noc bez światła).
+• Środki transportu jako dane epoki: noszenie, taczka, wóz, koń, potem kolej.
+• Ryzyko na trasie. Bandyci, wypadki, kradzież towaru. Ochrona transportu to ten sam system co przygotowanie napadu (sekcja 8), widziany z drugiej strony.
+• Czytelność jest wymogiem. Każdy agent zna powód bezczynności i pokazuje go po kliknięciu ("czeka na deski", "brak ścieżki do tartaku", "głodny"). To główne narzędzie gracza i główne narzędzie debugowania.
+8. Ryzyko jako proces
+Trzy fazy dla każdego ryzykownego przedsięwzięcia (napad, przemyt, ryzykowny eksperyment, wyprawa):
+1. Przygotowanie: gracz inwestuje czas, pieniądze i ludzi (rozpoznanie, wspólnik, alibi, kontakty). Każdy element jest widoczny i ma koszt.
+2. Wykonanie: szansa to funkcja widocznych czynników (pora, kto patrzy, znajomość terenu, doświadczenie, nerwy). Przejęcie ręczne zwiększa szansę.
+3. Następstwa: złapany nie znaczy skazany. Rodzina pracuje nad losem osoby (kaucja, adwokat, przekupstwo, zastraszenie świadków, ucieczka). Więzień buduje kontakty albo traci zdrowie.
+Ta sama struktura obsługuje naukę, cwaniactwo i przedsięwzięcia. Wypadki w pracy zależą od zawodu, warunków, doświadczenia i narzędzi. Urazy mają stopnie pośrednie (kaleka drwal może zostać księgowym).
+Przestępczość w pełnej wersji (po MVP): wykrywalność zależy od okolicy i obserwatorów, dowody i świadkowie zostają w świecie, półświatek ma własną hierarchię dziedziczoną w rodzie.
+9. Wiedza i nauka
+• Nie ma menu "wymyśl X". Gracz kieruje uwagą postaci (czas, notatki, pytania do innych), nie wybiera wyniku.
+• Odkrycie zachodzi, gdy postać trzyma powiązane obserwacje. Szansa zależy od liczby obserwacji w dziedzinie, traitów (ciekawość, inteligencja, upór), wykształcenia, czasu i narzędzi.
+• Dwa kroki: odkrycie zjawiska (z ekspozycji), potem zastosowanie (wymaga kolejnych odkryć, materiałów, narzędzi). Technologia to graf zależności, nie linia.
+• Ryzyko: błędne wnioski (fałszywa wiedza też jest stosowana), wypadki, koszt czasu i pieniędzy, reakcje społeczne epoki.
+• Droga do wpływu: tylko ona wie, rodzina wie, pokazane komuś, opublikowane, zaakceptowane, zastosowane. Przejścia zależą od wiarygodności (pozycja, wykształcenie, kontakty), pośredników i ryzyka kradzieży pomysłu. Alternatywa: zatrzymać wiedzę jako tajemnicę rodu.
+• Podział ról: odkrywca i sprzedawca to różne umiejętności. Odkrycie Zosi może wymagać brata-gaduły z kontaktami (albo kogoś, kto je sobie przywłaszczy).
+• Skala świata: narzędzia ograniczają, co można zaobserwować. Regiony mają poziom wiedzy w agregatach, który rośnie w tle. Odkrycie bywa nowością w skali świata albo odkryciem na nowo. Wiedza rozchodzi się szlakami handlowymi, w książkach, przez uczniów.
+• Widoczność: gracz widzi koszty (czas, pieniądze, zużyte surowce) i dwuznaczne sygnały (zeszyt grubieje, plamy na rękach, zapach w szopie). Nie widzi prawdopodobieństw ani postępu. Fałszywe tropy wyglądają tak samo jak prawdziwe. Wartości są dostępne w trybie debug dla dewelopera.
+10. Świat, LOD i generowanie na żądanie
+• Wszystkie osoby i rody mają te same dane. LOD określa wierność: 0 (pełna symulacja, obszar gracza), 1 (zgrubna, raz na sezon, statystycznie), 2 (tylko agregaty, osoba jeszcze nie istnieje).
+• Materializacja: gdy gracz wchodzi w kontakt z kimś (zatrudnia, żeni się, kupuje), gra wyciąga osobę z agregatu, generuje ją deterministycznie i zapisuje na stałe.
+• Determinizm: każda generowana rzecz wynika z hash(world_seed, entity_id, purpose). Ta sama osoba zawsze wychodzi taka sama, niezależnie od kolejności.
+• Spójność wsteczna: generowanie z ograniczeniami (wiek, rocznik, status, brak pokrewieństwa z już znanymi), przeszłość tworzona dopiero na żądanie (ojciec Kazika powstaje, gdy ktoś o niego zapyta, i jest zgodny wiekiem).
+• Globalnie spójne od początku (agregaty): państwa, granice, wojny, ceny bazowe, prawa, demografia.
+• Skalowanie: MVP to jeden region, ale architektura (agregaty plus materializacja) jest ta sama dla Europy.
+• Awans społeczny = odblokowanie wyższego LOD. Pracownik widzi drzwi zakładu, majster halę, właściciel pełną symulację.
+11. Epoki jako dane
+Technologie, zawody, budynki, prawa i reguły dziedziczenia siedzą w plikach danych. Scenariusz startowy to zestaw odblokowanych rzeczy i parametrów epoki. Kod nie zawiera nic specyficznego dla średniowiecza. Zasada testowa: dodanie nowej epoki ma wymagać nowych plików, nie zmian w kodzie.
+12. Architektura w Godot
+• Godot 4.x, GDScript (typowany). Gra 2D, widok z góry. Placeholdery: kolorowe kształty i ikony, bez grafiki.
+• Ścisły podział:
+    ◦ sim/: czysta logika (klasy RefCounted, bez zależności od Node). Cały stan świata, więzi, ekonomia, wiedza, generator. Testowalna headless.
+    ◦ data/: JSON z balansem, cechami, zawodami, towarami, epokami, wiedzą.
+    ◦ game/: sceny, agenci, nawigacja, kamera. Czyta stan sim.
+    ◦ ui/: ikony zdarzeń, menu kontekstowe, dziennik, drzewo rodziny.
+    ◦ tests/: testy symulacji (GUT lub własny runner).
+• Tick: symulacja ma własny zegar, widok go odczytuje. Szybkie przewijanie czasu nie może zależeć od FPS.
+• RNG: wyłącznie deterministyczny, z seedem świata. Zakaz randi() w sim/.
+• Save/load: serializacja stanu sim do JSON, wersjonowana.
+• Agenci: NavigationAgent2D, zachowanie z harmonogramów i potrzeb (utility-based). Zlecenia przez kolejkę zadań.
+• Zdarzenia: szyna zdarzeń (sygnały) między sim a ui.
+• Zero stałych w kodzie: każda wartość balansowa w data/balance.json.
+Moduł logistyki. sim/logistics jest niezależny od rodzin, traitów i więzi: zna tylko agentów, budynki, towary, drogi i zlecenia. Rodzina i cohesion to warstwa tożsamości nad nim. Dzięki temu ten sam rdzeń może później obsłużyć inny scenariusz albo osobną grę (nowoczesne Cultures bez rodu).
+13. Zakres MVP
+Scenariusz: jedna epoka (umowne średniowiecze), jeden region: wieś, las, miasteczko w odległości kilku godzin drogi. Start: rodzina drwali (4 do 6 osób). Co działa:
+• czas, sezony, światło, starzenie (stałe do strojenia)
+• ludzie z traitami i umiejętnościami, harmonogramy, potrzeby
+• drzewo genealogiczne, małżeństwa, porody (z ryzykiem), śmierć, dziedziczenie podstawowe
+• więzi skierowane, rdzeń, dryf, root, sukcesja, game over
+• gospodarstwo domowe, czynsz/koszty co K dni, sprzedaż na targu
+• trzy ścieżki: szare życie (praca dorywcza/etat), rzemiosło (drewno → deski → sprzedaż, plus jedno rzemiosło dodatkowe), lekka przestępczość (kradzież, przemyt)
+• wypadki w pracy, choroby, urazy
+• LOD i materializacja w jednym regionie, 3 do 4 rodów w tle
+• interfejs przez świat (ikony, menu na obiektach i ludziach)
+Logistyka jest filarem MVP: łańcuch drewno → deski → sprzedaż z magazynami, drogami i nosicielami ma działać jako osada bez rodziny, zanim dojdzie tożsamość i więzi (etapy 2 i 3).
+Poza MVP: pełna nauka, duże przedsięwzięcia, cwaniactwo z sekretami i plotkami, półświatek, wojna, spór o spadek, wiele epok, Europa. Model danych ma je przewidywać, ale nie implementować.
+Test sukcesu MVP: po 2 do 3 pokoleniach gracz ma historie do opowiedzenia i czuje, że to jego rodzina. Śmierć kogoś z rdzenia coś znaczy.
+14. Plan implementacji krok po kroku
+Zasady pracy: jeden etap = jeden commit lub gałąź. Każdy etap kończy się działającym stanem i testami logiki symulacji. Po każdym etapie krótki opis decyzji architektonicznych. Nie przechodź do następnego etapu bez spełnionych kryteriów. Przy niejasności projektowej zapytaj, nie zgaduj.
+Kolejność wynika z ryzyka. Logistyka z autonomicznymi agentami to najwyższe ryzyko techniczne (korki, zakleszczenia, towar bez nosiciela), więc jest prototypowana przed tożsamością i więziami. Cohesion to matematyka na grafie, testowalna headless w krótkim czasie.
+Etap 0: szkielet. Projekt Godot 4, struktura katalogów z sekcji 12, loader JSON, data/balance.json z kilkoma stałymi, deterministyczny RNG (hash(seed, id, purpose)), runner testów. Akceptacja: projekt się uruchamia, test sprawdza, że ten sam seed daje ten sam wynik.
+Etap 1: czas. Zegar symulacji, doba, sezony, rok, długość światła per sezon, pauza i prędkości. Prosty widok z paskiem czasu i zmianą oświetlenia. Akceptacja: test headless przewija 10 lat; wizualnie widać zmianę długości dnia w sezonach.
+Etap 2: świat i anonimowi agenci. Mapa 2D (wieś, las, miasteczko), nawigacja, agenci chodzący po harmonogramach (sen, praca, dom, wolne) i potrzebach (sen, jedzenie), przejęcie ręczne dowolnego agenta. Agent to tu tylko id, wiek, umiejętności i potrzeby, bez traitów, rodzin i więzi. Każdy agent trzyma idle_reason i pokazuje go po kliknięciu. Akceptacja: osada sama żyje dobę i noc, kliknięcie dowolnego agenta mówi, co robi albo na co czeka.
+Etap 3: logistyka i produkcja (prototyp osady bez rodziny). Moduł sim/logistics: zapotrzebowanie i nadwyżki budynków, parowanie w zlecenia transportu, magazyny, drogi (wydeptywanie, koszt ruchu), nosiciel jako rola, kolejka zleceń, menu kontekstowe na obiektach. Łańcuch drewno → deski → sprzedaż: 3 budynki, 2 towary. Wpływ sezonu i nocy na transport. Akceptacja: osada działa 30 dni gry bez ręcznej ingerencji; test headless traktuje agenta bez widocznego powodu bezczynności dłużej niż próg jako błąd; żaden towar nie leży bez zlecenia przy wolnym nosicielu; brak surowca daje oczekiwanie, nie zakleszczenie.
+Etap 4: ekonomia. Gospodarstwo domowe, koszty stałe co K dni, jedzenie i opał zimą, sprzedaż na targu, jakość i reputacja lokalna. Akceptacja: rodzina bez dodatkowego dochodu zbankrutuje w przewidywalnym czasie, z rzemiosłem może rosnąć.
+Etap 5: ludzie i drzewo. Person jako warstwa tożsamości nałożona na agentów z etapu 2: traity z danych, drzewo genealogiczne, starzenie, śmierć, generator początkowej populacji. Akceptacja: symulacja 100 lat bez rąk gracza nie wywala się, populacja nie wybucha ani nie wymiera, wiek zgadza się ze stałymi, logistyka z etapu 3 dalej działa.
+Etap 6: więzi i rdzeń. Bond skierowany, obliczanie strength, statusy, dryf zależny od liczebności, root, sukcesja z bezpiecznikiem. Akceptacja: testy scenariuszowe: (a) duża rodzina liniowa traci łańcuch, (b) gęsta sieć trzyma, (c) małżonek nie wciąga swojej rodziny, (d) śmierć roota przenosi kamerę, (e) wygaśnięcie linii daje game over.
+Etap 7: rodzina w ruchu. Zamiary na ludziach (zaprzyjaźnij się, flirtuj, unikaj), małżeństwa, porody z ryzykiem, wychowanie dzieci, dziedziczenie podstawowe. Członek rodziny może pełnić rolę nosiciela i robotnika zamiast pracownika, kosztem swojego czasu i uwagi gracza. Akceptacja: pełny cykl dwóch pokoleń przebiega bez ręcznej ingerencji w dane, a praca rodziny zamiast najętych widocznie zmienia koszty i więzi.
+Etap 8: ryzyko. Wypadki w pracy, choroby, urazy, fazy przygotowanie/wykonanie/następstwa jako wspólna infrastruktura. Akceptacja: wypadki zależą od zawodu i doświadczenia, uraz zmienia możliwości postaci.
+Etap 9: lekka przestępczość. Kradzież i przemyt, wykrywalność, areszt, kaucja, wyrok, następstwa dla rodziny. Akceptacja: złapanie otwiera fazę następstw, a nie kończy historii.
+Etap 10: LOD i materializacja. Agregaty regionu, rody w tle (LOD 1), materializacja osób na żądanie, deterministyczna i zapisywana na stałe. Akceptacja: ta sama osoba po wczytaniu save'a jest identyczna, sumy populacji w agregatach zgadzają się, generowanie nie łamie pokrewieństw ani wieku.
+Etap 11: interfejs i UX. Ikony zdarzeń, auto-pauza, dziennik, widok drzewa rodziny z więziami, wieczorne decyzje, sygnały oddalania się członków rodziny. Akceptacja: da się zagrać pełną sesję bez wyskakujących okien poza krytycznymi.
+Etap 12: zapis i strojenie. Save/load z wersjonowaniem, tryb debug z podglądem ukrytych wartości, dopracowanie balance.json. Akceptacja: sesja kilku pokoleń zapisuje się i wczytuje bez rozjazdów.
+Po MVP (kolejność do ustalenia): wiedza i nauka, cwaniactwo z sekretami i plotkami, większe przedsięwzięcia, półświatek, wojna, spór o spadek, druga epoka (test, że wystarczą nowe pliki danych), rozszerzenie regionu do kraju.
+15. Otwarte pytania
+• Mechanika sporu o spadek.
+• System walki i wojny (czy to osobny tryb, czy to samo co świat).
+• Medycyna i poziom opieki jako zależność od epoki.
+• Reguły dziedziczenia i ról płci w różnych epokach (dane czy kod).
+• Dokładna skala liczebności: ilu ludzi w LOD 0 jednocześnie.
+• Tytuł i warstwa artystyczna.

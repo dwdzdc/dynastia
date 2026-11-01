@@ -1,0 +1,3 @@
+# Pełny determinizm w sim/
+
+Cała warstwa `sim/` jest deterministyczna: ten sam seed świata i te same akcje gracza dają identyczny przebieg symulacji na wiele lat. Zakaz `randi()`, zakaz czasu zegarowego i nieuporządkowanej iteracji w `sim/`, ostrożność ze zmiennoprzecinkowymi akumulacjami. Powód: powtarzalne testy headless (przewijanie 10/100 lat) i możliwość wiernego odtworzenia bugów logistyki. Opcja odrzucona: determinizm tylko przy generowaniu świata i ustalonych scenariuszach testowych — odrzucona, bo wtedy testy przewijania przestają być powtarzalne, a „te same akcje → ten sam efekt" jest właśnie tym, co czyni debug możliwym.
