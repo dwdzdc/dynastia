@@ -158,7 +158,7 @@ Pętla gry: ród Wilków (6 osób, 3 pokolenia) w chacie pod lasem. Co 5 dni czy
 
 ### Faza Q — interfejs i balans
 
-- [ ] Q1 Panele: dom (skrzynia, mieszkańcy), stragan, osoba (sakwa, umowa) → zrzuty.
+- [x] Q1 Panele: dom (skrzynia, mieszkańcy), stragan, osoba (sakwa, umowa) → zrzuty.
 - [ ] Q2 Sonda wsi na 60 dób: brak zakleszczeń, pieniądze krążą, rody AI przeżywają, ludzie widocznie pracują.
 
 ## Iteracja 2 — społeczeństwo (wstrzymana w połowie)

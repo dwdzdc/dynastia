@@ -36,7 +36,7 @@ const MEMORIES_LONG := 30
 const WARM := 15.0                  # progi słów dla więzi i preferencji (bez liczb w UI)
 const MILD := 3.0
 const CHRONICLE_ROWS := 40
-const SKILL_LABELS := { "chop": "rąbanie", "saw": "piłowanie", "craft": "stolarka", "forage": "zbieractwo", "steal": "złodziejstwo" }
+const SKILL_LABELS := { "chop": "rąbanie", "saw": "piłowanie", "craft": "stolarka", "forage": "zbieractwo", "steal": "złodziejstwo", "trade": "handel" }
 
 const FAMILY_W := 440.0   # szerokość panelu rodu (karty zawijają tekst)
 
@@ -414,9 +414,22 @@ func _build_person_info(a: SimAgent) -> void:
 	_bar("Wyspanie", func(): return a.needs["sleep"], Color(0.4, 0.55, 0.85))
 	_dyn(func():
 		var parts: Array = []
-		for k in ["chop", "saw", "craft", "forage", "steal"]:
+		for k in ["chop", "saw", "craft", "forage", "steal", "trade"]:
 			parts.append("%s %.1f" % [SKILL_LABELS[k], a.skill(k)])
 		return "Umiejętności: " + " · ".join(parts), 16, DIM)
+	# Sakwa, gospodarstwo i umowa (Q1): pieniądze przy sobie, gdzie mieszka, u kogo pracuje.
+	_dyn(func():
+		var hh: SimHousehold = world.households.get(p.household_id)
+		var home: SimBuilding = world.buildings.get(hh.home_id) if hh != null else null
+		var t := "Sakwa: %d zł (z czego %d zł domu) · mieszka: %s" % [int(p.purse), int(p.held), home.name if home != null else "bez dachu"]
+		var c: Dictionary = world.contracts.of_worker(p.id)
+		if not c.is_empty():
+			var eh: SimHousehold = world.households.get(int(c["employer"]))
+			var boss := world.contracts.payer(int(c["employer"]))
+			t += "\nUmowa: %s w %s, %d zł/dzień%s, należy się %d zł" % [SimJobs.JOB_LABELS.get(c["job"], c["job"]),
+				world.buildings[c["place"]].name if world.buildings.has(c["place"]) else "?", int(c["wage"]),
+				(" (płaci: %s)" % world.person_of(boss).name) if boss != null else "", int(round(float(c["owed"]))) ]
+		return t, 16, DIM)
 	_dyn(func():
 		var s: Array = []
 		if a.sick_days > 0.0:
