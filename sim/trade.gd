@@ -99,7 +99,7 @@ func best_seller(buyer: SimAgent, good: String) -> SimStall:
 	var best: SimStall = null
 	var best_score := INF
 	for st: SimStall in stalls.values():
-		if not st.is_open() or not st.deals_in(good) or st.owner == bh.id or st.stock.amount(good) <= 0:
+		if not st.is_open() or not st.deals_in(good) or st.owner == bh.id or sellable(st, good) <= 0:
 			continue
 		if st.temporary and good in st.buys:
 			continue   # wóz wywozi to, co skupił
@@ -139,6 +139,17 @@ func best_buyer(seller: SimAgent, good: String) -> SimStall:
 			best_score = score
 			best = st
 	return best
+
+
+# Ile da się sprzedać: gdy stragan sprzedaje z domu właściciela (np. dwór ze spichrza),
+# zostawia zapas na jego własny stół.
+func sellable(st: SimStall, good: String) -> int:
+	var have := st.stock.amount(good)
+	var oh: SimHousehold = w.households.get(st.owner)
+	if oh != null and st.stock.id == oh.home_id:
+		var keep := oh.target_food if good == "food" else (oh.target_firewood if good == "log" else 0)
+		have -= keep
+	return maxi(0, have)
 
 
 # Spodziewana cena u straganu dla tego kupującego (do planowania ilości).
@@ -185,7 +196,7 @@ func sell_to(st: SimStall, buyer: SimAgent, good: String, qty: int) -> Dictionar
 	var bh := w.household_of(buyer)
 	var kp := w.person_of(ka)
 	var split := _split(ka, buyer)
-	while int(out["qty"]) < qty and st.stock.amount(good) > 0:
+	while int(out["qty"]) < qty and sellable(st, good) > 0:
 		var q := float(st.stock.chair_qualities[0]) if good == "chair" and not st.stock.chair_qualities.is_empty() else 0.0
 		var lo := sell_min(oh, good, q)
 		var hi := buy_max(bh, good, q)

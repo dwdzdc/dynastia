@@ -755,7 +755,7 @@ func _buy_trip(a: SimAgent, good: String, want: int, dest: SimBuilding, why_go: 
 	if st == null or want <= 0:
 		return false
 	var price := maxf(w.trade.quote(st, a, good), 0.01)
-	var qty := mini(mini(want, int(w.balance["carry"][good])), mini(int(floor(_budget(a) / price)), st.stock.amount(good)))
+	var qty := mini(mini(want, int(w.balance["carry"][good])), mini(int(floor(_budget(a) / price)), w.trade.sellable(st, good)))
 	if qty <= 0:
 		return false
 	_fetch_coins(a, price * qty)
@@ -1499,6 +1499,7 @@ func _fx_produce(a: SimAgent, arg: Dictionary) -> bool:
 			return false
 	for g in inputs:
 		b.take(g, int(inputs[g]))
+	b.last_output_day = w.clock.day_index()
 	var outputs: Dictionary = r["outputs"]
 	for g in outputs:
 		b.add(g, int(outputs[g]))

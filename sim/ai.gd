@@ -319,9 +319,13 @@ func _build_homes() -> void:
 # Czy wyrobu tego typu warsztatu brakuje na rynku: kupiec ma mało, a nikt go nie robi.
 func _scarce_output(type: String) -> bool:
 	var tc: Dictionary = w.balance["trade"]
+	# Liczy się warsztat, który naprawdę pracuje (coś ostatnio wyprodukował), a nie
+	# taki, który tylko stoi (X8).
 	for e: Dictionary in w.enterprises.values():
 		var oh: SimHousehold = w.households.get(int(e["owner"]))
-		if e["type"] == type and oh != null and operating(oh, e["b"]):
+		var b: SimBuilding = e["b"]
+		if e["type"] == type and oh != null and operating(oh, b) \
+				and w.clock.day_index() - b.last_output_day <= int(w.balance["ai"]["idle_enterprise_days"]):
 			return false
 	for r: Dictionary in w.jobs.recipes.values():
 		if String(r["type"]) != type:
