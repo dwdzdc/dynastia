@@ -55,6 +55,7 @@ func _run_all() -> void:
 	_test_dinner_gathers_family()
 	_test_activity_bonds_child_and_accident()
 	_test_drift_never_below_stranger()
+	_test_strength_scenarios()
 	_test_world_deterministic()
 	_test_world_30_days_autonomous()
 	_test_economy_chain_produces_income()
@@ -520,6 +521,53 @@ func _test_drift_never_below_stranger() -> void:
 		if w.bonds.value(piotr.id, target) < 0.0:
 			ok = false
 	check("fading never turns a friendly bond hostile", ok)
+
+
+func _named(f, nm: String):
+	for p in f.living():
+		if p.name == nm:
+			return p
+	return null
+
+
+func _bond(w, a, b, amount: float) -> void:
+	w.bonds.remember(a.id, SimBonds.person(b.id), "married", [b.id], amount / float(w.memories["kinds"]["married"]["weight"]))
+
+
+func _test_strength_scenarios() -> void:
+	var w = _new_world()
+	var f = w.family
+	check("start: root has strength 1, everyone else above zero", is_equal_approx(float(f.strength[f.root_id]), 1.0) and f.strength.values().min() > 0.0)
+	var jan = f.root()
+	var maria = f.persons[jan.spouse_id]
+	var piotr = _named(f, "Piotr")
+	var kuba = _named(f, "Kuba")
+	var zofia = _named(f, "Zofia")
+	# Łańcuch: Kuba trzyma się tylko Piotra, Piotr tylko ojca.
+	w.bonds.bonds.clear()
+	_bond(w, piotr, jan, 50.0)
+	_bond(w, kuba, piotr, 50.0)
+	f.update_strength()
+	var chain_p: float = f.strength[piotr.id]
+	var chain_k: float = f.strength[kuba.id]
+	check("chain weakens with distance from root", chain_k < chain_p * 0.9)
+	# Gęsta sieć: Kuba lubi ojca, matkę i brata; matka lubi ojca.
+	_bond(w, kuba, jan, 50.0)
+	_bond(w, kuba, maria, 50.0)
+	_bond(w, maria, jan, 50.0)
+	f.update_strength()
+	check("dense network holds", float(f.strength[kuba.id]) > chain_p)
+	check("unbonded member has zero strength", is_zero_approx(float(f.strength[zofia.id])))
+	# Brat żony (spoza rodu), choć kocha siostrę, nie wchodzi do rodu.
+	var brother := SimPerson.new()
+	brother.id = 9999
+	brother.name = "Szwagier"
+	brother.sex = "m"
+	brother.birth_day = maria.birth_day
+	f.persons[brother.id] = brother
+	_bond(w, brother, maria, 100.0)
+	f.update_strength()
+	check("spouse does not pull in her family", not f.strength.has(brother.id))
 
 
 func _state_sig(w) -> String:

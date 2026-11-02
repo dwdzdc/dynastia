@@ -315,5 +315,11 @@
     "fine": 15,
     "bail": 25,
     "reputation_hit": 2.0
+  },
+  "belonging": {
+    "bond_scale": 100.0,
+    "iterations": 30,
+    "damping": 0.6,
+    "epsilon": 0.0005
   }
 }

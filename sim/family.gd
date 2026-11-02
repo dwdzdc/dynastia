@@ -12,6 +12,7 @@ var player_lineage_id: int = -1
 var dynasty: String
 var game_over: bool = false
 var generation_of: Dictionary = {}  # person id -> pokolenie (0 = założyciele)
+var strength: Dictionary = {}   # id osoby -> siła przynależności do rodu gracza (raz na dobę)
 
 var _people: Dictionary
 var _fam: Dictionary
@@ -87,6 +88,7 @@ func setup_start() -> void:
 	for id in persons:
 		generation_of[id] = 0 if persons[id].mother_id < 0 else 1
 	_seed_start_bonds()
+	update_strength()
 	for id in persons:
 		apply_modifiers(persons[id])
 
@@ -105,7 +107,7 @@ func _seed_start_bonds() -> void:
 			_remember_all(p.id, p.spouse_id, cfg["spouses"])
 		for oid in _sorted_ids():
 			var o: SimPerson = persons[oid]
-			if o.id != p.id and _siblings(p, o):
+			if o.id != p.id and siblings(p, o):
 				_remember_all(p.id, o.id, cfg["siblings"])
 
 
@@ -114,7 +116,7 @@ func _remember_all(from: int, to: int, kinds: Array) -> void:
 		w.bonds.remember(from, SimBonds.person(to), String(k), [to])
 
 
-func _siblings(a: SimPerson, b: SimPerson) -> bool:
+func siblings(a: SimPerson, b: SimPerson) -> bool:
 	return (a.mother_id >= 0 and a.mother_id == b.mother_id) or (a.father_id >= 0 and a.father_id == b.father_id)
 
 
@@ -122,6 +124,10 @@ func _new_id() -> int:
 	var id := _next_id
 	_next_id += 1
 	return id
+
+
+func update_strength() -> void:
+	strength = SimBelonging.compute(self, w.bonds, player_lineage(), w.balance["belonging"])
 
 
 func new_lineage(lname: String) -> SimLineage:
@@ -300,6 +306,7 @@ func new_day() -> void:
 		_roll_conception(p)
 	for p in living():
 		_roll_courtship(p)
+	update_strength()
 
 
 func _on_stage_change(p: SimPerson, st: String) -> void:
