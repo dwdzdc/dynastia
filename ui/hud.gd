@@ -358,7 +358,7 @@ func _build_person_info(a: SimAgent) -> void:
 
 	_info_box.add_child(HSeparator.new())
 	if fam.stage_of(p) == "child":
-		_info_box.add_child(_label("Dziecko — bawi się przy chacie. Do pracy od %d lat." % int(world.balance["aging"]["stages"]["teen"]["min"]), 17, DIM))
+		_info_box.add_child(_label("Dziecko — bawi się przy chacie. Do pracy od %d lat." % int(fam.years_label(fam.stage_start("teen"))), 17, DIM))
 	else:
 		_info_box.add_child(_label("Przydział pracy:", 18, Color(1.0, 0.85, 0.45)))
 		var grid := GridContainer.new()

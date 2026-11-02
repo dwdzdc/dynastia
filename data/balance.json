@@ -47,34 +47,48 @@
     }
   },
   "aging": {
-    "days_per_year_of_life": 0.4,
-    "stages": {
-      "child": {
-        "min": 0,
-        "max": 12
+    "stages": [
+      {
+        "id": "child",
+        "days": 12.0,
+        "years": [
+          0,
+          12
+        ]
       },
-      "teen": {
-        "min": 12,
-        "max": 16
+      {
+        "id": "teen",
+        "days": 4.0,
+        "years": [
+          12,
+          16
+        ]
       },
-      "adult": {
-        "min": 16,
-        "max": 55
+      {
+        "id": "adult",
+        "days": 40.0,
+        "years": [
+          16,
+          55
+        ]
       },
-      "elder": {
-        "min": 55,
-        "max": 999
+      {
+        "id": "elder",
+        "days": 15.0,
+        "years": [
+          55,
+          75
+        ]
       }
-    },
+    ],
     "work_eff": {
       "child": 0.0,
       "teen": 0.7,
       "adult": 1.0,
       "elder": 0.65
     },
-    "old_age_start": 55,
-    "old_age_death_per_year": 0.0036,
-    "old_age_growth_per_year": 1.12
+    "old_age_death_per_day": 0.01,
+    "old_age_growth_per_day": 1.15
   },
   "movement": {
     "speed": 4.0,
@@ -214,20 +228,37 @@
     }
   },
   "family": {
-    "marry_min_age": 16,
-    "spouse_age_spread": 6,
-    "fertile_min": 16,
-    "fertile_max": 42,
     "max_children": 7,
     "birth_mother_death": 0.04,
     "birth_child_death": 0.07,
     "birth_risk_age_mult": 2.0,
-    "birth_risk_age": 36,
     "birth_risk_low_health_mult": 2.0,
     "max_household": 12,
     "marry_chance_per_day": 0.3,
-    "conceive_per_year": 0.16,
-    "pregnancy_years": 0.75
+    "marry_from": {
+      "stage": "adult",
+      "day": 0.0
+    },
+    "spouse_age_spread_days": 6.0,
+    "spouse_oldest": {
+      "stage": "adult",
+      "day": 35.0
+    },
+    "fertile_from": {
+      "stage": "adult",
+      "day": 0.0
+    },
+    "fertile_to": {
+      "stage": "adult",
+      "day": 27.0
+    },
+    "birth_risk_from": {
+      "stage": "adult",
+      "day": 20.0
+    },
+    "conceive_per_day": 0.23,
+    "pregnancy_days": 3.0,
+    "start_age_jitter_days": 0.8
   },
   "crime": {
     "steal_seconds": 50.0,

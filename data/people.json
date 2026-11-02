@@ -19,11 +19,11 @@
   "trait_inherit_chance": 0.35,
   "trait_random_chance": 0.2,
   "start_family": [
-    { "key": "gran", "name": "Agnieszka", "sex": "f", "age": 61, "traits": ["krzepki"], "job": "none", "skills": { "craft": 3.0 } },
-    { "key": "father", "name": "Jan", "sex": "m", "age": 38, "traits": ["silny"], "job": "woodcutter", "mother": "gran", "root": true, "skills": { "chop": 4.0, "saw": 2.0 } },
-    { "key": "mother", "name": "Maria", "sex": "f", "age": 34, "traits": ["pracowity"], "job": "carrier", "spouse": "father", "attached": true, "surname": "Kmieć", "skills": { "craft": 1.0 } },
-    { "key": "son", "name": "Piotr", "sex": "m", "age": 17, "traits": ["zreczny"], "job": "sawyer", "mother": "mother", "father": "father", "skills": { "saw": 2.0, "chop": 1.0 } },
-    { "key": "daughter", "name": "Zofia", "sex": "f", "age": 14, "traits": [], "job": "none", "mother": "mother", "father": "father", "skills": {} },
-    { "key": "kid", "name": "Kuba", "sex": "m", "age": 7, "traits": ["nieostrozny"], "job": "none", "mother": "mother", "father": "father", "skills": {} }
+    { "key": "gran", "name": "Agnieszka", "sex": "f", "age_days": 60.5, "traits": ["krzepki"], "job": "none", "skills": { "craft": 3.0 } },
+    { "key": "father", "name": "Jan", "sex": "m", "age_days": 38.6, "traits": ["silny"], "job": "woodcutter", "mother": "gran", "root": true, "skills": { "chop": 4.0, "saw": 2.0 } },
+    { "key": "mother", "name": "Maria", "sex": "f", "age_days": 34.5, "traits": ["pracowity"], "job": "carrier", "spouse": "father", "attached": true, "surname": "Kmieć", "skills": { "craft": 1.0 } },
+    { "key": "son", "name": "Piotr", "sex": "m", "age_days": 17.0, "traits": ["zreczny"], "job": "sawyer", "mother": "mother", "father": "father", "skills": { "saw": 2.0, "chop": 1.0 } },
+    { "key": "daughter", "name": "Zofia", "sex": "f", "age_days": 14.0, "traits": [], "job": "none", "mother": "mother", "father": "father", "skills": {} },
+    { "key": "kid", "name": "Kuba", "sex": "m", "age_days": 7.0, "traits": ["nieostrozny"], "job": "none", "mother": "mother", "father": "father", "skills": {} }
   ]
 }

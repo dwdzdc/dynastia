@@ -47,7 +47,7 @@ Najprościej: RimWorld, tylko zamiast dzikiej planety masz społeczeństwo. Pres
 - **Czynsz nie jest osią gry.** Istnieje tylko przy wynajmie, jako jeden z wielu kosztów. Budynki to aktywa (0..n) rodu albo osoby. Własny dom, wynajem, przeprowadzka daleko, bezdomność i życie w drodze to równorzędne stany, a nie koniec gry.
 - **Świat domyślnie wielki** (LOD, agregaty, materializacja na żądanie, `intro` §10). MVP to mały wycinek tej samej architektury.
 - **Wiele epok:** średniowiecze, rewolucja przemysłowa, nowoczesność. Epoka może zmieniać się w trakcie gry (nauka, `intro` §9). Wszystko, co od niej zależy (zawody, prawo, środki kontaktu: list kontra telefon), siedzi w danych epoki.
-- **Czas jak w Simsach:** długa doba (teraz 10 min przy 1×), codzienność i wiele pokoleń. Długość każdego procesu ustawiona osobno w danych w dobach (ciąża ok. 3 doby), a wiek w latach to etykieta.
+- **Czas jak w Simsach:** długa doba (teraz 10 min przy 1×), codzienność i wiele pokoleń. Długość każdego procesu ustawiona osobno w danych w dobach (ciąża ok. 3 doby), a wiek w latach to etykieta. Dwa niezależne zegary: **kalendarz** (pory roku, `time.days_per_season`) steruje pogodą, światłem i opałem; **życie** (etapy w dobach, `aging.stages`) steruje dorastaniem, płodnością i starością. Pora roku trwa kilka lat życia, a rok kalendarzowy to mniej więcej jedno pokolenie (jak w Simsach). UI nie zestawia ich jako jednej osi.
 - **Fazy dnia płynne** (poranek, dzień, zmierzch, noc), z długościami zależnymi od pory roku, bez nagłego przełączenia w ciemność.
 - **Wygląd:** rzut izometryczny jak Cultures. Low-poly 3D z kamerą ortogonalną jest akceptowane (ADR-0006).
 - **Rozkazy ręczne** to kolejka (PPM zastępuje, Shift+PPM dopisuje). Po wykonaniu postać sama wraca do autopilota.

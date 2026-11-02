@@ -15,7 +15,8 @@ var generation_of: Dictionary = {}  # person id -> pokolenie (0 = założyciele)
 var _people: Dictionary
 var _fam: Dictionary
 var _aging: Dictionary
-var _days_per_year: float
+var _stages: Array              # etapy życia z danych, w kolejności
+var _stage_start := {}          # id etapu -> przeżyte doby na jego początku
 var _next_id := 1
 
 
@@ -24,7 +25,11 @@ func _init(world: SimWorld, people: Dictionary) -> void:
 	_people = people
 	_fam = world.balance["family"]
 	_aging = world.balance["aging"]
-	_days_per_year = float(_aging["days_per_year_of_life"])
+	_stages = _aging["stages"]
+	var start := 0.0
+	for st: Dictionary in _stages:
+		_stage_start[String(st["id"])] = start
+		start += float(st["days"])
 	dynasty = String(people["dynasty"])
 
 
@@ -37,7 +42,7 @@ func setup_start() -> void:
 		p.name = String(spec["name"])
 		p.sex = String(spec["sex"])
 		p.surname = String(spec.get("surname", dynasty)) if spec.get("attached", false) else dynasty
-		p.birth_day = now - float(spec["age"]) * _days_per_year - w.rng.next_float(0.0, _days_per_year * 0.9)
+		p.birth_day = now - float(spec["age_days"]) - w.rng.next_float(0.0, float(_fam["start_age_jitter_days"]))
 		p.traits = (spec.get("traits", []) as Array).duplicate()
 		p.attached = bool(spec.get("attached", false))
 		p.blood = not p.attached
@@ -92,17 +97,46 @@ func _sorted_ids() -> Array:
 	return ids
 
 
+func days_lived(p: SimPerson) -> float:
+	return p.days_lived(w.clock.now())
+
+
+# Wiek w latach to tylko etykieta: interpolacja lat wewnątrz etapu, ostatni etap
+# ciągnie się dalej w tym samym tempie.
 func age_of(p: SimPerson) -> float:
-	return p.age(w.clock.now(), _days_per_year)
+	return years_label(days_lived(p))
+
+
+func years_label(days: float) -> float:
+	for i in _stages.size():
+		var st: Dictionary = _stages[i]
+		var start: float = _stage_start[String(st["id"])]
+		var span: float = float(st["days"])
+		if days < start + span or i == _stages.size() - 1:
+			var y: Array = st["years"]
+			return float(y[0]) + (days - start) / span * (float(y[1]) - float(y[0]))
+	return 0.0
 
 
 func stage_of(p: SimPerson) -> String:
-	var age := age_of(p)
-	var st: Dictionary = _aging["stages"]
-	for s in ["child", "teen", "adult", "elder"]:
-		if age >= float(st[s]["min"]) and age < float(st[s]["max"]):
-			return s
-	return "elder"
+	return stage_at(days_lived(p))
+
+
+func stage_at(days: float) -> String:
+	var out := String(_stages[0]["id"])
+	for st: Dictionary in _stages:
+		if days >= float(_stage_start[String(st["id"])]):
+			out = String(st["id"])
+	return out
+
+
+# Próg z danych {stage, day} → przeżyte doby.
+func life_day(at: Dictionary) -> float:
+	return float(_stage_start[String(at["stage"])]) + float(at["day"])
+
+
+func stage_start(stage: String) -> float:
+	return float(_stage_start[stage])
 
 
 func stage_label(p: SimPerson) -> String:
@@ -205,25 +239,18 @@ func _on_stage_change(p: SimPerson, st: String) -> void:
 
 
 func _roll_old_age(p: SimPerson) -> void:
-	var age := age_of(p)
-	var start := float(_aging["old_age_start"])
-	if age < start:
+	var elder_days := days_lived(p) - stage_start("elder")
+	if elder_days < 0.0:
 		return
-	var per_year := float(_aging["old_age_death_per_year"]) * pow(float(_aging["old_age_growth_per_year"]), age - start)
-	var chance := _per_day(per_year)
+	var chance := float(_aging["old_age_death_per_day"]) * pow(float(_aging["old_age_growth_per_day"]), elder_days)
 	if w.rng.chance(chance):
 		var a: SimAgent = w.agent_by_id(p.agent_id)
 		w.kill(a, "zmarł%s ze starości" % ("" if p.sex == "m" else "a"))
 
 
-# Szansa na rok życia → szansa na dobę (doba może trwać kilka lat życia).
-func _per_day(per_year: float) -> float:
-	return 1.0 - pow(1.0 - clampf(per_year, 0.0, 1.0), 1.0 / _days_per_year)
-
-
 func _fertile(p: SimPerson) -> bool:
-	var age := age_of(p)
-	return p.sex == "f" and age >= float(_fam["fertile_min"]) and age <= float(_fam["fertile_max"])
+	var d := days_lived(p)
+	return p.sex == "f" and d >= life_day(_fam["fertile_from"]) and d <= life_day(_fam["fertile_to"])
 
 
 func _roll_conception(p: SimPerson) -> void:
@@ -238,11 +265,11 @@ func _roll_conception(p: SimPerson) -> void:
 	var a: SimAgent = w.agent_by_id(p.agent_id)
 	if a == null or a.status != "active":
 		return
-	var c := _per_day(float(_fam["conceive_per_year"]))
+	var c := float(_fam["conceive_per_day"])
 	if a.hungry_no_food or a.health < 40.0:
 		c *= 0.3
 	if w.rng.chance(c):
-		p.pregnant_left = float(_fam["pregnancy_years"]) * _days_per_year
+		p.pregnant_left = float(_fam["pregnancy_days"])
 		w.note("%s spodziewa się dziecka." % p.name, "good", a.position)
 
 
@@ -260,7 +287,7 @@ func _give_birth(mother: SimPerson) -> void:
 	var father: SimPerson = persons.get(mother.spouse_id)
 	var ma: SimAgent = w.agent_by_id(mother.agent_id)
 	var risk := 1.0
-	if age_of(mother) >= float(_fam["birth_risk_age"]):
+	if days_lived(mother) >= life_day(_fam["birth_risk_from"]):
 		risk *= float(_fam["birth_risk_age_mult"])
 	if ma != null and ma.health < 50.0:
 		risk *= float(_fam["birth_risk_low_health_mult"])
@@ -333,7 +360,7 @@ func _pick_name(sex: String) -> String:
 # --- Małżeństwa ---
 
 func can_marry(p: SimPerson) -> bool:
-	return p.alive() and p.spouse_id < 0 and age_of(p) >= float(_fam["marry_min_age"]) and not p.attached
+	return p.alive() and p.spouse_id < 0 and days_lived(p) >= life_day(_fam["marry_from"]) and not p.attached
 
 
 func set_seeking(pid: int, on: bool) -> void:
@@ -360,7 +387,7 @@ func _roll_courtship(p: SimPerson) -> void:
 	var who := "Panna" if cand["sex"] == "f" else "Kawaler"
 	w.events.ask("marriage", "Propozycja ślubu",
 		"%s %s %s (lat %d) z chaty sąsiadów chce poślubić %s.\nCechy: %s.\nWesele kosztuje %d zł (brakująca kwota pójdzie w dług)." % [
-			who, cand["name"], cand["surname"], int(cand["age"]), p.name, traits_txt, int(cand["cost"])],
+			who, cand["name"], cand["surname"], int(years_label(float(cand["age_days"]))), p.name, traits_txt, int(cand["cost"])],
 		[{ "label": "Zgoda na ślub", "value": "yes" }, { "label": "Odmowa", "value": "no" }],
 		{ "person": p.id, "cand": cand })
 
@@ -369,8 +396,9 @@ func _roll_courtship(p: SimPerson) -> void:
 func _materialize_candidate(p: SimPerson) -> Dictionary:
 	var rng := SimRng.new(SimRng.hash3(int(w.balance["world_seed"]), p.id * 1000 + int(w.clock.day_index()), "spouse"))
 	var sex := "f" if p.sex == "m" else "m"
-	var spread := float(_fam["spouse_age_spread"])
-	var age := clampf(age_of(p) + rng.next_float(-spread, spread * 0.5), float(_fam["marry_min_age"]), 50.0)
+	var spread := float(_fam["spouse_age_spread_days"])
+	var age_days := clampf(days_lived(p) + rng.next_float(-spread, spread * 0.5),
+		life_day(_fam["marry_from"]), life_day(_fam["spouse_oldest"]))
 	var traits: Array = []
 	if rng.chance(0.6):
 		traits.append(rng.choice(_people["inheritable_traits"]))
@@ -378,7 +406,7 @@ func _materialize_candidate(p: SimPerson) -> Dictionary:
 		"name": String(rng.choice(_people["names"][sex])),
 		"surname": String(rng.choice(_people["surnames"])),
 		"sex": sex,
-		"age": age,
+		"age_days": age_days,
 		"traits": traits,
 		"cost": 15,
 		"skills": { "craft": rng.next_float(0.0, 3.0), "chop": rng.next_float(0.0, 2.5), "saw": rng.next_float(0.0, 2.0) },
@@ -399,7 +427,7 @@ func resolve_marriage(data: Dictionary, accepted: bool) -> void:
 	s.name = String(cand["name"])
 	s.surname = String(cand["surname"]) if cand["sex"] == "m" else dynasty
 	s.sex = String(cand["sex"])
-	s.birth_day = w.clock.now() - float(cand["age"]) * _days_per_year
+	s.birth_day = w.clock.now() - float(cand["age_days"])
 	s.traits = (cand["traits"] as Array).duplicate()
 	s.attached = true
 	s.spouse_id = p.id

@@ -125,6 +125,7 @@ Kto odpada, przede wszystkim **wychodzi spod kontroli gracza**. Może wejść do
 
 - Jak w Simsach: długa doba (codzienność) i wiele pokoleń.
 - Długość każdego procesu ustawiona osobno w danych w dobach (np. ciąża ok. 3 doby, dzieciństwo kilkanaście, dorosłość kilkadziesiąt), a nie wyliczana z „lat”. Wiek w latach to tylko etykieta.
+- Progi w logice (płodność, ślub, ryzyko porodu, starość) to etap plus doba w etapie (`{stage, day}`), nigdy lata. Kalendarz (pory roku) jest osobnym zegarem i nie jest zsynchronizowany z wiekiem.
 
 ## Rody AI
 

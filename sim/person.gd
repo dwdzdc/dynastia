@@ -33,6 +33,7 @@ func full_name() -> String:
 	return "%s %s" % [name, surname]
 
 
-func age(now_day: float, days_per_year: float) -> float:
+# Przeżyte doby. Wiek w latach to tylko etykieta liczona z etapów (SimFamily.age_of).
+func days_lived(now_day: float) -> float:
 	var end := death_day if death_day >= 0.0 else now_day
-	return (end - birth_day) / days_per_year
+	return end - birth_day

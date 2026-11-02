@@ -44,6 +44,8 @@ func _run_all() -> void:
 	_test_light_factor_day_night()
 	# Świat (osada + ród)
 	_test_world_start_family()
+	_test_life_stages_in_days()
+	_test_pregnancy_lasts_data_days()
 	_test_world_deterministic()
 	_test_world_30_days_autonomous()
 	_test_economy_chain_produces_income()
@@ -223,6 +225,46 @@ func _test_world_start_family() -> void:
 	check("trees generated", w.trees.size() > 20)
 
 
+func _test_life_stages_in_days() -> void:
+	var w = _new_world()
+	var f = w.family
+	var stages: Array = w.balance["aging"]["stages"]
+	var start := 0.0
+	var ok := true
+	for st: Dictionary in stages:
+		var id := String(st["id"])
+		if f.stage_start(id) != start or f.stage_at(start) != id:
+			ok = false
+		if start > 0.0 and f.stage_at(start - 0.01) == id:
+			ok = false
+		if absf(f.years_label(start) - float(st["years"][0])) > 0.001:
+			ok = false
+		start += float(st["days"])
+	check("stage boundaries come from data days", ok)
+	var adult: Dictionary = stages[2]
+	var mid: float = f.stage_start("adult") + float(adult["days"]) * 0.5
+	var mid_years: float = (float(adult["years"][0]) + float(adult["years"][1])) * 0.5
+	check("age in years interpolated within stage", absf(f.years_label(mid) - mid_years) < 0.001)
+	var last: Dictionary = stages[stages.size() - 1]
+	check("last stage extrapolates past its days", f.years_label(start + float(last["days"])) > float(last["years"][1]))
+	check("start ages read as days", absf(f.age_of(f.root()) - 38.0) < 1.5)
+
+
+func _test_pregnancy_lasts_data_days() -> void:
+	var w = _new_world()
+	var f = w.family
+	var mother = f.persons[f.root().spouse_id]
+	var days := int(w.balance["family"]["pregnancy_days"])
+	mother.pregnant_left = float(days)
+	var n0: int = f.persons.size()
+	for i in days - 1:
+		f.new_day()
+	var before_term: bool = f.persons.size() == n0 and mother.pregnant_left > 0.0
+	f.new_day()
+	check("no birth before pregnancy_days", before_term)
+	check("birth exactly after pregnancy_days", f.persons.size() == n0 + 1)
+
+
 func _state_sig(w) -> String:
 	var parts: Array = ["%.3f" % w.household.cash, str(w.building("sawmill").stock)]
 	for a in w.agents:
@@ -343,20 +385,20 @@ func _test_manual_queue_auto_release() -> void:
 func _test_long_run_no_crash() -> void:
 	var w = _new_world(4242)
 	# Autopilot gracza: każdy dorosły bez pary szuka małżonka, dorastający dostają pracę.
-	var years := 0
-	while years < 30 and not w.family.game_over:
+	var days := 0
+	while days < 30 and not w.family.game_over:
 		for p in w.family.living():
 			if w.family.can_marry(p) and not p.seeking_spouse:
 				w.family.set_seeking(p.id, true)
 			var a = w.agent_by_id(p.agent_id)
 			if a != null and a.job == "none" and a.can_work() and not p.attached:
 				a.job = "laborer"
-		_run_days_auto(w, float(w.balance["aging"]["days_per_year_of_life"]))
-		years += 1
+		_run_days_auto(w, 1.0)
+		days += 1
 	var gen: int = w.stats.get("max_generation", 0)
-	print("  long run: years=%d alive=%d persons=%d gen=%d cash=%d debt=%d over=%s" % [
-		years, w.family.living().size(), w.family.persons.size(), gen, int(w.household.cash), int(w.household.debt), w.family.game_over])
-	check("30 life-years simulated without crash", years >= 1)
+	print("  long run: days=%d alive=%d persons=%d gen=%d cash=%d debt=%d over=%s" % [
+		days, w.family.living().size(), w.family.persons.size(), gen, int(w.household.cash), int(w.household.debt), w.family.game_over])
+	check("30 days of family life simulated without crash", days >= 1)
 	var ages_ok := true
 	for p in w.family.living():
 		if w.family.age_of(p) < 0.0 or w.family.age_of(p) > 120.0:
