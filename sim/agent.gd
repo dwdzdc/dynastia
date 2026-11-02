@@ -18,6 +18,7 @@ var facing: Vector2 = Vector2.DOWN
 var home_id: String = "home"
 
 var job: String = "none"            # none | woodcutter | sawyer | carpenter | carrier | laborer
+var workplace: String = ""          # miejsce pracy u kogoś (budynek z umowy, S15); "" = własna robota
 var skills: Dictionary = {}         # chop | saw | craft -> 0..max
 var needs: Dictionary = { "food": 100.0, "sleep": 100.0 }
 var health: float = 100.0

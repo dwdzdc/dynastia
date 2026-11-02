@@ -418,6 +418,17 @@
     "reputation_min": -20.0,
     "valve": false
   },
+  "contracts": {
+    "min_wage": 4.0,
+    "wage_per_distance": 0.03,
+    "wage_per_bond": 0.02,
+    "days": 3,
+    "pay_lead": 0.02,
+    "pay_wait": 0.04,
+    "pay_radius": 3.0,
+    "pay_offset": [0.0, 1.8],
+    "unpaid_tolerance": 0.5
+  },
   "fields": {
     "plow_seasons": ["spring"],
     "sow_seasons": ["spring"],
@@ -430,6 +441,7 @@
     "yield_per_cell": 5
   },
   "estate": {
+    "laborers": 8,
     "building": "manor",
     "reserve_food": 30,
     "sell_to_merchant_per_day": 40

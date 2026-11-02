@@ -639,7 +639,7 @@ func _test_departure_and_ai_life() -> void:
 	var labored := false
 	for i in 2000:
 		w.step_sim(0.3)
-		if ap.activity == "labor":
+		if w.jobs.is_work(ap.activity):
 			labored = true
 			break
 	check("departed works on own autopilot", labored)
@@ -1132,24 +1132,47 @@ func _test_traveling_traders() -> void:
 	check("missed offer expires when the wagon leaves", a.status == "away" and tr.wants("plank") == 0)
 
 
+# L3 (S15): praca u kogoś to umowa z oferty; płaca narasta z pracy, a wręcza ją płatnik
+# z gospodarstwa pracodawcy pod miejscem pracy. Niezapłacony pamięta i odchodzi.
 func _test_estate_pays_wages() -> void:
 	var w = _new_world()
 	var est = w.estate_owner()
 	check("the manor household is the employer", est != null and w.family.persons[est.members[0]].surname == "Dworski")
-	var a = w.agent_by_id(_named(w.family, "Piotr").agent_id)
+	var o: Dictionary = w.contracts.find_offer(est.id, "manor", "laborer")
+	check("field owner posts an offer with slots and a wage", not o.is_empty() and int(o["slots"]) > 0 and float(o["wage"]) > 0.0)
+	var piotr = _named(w.family, "Piotr")
+	var a = w.agent_by_id(piotr.agent_id)
+	w.contracts.hire(o, piotr)
+	check("hiring sets job and workplace", a.job == "laborer" and a.workplace == "manor")
 	var f = w.fields[0]
 	var s := { "t": "act", "act": "labor", "left": 100.0, "why": "dniówka", "will": 1.0, "field": f.id, "cell": 0, "task": "plow" }
 	var est0: float = est.cash
-	var hh0: float = w.household.cash + w.family.persons[a.person_id].purse
 	for i in 60:
-		w._labor(a, s, 1.0)
-	var paid: float = est0 - est.cash
-	check("wage is paid from the employer's cash to the worker", paid > 0.0 and is_equal_approx(w.household.cash + w.family.persons[a.person_id].purse - hh0, paid))
+		w._act(a, s, 1.0)
+		s["left"] = 100.0
+	var c: Dictionary = w.contracts.of_worker(piotr.id)
+	check("wage accrues with work, nobody is paid from thin air", float(c["owed"]) > 0.0 and is_equal_approx(est.cash, est0))
 	check("estate work advances work on a concrete strip", f.cells[0]["stage"] != "fallow" or float(f.cells[0]["done"]) > 0.0)
+	var payer = w.contracts.payer(est.id)
+	check("payer is someone from the employer's household", payer != null and w.person_of(payer).household_id == est.id)
+	var pp = w.person_of(payer)
+	pp.purse = 100.0
+	payer.position = w.contracts.pay_spot("manor")
+	a.position = w.building("sawmill").door()
+	check("worker away from the pay spot gets nothing", is_zero_approx(w.contracts.hand_out(payer, "manor")))
+	a.position = w.contracts.pay_spot("manor")
+	var owed: float = c["owed"]
+	var purse0: float = piotr.purse
+	check("payer hands the wage over in person", is_equal_approx(w.contracts.hand_out(payer, "manor"), owed)
+		and is_equal_approx(piotr.purse - purse0, owed) and is_equal_approx(pp.purse, 100.0 - owed))
+	c["owed"] = 5.0
+	w.contracts.settle_day()
+	check("unpaid worker quits and remembers it", w.contracts.of_worker(piotr.id).is_empty()
+		and w.bonds.value(piotr.id, SimBonds.person(pp.id)) < 0.0)
+	pp.purse = 0.0
 	est.cash = 0.0
-	s["left"] = 100.0
-	w._labor(a, s, 1.0)
-	check("employer without money stops paying and sends people home", float(s["left"]) <= 0.0)
+	w.ai.post_offers()
+	check("employer without money offers no work", int(w.contracts.find_offer(est.id, "manor", "laborer")["slots"]) == 0)
 
 
 # L2: robotnik dworu bierze wolny zagon i idzie wzdłuż niego; dwóch nie bierze tego samego;

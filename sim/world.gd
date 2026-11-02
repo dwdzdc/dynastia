@@ -23,6 +23,7 @@ var together: SimTogether
 var ai: SimAI
 var market: SimMarket
 var traders: SimTraders
+var contracts: SimContracts
 var chronicle: SimChronicle
 
 var buildings: Dictionary = {}   # id -> SimBuilding
@@ -85,6 +86,8 @@ func _init(seed: int, p_balance: Dictionary, p_map: Dictionary, p_people: Dictio
 	_spawn_society()
 	market = SimMarket.new(self, balance["market"])
 	traders = SimTraders.new(self, p_traders)
+	contracts = SimContracts.new(self, balance["contracts"])
+	ai.post_offers()
 	for p in family.living():
 		p.set_meta("stage", family.stage_of(p))
 	note("Ród %s zaczyna w wynajętej chacie pod lasem. Czynsz %d zł dziennie — pilnuj kasy." % [
@@ -287,6 +290,9 @@ func set_job(agent_id: int, job: String) -> void:
 	if a == null or a.status != "active" or is_independent(a):
 		return
 	_order_against_will(a, job)
+	var p := person_of(a)
+	if p != null and job != a.job:
+		contracts.quit(p, "")
 	a.job = job
 	jobs.replan(a)
 
@@ -533,6 +539,8 @@ func _act(a: SimAgent, s: Dictionary, dt: float) -> void:
 	if jobs.is_work(act) and not s.has("will"):
 		_check_will(a, s, act)
 	a.labor_task = String(s.get("task", ""))
+	if jobs.is_work(act):
+		contracts.accrue(a, s, dt)
 	if act == "labor":
 		_labor(a, s, dt)
 	if jobs.is_work(act):
@@ -569,6 +577,15 @@ func field_by_id(id: String) -> SimField:
 	return null
 
 
+# Gospodarstwo, które mieszka w budynku (np. właściciel dworu i jego pól).
+func household_at(bid: String) -> SimHousehold:
+	var best: SimHousehold = null
+	for h: SimHousehold in households.values():
+		if h.home_id == bid and not h.members.is_empty():
+			best = h
+	return best
+
+
 func estate_owner() -> SimHousehold:
 	var b: SimBuilding = building(String(balance["estate"]["building"]))
 	var best: SimHousehold = null
@@ -579,17 +596,7 @@ func estate_owner() -> SimHousehold:
 
 
 func _labor(a: SimAgent, s: Dictionary, dt: float) -> void:
-	var sch: Dictionary = balance["schedule"]
-	var work_day := (float(sch["work_end"]) - float(sch["work_start"])) * clock.day_seconds
-	var share := dt / work_day * a.age_eff * float(s["will"])
-	var employer := estate_owner()
-	var wage := float(balance["jobs"]["laborer_wage_day"]) * share
-	if employer == null or employer.cash < wage:
-		s["left"] = 0.0
-		a.idle_reason = "dwór nie ma czym płacić — schodzi z pola"
-		return
-	employer.pay(wage)
-	earn_for(a, wage)
+	# Płaca narasta w umowie (SimContracts.accrue), wręcza ją płatnik po robocie (L3).
 	# Praca posuwa robotę na konkretnym polu (L2); po skończonym zadaniu nowy plan.
 	# Robotnik idzie wzdłuż zagonu razem z postępem.
 	var f := field_by_id(String(s.get("field", "")))
@@ -804,6 +811,7 @@ func _new_day() -> void:
 	for f: SimField in fields:
 		if f.new_day(season) > 0:
 			note("Niezebrane zboże zgniło na polu (%s)." % building(f.owner_building).name, "warn", f.center())
+	contracts.settle_day()
 	together.end_day()
 	_estate_sells()
 	market.new_day()

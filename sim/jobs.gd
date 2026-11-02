@@ -23,6 +23,7 @@ var recipes: Dictionary          # data/recipes.json (S13): produkcja w budynkac
 var work_acts: Array = ["chop", "forage", "labor"]  # czynności, które są pracą (+ z receptur)
 
 const BASE_WORK_ACTS := ["chop", "forage", "labor"]
+const PAY_QUEUE_SPREAD := 6                  # ilu ludzi stoi obok siebie po wypłatę
 const FREE_SPOT_RADIUS := Vector2(1.5, 4.0)  # wolne: jak daleko od drzwi domu (min, max)
 const FREE_TIME_WAITS := 3.0                  # wolne trwa tyle „czekań”, potem nowy plan
 const AT_DOOR := 1.0   # skrzynia: trzeba stać przy drzwiach domu (albo w środku)
@@ -86,6 +87,14 @@ func desired_kind(a: SimAgent) -> String:
 		return "sleep"
 	if block in ["dinner", "free"] and not a.is_child and aloof_today(a):
 		return "aloof"
+	# Wypłata (L3): płatnik idzie z sakwą pod miejsce pracy, pracownicy czekają na pieniądze.
+	if not a.is_child and w.contracts.in_pay_window():
+		var p := w.person_of(a)
+		if p != null and w.contracts.payer(p.household_id) == a and not w.contracts.pay_places(p.household_id).is_empty():
+			return "payday"
+		var c: Dictionary = w.contracts.of_worker(a.person_id) if p != null else {}
+		if not c.is_empty() and float(c["owed"]) > 0.0 and block != "work":
+			return "collect"
 	if block == "dinner":
 		return "dinner"
 	if a.is_child:
@@ -131,6 +140,10 @@ func replan(a: SimAgent) -> void:
 			_plan_aloof(a)
 		"work":
 			_plan_work(a)
+		"payday":
+			_plan_payday(a)
+		"collect":
+			_plan_collect(a)
 		"chore":
 			if not _plan_chore(a):
 				_go_inside(a, _home(a), "rest", 3.0, _rest_reason(a))
@@ -509,11 +522,19 @@ func _plan_laborer(a: SimAgent) -> void:
 	if a.carrying != "":
 		_plan_deliver_carried(a)
 		return
-	# Robota w polu (L2): orka, siew, żniwa na konkretnej działce dworu, snopy do spichrza.
-	var manor: SimBuilding = w.building(String(w.balance["estate"]["building"]))
-	var f := w.field_with_work(manor.id)
+	# Robota w polu (L2) u kogoś na umowie (L3): orka, siew, żniwa na zagonach
+	# pracodawcy, snopy do jego spichrza.
+	var p := w.person_of(a)
+	if p != null and w.contracts.of_worker(p.id).is_empty():
+		var o := w.contracts.best_offer_for(p, "laborer")
+		if o.is_empty():
+			_free_time(a, "nikt nie najmie do pola (albo płacą za mało)")
+			return
+		w.contracts.hire(o, p)
+	var manor: SimBuilding = w.buildings.get(a.workplace)
+	var f := w.field_with_work(manor.id) if manor != null else null
 	if f == null:
-		_free_time(a, "dwór nie ma dziś roboty w polu")
+		_free_time(a, "%s nie ma dziś roboty w polu" % (manor.name if manor != null else "pracodawca"))
 		return
 	var season := w.clock.current_season()
 	var i := f.free_cell(season)
@@ -674,6 +695,27 @@ func _pickup_and_deliver(a: SimAgent, from: SimBuilding, good: String, to: SimBu
 	_do(a, "deposit", to.id)
 
 
+# Płatnik (L3): bierze ze skrzyni, ile trzeba, idzie pod miejsce pracy i wręcza
+# wypłaty tym, którzy czekają. Póki ktoś czeka, a okno trwa — zostaje.
+func _plan_payday(a: SimAgent) -> void:
+	var p := w.person_of(a)
+	var places := w.contracts.pay_places(p.household_id)
+	var place := String(places[0])
+	_fetch_coins(a, w.contracts.owed_total(p.household_id, place))
+	_walk(a, w.contracts.pay_spot(place), "idzie z wypłatą dla ludzi")
+	_act(a, "pay", float(_cfg["wait_seconds"]), "wypłaca ludziom za robotę")
+	_do(a, "hand_out", place)
+
+
+# Pracownik po robocie czeka pod miejscem pracy na płatnika.
+func _plan_collect(a: SimAgent) -> void:
+	var c := w.contracts.of_worker(a.person_id)
+	var spot := w.contracts.pay_spot(String(c["place"]))
+	var k := float(a.id % PAY_QUEUE_SPREAD) - PAY_QUEUE_SPREAD * 0.5
+	_walk(a, spot + Vector2(k * 0.7, 1.0), "idzie po wypłatę")
+	_wait(a, "czeka na wypłatę (%d zł)" % int(round(float(c["owed"]))))
+
+
 # Gdy nie da się robić swojej roboty (nic do noszenia, brak zbytu, brak roboty w polu):
 # czas wolny przed domem, wśród ludzi, zamiast stania w miejscu (jak w Cultures).
 # Kto obsadza stanowisko (tartak, później stragan), ten czeka przy nim.
@@ -785,6 +827,9 @@ func apply(a: SimAgent, step: Dictionary) -> bool:
 			return _fx_pickup(a, step["arg"])
 		"return_coins":
 			_return_coins(a)
+			return true
+		"hand_out":
+			w.contracts.hand_out(a, String(step["arg"]))
 			return true
 		"field_pickup":
 			return _fx_field_pickup(a, String(step["arg"]))

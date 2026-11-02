@@ -14,6 +14,7 @@
     "accident": {"weight": -40.0, "half_life_days": 0.0, "permanent": true, "text": "wypadek: {act}"},
     "accident_seen": {"weight": -20.0, "half_life_days": 40.0, "permanent": false, "text": "widział(a) wypadek {with}: {act}"},
     "ordered_against_will": {"weight": -4.0, "half_life_days": 12.0, "permanent": false, "text": "{with} kazał(a) wbrew woli"},
+    "unpaid_wage": {"weight": -25.0, "half_life_days": 30.0, "permanent": false, "text": "{with} nie zapłacił(a) za robotę"},
     "quarrel": {"weight": -6.0, "half_life_days": 10.0, "permanent": false, "text": "kłótnia z {with}"}
   },
   "start": {
