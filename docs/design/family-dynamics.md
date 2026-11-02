@@ -86,6 +86,6 @@ Kto odpada, przede wszystkim **wychodzi spod kontroli gracza**. Może wejść do
 ## Otwarte pytania
 
 1. **Pojednanie.** Jak wygląda rytuał powrotu do rodu? Kto go inicjuje, gracz czy postać, i co jest warunkiem: więź, wspólny wróg, potrzeba?
-3. **Preferencje.** Skąd postać wie, czego chce? Z cech, z umiejętności, z wzorców (syn chce być jak ojciec), z historii?
-4. **Odmowa.** Od jakiego poziomu więzi postać odmawia rozkazu i co się wtedy dzieje (robi co innego, kłótnia, odejście)?
+2. **Preferencje.** Skąd postać wie, czego chce? Z cech, z umiejętności, z wzorców (syn chce być jak ojciec), z historii?
+3. **Odmowa.** Od jakiego poziomu więzi postać odmawia rozkazu i co się wtedy dzieje (robi co innego, kłótnia, odejście)?
 4. **Ród gracza po podziale.** Kiedy ród pęka na dwie części, czy druga staje się rodem AI w tym samym świecie (z własnym rootem) i można z nią potem wchodzić w relacje: pojednanie, rywalizacja, spór o spadek?
