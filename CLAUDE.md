@@ -14,7 +14,7 @@ Decyzje architektoniczne są w `docs/adr/`, terminy w `GLOSSARY.md`.
 
 ## Gdzie jesteśmy
 
-Iteracja 1 (dynamika rodu) jest zrobiona i przetestowana przez autora. Następna jest **Iteracja 2 — społeczeństwo** (`progress.md`): decyzje S6–S12 zatwierdzone (S13 do potwierdzenia), punkty F1–J3 rozpisane. Następna praca to **Faza F, punkt F1**, i dalej po kolei.
+Iteracja 1 (dynamika rodu) jest zrobiona i przetestowana przez autora. Następna jest **Iteracja 2 — społeczeństwo** (`progress.md`): zrobione F1–F4, G1–G5, H1–H3 i H7a (dwór jako pracodawca); czeka na test rozgrywki autora. Dalej: H4–H6 (pole, młyn, piekarnia, kamieniołom; potrzebne ogólne noszenie towarów między budynkami), H7 (zatrudnianie w warsztatach gracza), faza I (budowa), faza J. Testy trwają ok. 2 min (kilkudziesięciu agentów).
 
 ## Jak pracujemy
 
