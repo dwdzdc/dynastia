@@ -1,0 +1,35 @@
+sim/crime.gd.uid
+  s_bb6b65b605000f::t_74c11fbeaea131 1
+data/balance.json
+  s_bb6b65b605000f::t_cf39c0d89a0cb2 288
+sim/crime.gd
+  s_bb6b65b605000f::t_d4a9a0f9a31e22 1-63,70-149,151-154,156-167
+  s_bb6b65b605000f::t_cc49dc77689494 64-69
+  s_bb6b65b605000f::t_cf39c0d89a0cb2 150,155
+sim/jobs.gd
+  s_bb6b65b605000f::t_cf39c0d89a0cb2 32,502,507-516,518-543,1098-1102
+sim/world.gd
+  s_bb6b65b605000f::t_cf39c0d89a0cb2 24,91,1040-1042,1045-1047
+progress.md
+  ai_agent 156-157
+tests/run_tests.gd
+  s_bb6b65b605000f::t_5ea99f61f0e98d 88,1471-1503
+data/memories.json
+  s_bb6b65b605000f::t_cf39c0d89a0cb2 24-25
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "8c71c3ac020b2efbd6362d0430e088433d3299f4",
+  "prompts": {},
+  "sessions": {
+    "s_bb6b65b605000f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "8bc32a82-6b1e-41ef-8272-8f242d268239",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Dawid Dziedzic <24682682+dwdzdc@users.noreply.github.com>"
+    }
+  }
+}
