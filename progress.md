@@ -99,16 +99,20 @@ Pętla gry: ród Wilków (6 osób, 3 pokolenia) w chacie pod lasem. Co 5 dni czy
 
 ## Iteracja 2 — społeczeństwo (następna)
 
-Cel: rodzina przestaje być oderwana od świata. Inne rody żyją z tych samych danych i tym samym kodem, popyt i ceny biorą się z ich pieniędzy i potrzeb, małżonek to ktoś, kogo się zna, a dom to aktywo, które można wynająć, kupić albo zbudować. Decyzje szkieletowe S6–S12 czekają na zatwierdzenie (niżej); podział na punkty pisze autor.
+Cel: rodzina przestaje być oderwana od świata. Inne rody żyją z tych samych danych i tym samym kodem, popyt i ceny biorą się z ich pieniędzy i potrzeb, małżonek to ktoś, kogo się zna, a dom to aktywo, które można wynająć, kupić albo zbudować. Decyzje S6–S12 zatwierdzone przez autora (02.11.2026), S9 rozszerzona o kupców wędrownych, S13 dopisana; podział na punkty pisze autor.
 
-### Decyzje szkieletowe (propozycja, do zatwierdzenia)
+**Zakres towarów:** jedzenie lokalnie (pole → zboże → młyn → mąka → chleb; pole sezonowe), budulec: deski (są) i kamień, opał (jest), praca u kogoś jako relacja (nie towar). Czego okolica nie robi (np. żelazo, narzędzia, sól, sukno), przywożą kupcy wędrowni; nadwyżki wywożą. Woda: studnia jako miejsce w iteracji 3.
+
+### Decyzje szkieletowe
 
 - **S6. Gospodarstwo jako byt świata.** `SimHousehold { id, home_id, members, cash }`, wiele w świecie; ród ma ich 0..n. Kasa wspólna należy do gospodarstwa, nie do rodu. Sakiewki osób (S5) zostają. Odszedły zakłada własne gospodarstwo.
 - **S7. Budynek jako aktywo.** `SimBuilding.owner` (osoba, ród albo nikt) i `tenant` (gospodarstwo). Czynsz i płace liczone **na dobę**, płacone konkretnej osobie lub gospodarstwu. Eksmisja przy długu, bezdomność jako stan, nie koniec gry.
 - **S8. Rody AI pełne.** Kilka rodów startowych z danych, z ciałami na mapie, tym samym `SimFamily`/`SimBonds`/`SimJobs` co gracz. Gracz to tylko ród, któremu przypisano „player”. Różnią się decyzjami (AI wybiera prace, śluby, zakupy), nie modelem. Ich ludzie są w świecie wyraźnie odróżnieni od twoich.
-- **S9. Rynek jako ludzie.** Kupiec to osoba z rodu kupieckiego z własną kasą i zapasem. Kupuje tylko, gdy ma pieniądze i zbyt; cena zależy od jego zapasu i kasy. Popyt mają konkretni kupujący (jedzenie, deski na budowę). Wymiana z „miastem za mapą” (import/eksport w danych) jako zawór, żeby mała okolica się nie zakleszczyła.
+- **S9. Rynek jako ludzie.** Kupiec to osoba z rodu kupieckiego z własną kasą i zapasem. Kupuje tylko, gdy ma pieniądze i zbyt; cena zależy od jego zapasu i kasy. Popyt mają konkretni kupujący (jedzenie, deski na budowę).
+  **Kupcy wędrowni (import/eksport):** wóz z kupcem przyjeżdża zza krawędzi mapy według rozkładu z danych, z konkretną ofertą („kupię 20 desek po 3 zł”, „mam 10 sztabek żelaza”) i własną kasą. Stoi na targu przez określony czas, towar fizycznie się donosi i odbiera; potem odjeżdża i z nim towar. Nie zdążysz — przepada okazja. Kupcy żyją na mapie tylko w czasie pobytu (lekki LOD), ale to ludzie z imieniem, z którymi można mieć więź (stały odbiorca).
 - **S10. Budowa.** Plac budowy jako byt: typ budynku z danych, lista materiałów i ilość pracy. Na razie tylko dom. Ród AI buduje, gdy jest za ciasno i ma pieniądze; gracz może zlecić budowę w wybranym miejscu. Tłok i prywatność wpływają na więzi (za ciasno: kłótnie, osobno: rzadszy wspólny czas).
 - **S11. Małżeństwo z istniejącymi ludźmi.** Kandydaci to wolni dorośli z innych rodów w okolicy, uszeregowani po więzi (poznali się w pracy, na targu). Bez materializacji z powietrza; brak kandydatów to brak ślubu (szersza okolica przyjdzie z LOD).
+- **S13. Receptury w danych.** Każda produkcja to wpis w `data/recipes.json`: budynek, czynność, wejścia, wyjścia, czas, umiejętność. Piłowanie i stolarka przechodzą z kodu (`_plan_producer`) do danych; młyn, piekarnia, kamieniołom to nowe dane i model, bez nowej logiki. Pole (cykl sezonowy) to osobny mały moduł.
 - **S12. Ludzie z innych rodów w więziach.** Te same `SimBonds` i `SimTogether` dla wszystkich par, także między rodami (przyjaźń, wrogość, sąsiedzi). Siła przynależności liczona per ród od jego roota.
 
 ## Iteracja 3 — codzienność i ciało
