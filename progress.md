@@ -153,8 +153,8 @@ Pętla gry: ród Wilków (6 osób, 3 pokolenia) w chacie pod lasem. Co 5 dni czy
 
 ### Faza P — kradzież
 
-- [ ] P1 Proces: upatrzenie celu (stragan, niezwinięty towar, sakwa w tłumie), obserwacja, moment bez patrzących.
-- [ ] P2 Świadkowie (znajomy może przemilczeć), donos do strażnika, strażnik idzie aresztować → test.
+- [x] P1 Proces: upatrzenie celu (stragan, niezwinięty towar, sakwa w tłumie), obserwacja, moment bez patrzących.
+- [x] P2 Świadkowie (znajomy może przemilczeć), donos do strażnika, strażnik idzie aresztować → test.
 
 ### Faza Q — interfejs i balans
 

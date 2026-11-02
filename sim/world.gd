@@ -21,6 +21,7 @@ var family: SimFamily
 var bonds: SimBonds
 var together: SimTogether
 var talk: SimTalk
+var crime: SimCrime
 var ai: SimAI
 var trade: SimTrade
 var traders: SimTraders
@@ -87,6 +88,7 @@ func _init(seed: int, p_balance: Dictionary, p_map: Dictionary, p_people: Dictio
 	chronicle = SimChronicle.new()
 	together = SimTogether.new(self, memories["together"])
 	talk = SimTalk.new(self, memories["talk"])
+	crime = SimCrime.new(self, balance["crime"])
 	ai = SimAI.new(self)
 	family.setup_start()
 	_spawn_society()
@@ -1035,10 +1037,14 @@ func arrest(a: SimAgent) -> void:
 	a.status = "jailed"
 	a.hidden = true
 	a.jail_days = float(c["jail_days"])
-	household.debt += float(c["fine"])
-	household.reputation -= float(c["reputation_hit"])
+	var h := household_of(a)
+	h.debt += float(c["fine"])
+	h.reputation -= float(c["reputation_hit"])
 	stats["arrests"] = int(stats.get("arrests", 0)) + 1
 	var who := "Złapany" if p.sex == "m" else "Złapana"
+	if not family.is_ours(p):
+		note("%s %s na kradzieży — siedzi w areszcie." % [who, p.full_name()], "info", building("jail").door())
+		return
 	note("%s na kradzieży: %s trafia do aresztu na %d dni. Grzywna %d zł (w dług)." % [who, p.name, int(a.jail_days), int(c["fine"])], "critical", building("jail").door())
 	var opts: Array = [{ "label": "Niech siedzi (%d dni)" % int(a.jail_days), "value": "stay" }]
 	if household.cash >= float(c["bail"]):

@@ -21,6 +21,8 @@
     "gift": {"weight": 6.0, "half_life_days": 20.0, "permanent": false, "text": "prezent od {with}"},
     "match_refused": {"weight": -20.0, "half_life_days": 40.0, "permanent": false, "text": "{with} nie zgodził(a) się na ślub"},
     "thrown_out": {"weight": -45.0, "half_life_days": 0.0, "permanent": true, "text": "{with} wyrzucił(a) z domu"},
+    "robbed": {"weight": -30.0, "half_life_days": 30.0, "permanent": false, "text": "{with} okradł(a)"},
+    "covered_theft": {"weight": 5.0, "half_life_days": 20.0, "permanent": false, "text": "przemilczał(a) kradzież {with}"},
     "quarrel": {"weight": -6.0, "half_life_days": 10.0, "permanent": false, "text": "kłótnia z {with}"}
   },
   "start": {

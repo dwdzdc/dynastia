@@ -85,6 +85,7 @@ func _run_all() -> void:
 	_test_overseer()
 	_test_housing_orders()
 	_test_construction()
+	_test_theft_process()
 	_test_world_deterministic()
 	_test_world_30_days_autonomous()
 	_test_economy_chain_produces_income()
@@ -1465,6 +1466,41 @@ func _test_construction() -> void:
 	w.build_work(sid, 99999.0)
 	check("finished house belongs to the lineage that commissioned it", not w.sites.has(sid) and b.type == "home"
 		and b.owner_kind == "lineage" and b.owner_id == w.family.player_lineage_id and w.is_free_house(b))
+
+
+# P1–P2: złodziej upatruje niepilnowany stragan, czeka na moment bez świadków; łapie
+# konkretny świadek, który biegnie do straży; kto lubi złodzieja, milczy.
+func _test_theft_process() -> void:
+	var w = _new_world()
+	w.clock.set_time(1, 0.5)
+	var st = w.trade.stalls["stall_bednarz"]
+	st.keeper = -1
+	st.packed = false
+	var thief = w.agent_by_id(_named(w.family, "Zofia").agent_id)
+	for a in w.agents:
+		if a != thief:
+			a.position = Vector2(5, 65)   # nikogo w pobliżu
+	thief.position = st.counter()
+	var t: Dictionary = w.crime.pick_target(thief)
+	check("thief picks the unattended, unpacked stall", t.get("stall", "") == "stall_bednarz")
+	var food0: int = st.stock.amount("food") + st.stock.amount("log")
+	check("no witnesses: the moment is right", w.crime.moment_ok(thief, t))
+	check("goods vanish from the stall into the thief's hands", w.crime.steal(thief, t) and thief.carrying != ""
+		and st.stock.amount("food") + st.stock.amount("log") < food0 and thief.status == "active")
+	st.packed = true
+	check("packed stall is not a target", w.crime.pick_target(thief).get("stall", "") != "stall_bednarz")
+	st.packed = false
+	var witness = w.agent_by_id(_named(w.family, "Piotr").agent_id)
+	witness.position = thief.position + Vector2(1, 0)
+	witness.steps.clear()
+	witness.activity = "rest"
+	check("someone right next to the thief: wait for a better moment", not w.crime.moment_ok(thief, t))
+	w.bonds.remember(w.person_of(witness).id, SimBonds.person(w.person_of(thief).id), "covered_theft", [], -50.0)
+	w.crime.report(witness, thief)
+	check("witness runs to the town hall to report", witness.steps[0]["to"].distance_to(w.building("jail").door()) < 0.01)
+	witness.position = w.building("jail").door()
+	w.crime.on_report(witness, thief.id)
+	check("reported thief is arrested by the watch", thief.status == "jailed")
 
 
 func _state_sig(w) -> String:

@@ -285,25 +285,7 @@
     "boy_chance": 0.5,
     "newborn_food": 80.0
   },
-  "crime": {
-    "steal_seconds": 50.0,
-    "caught_base": 0.07,
-    "caught_skill_reduction": 0.06,
-    "caught_dark_mult": 0.6,
-    "loot_coins": [
-      3,
-      9
-    ],
-    "loot_food_chance": 0.4,
-    "loot_food": [
-      2,
-      4
-    ],
-    "jail_days": 3,
-    "fine": 15,
-    "bail": 25,
-    "reputation_hit": 2.0
-  },
+  "crime": {"steal_seconds": 50.0, "jail_days": 3, "fine": 15, "bail": 25, "reputation_hit": 2.0, "watch_seconds": 6.0, "max_watch": 8, "sight_radius": 7.0, "close_radius": 2.5, "crowd_size": 6, "reach": 2.5, "notice_base": 0.35, "notice_skill_reduction": 0.06, "crowd_cover": 0.3, "victim_mult": 1.5, "silent_bond": 20.0, "min_purse": 3.0, "square_radius": 9.0, "purse_take": [0.3, 0.7], "stall_take": [1, 3], "skill_per_theft": 0.15},
   "belonging": {
     "bond_scale": 100.0,
     "iterations": 30,

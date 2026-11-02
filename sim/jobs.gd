@@ -29,6 +29,7 @@ const BASE_WORK_ACTS := ["chop", "forage", "labor", "build"]
 const OVERSEE_OFFSET := Vector2(1.2, 1.2)     # nadzorca staje obok pilnowanego
 const OVERSEE_WAITS := 4.0                    # jak długo stoi przy jednym miejscu
 const BUILD_RADIUS := 2.2                     # budowlańcy krążą wokół placu
+const THIEF_OFFSET := Vector2(0.8, 0.9)       # złodziej staje obok celu, nie na nim
 const LOVE_OFFSET := Vector2(1.5, 0.8)        # zakochany staje obok tej drugiej osoby
 const POOR_MEALS := 4.0                       # bieda: w skrzyni mniej niż na tyle posiłków
 const FIREWOOD_TRIP := 2                      # ile kłód opału niesie się na raz
@@ -498,16 +499,48 @@ func _chop(a: SimAgent, t: SimTree, mill: SimBuilding) -> void:
 	_do(a, "chop_done", t.id)
 
 
+# Złodziej (P1): upatruje cel, staje obok, obserwuje i czeka na moment bez świadków.
 func _plan_thief(a: SimAgent) -> void:
 	if a.carrying != "":
 		_plan_deliver_carried(a)
 		return
-	var market: SimBuilding = w.building("market")
-	var spot := market.door() + Vector2(w.rng.next_float(-4.0, 4.0), w.rng.next_float(-0.5, 1.5))
+	var t := w.crime.pick_target(a)
+	if t.is_empty():
+		_free_time(a, "kręci się, ale nie ma okazji")
+		return
+	var at := w.crime.target_pos(t)
+	_walk(a, at + THIEF_OFFSET, "kręci się przy targu")
+	_watch_and_try(a, t, 0)
+
+
+func _watch_and_try(a: SimAgent, t: Dictionary, n: int) -> void:
 	var c: Dictionary = w.balance["crime"]
-	_walk(a, spot, "idzie na targ (podejrzanie)")
-	_act(a, "steal", _dur(a, "steal", float(c["steal_seconds"])), "kręci się przy straganach")
-	_do(a, "steal_done")
+	_act(a, "watch", float(c["watch_seconds"]), "rozgląda się przy targu")
+	var arg := t.duplicate()
+	arg["n"] = n
+	_do(a, "steal_try", arg)
+
+
+func _fx_steal_try(a: SimAgent, t: Dictionary) -> bool:
+	var c: Dictionary = w.balance["crime"]
+	var at := w.crime.target_pos(t)
+	if at.x == INF:
+		return true
+	if not w.crime.moment_ok(a, t):
+		# Ktoś patrzy: jeszcze chwila, a jak długo nic — odpuszcza.
+		if int(t["n"]) + 1 < int(c["max_watch"]):
+			var nx := t.duplicate()
+			nx["n"] = int(t["n"]) + 1
+			a.steps.push_front({ "t": "do", "fn": "steal_try", "arg": nx })
+			a.steps.push_front({ "t": "act", "act": "watch", "left": float(c["watch_seconds"]), "why": "czeka, aż nikt nie będzie patrzył",
+				"inside": "", "alert": false, "work": false })
+		return true
+	if a.position.distance_to(at) > float(c["reach"]):
+		a.steps.push_front({ "t": "do", "fn": "steal_try", "arg": t })
+		a.steps.push_front({ "t": "walk", "to": at + THIEF_OFFSET, "why": "podchodzi bliżej" })
+		return true
+	w.crime.steal(a, t)
+	return true
 
 
 func _plan_forage(a: SimAgent) -> void:
@@ -1062,8 +1095,11 @@ func apply(a: SimAgent, step: Dictionary) -> bool:
 			return _fx_produce(a, step["arg"])
 		"forage_done":
 			return _fx_forage(a)
-		"steal_done":
-			return _fx_steal(a)
+		"steal_try":
+			return _fx_steal_try(a, step["arg"])
+		"report_theft":
+			w.crime.on_report(a, int(step["arg"]))
+			return true
 	return false
 
 
@@ -1252,29 +1288,6 @@ func _fx_chop_done(a: SimAgent, tree_id: int) -> bool:
 	a.carrying_qty += 1
 	_gain_skill(a, "chop", float(_cfg["chop_seconds"]))
 	w.roll_accident(a, "chop")
-	return true
-
-
-func _fx_steal(a: SimAgent) -> bool:
-	var c: Dictionary = w.balance["crime"]
-	var p := float(c["caught_base"]) * maxf(0.3, 1.0 - float(c["caught_skill_reduction"]) * a.skill("steal"))
-	if w.clock.light_factor() < 0.5:
-		p *= float(c["caught_dark_mult"])
-	_gain_skill(a, "steal", float(c["steal_seconds"]))
-	if w.rng.chance(p):
-		w.arrest(a)
-		return true
-	if w.rng.chance(float(c["loot_food_chance"])):
-		var fr: Array = c["loot_food"]
-		a.carrying = "food"
-		a.carrying_qty = w.rng.next_int(int(fr[0]), int(fr[1]))
-		w.events.float_text(a.position, "+%d jedzenia (kradzione)" % a.carrying_qty, "info")
-	else:
-		var cr: Array = c["loot_coins"]
-		var got := w.rng.next_int(int(cr[0]), int(cr[1]))
-		w.earn_for(a, float(got))
-		w.events.float_text(a.position, "+%d zł (kradzione)" % got, "money")
-	w.stats["thefts"] = int(w.stats.get("thefts", 0)) + 1
 	return true
 
 
