@@ -109,6 +109,7 @@ Pętla gry: ród Wilków (6 osób, 3 pokolenia) w chacie pod lasem. Co 5 dni czy
 - **S17. Rozmowa** (`talk`) jako jedyne źródło więzi spoza domu i wspólnej pracy: dwie osoby w miejscu publicznym, stoją, dymek, wspomnienie.
 - **S18. Romans** jako osobny kanał w `SimBonds` (`love:<id>`). Etapy z wartości i wspomnień: wpadł w oko → szuka okazji → zaloty → zgoda rodów → ślub. Znikają `seeking_spouse` i `marry_chance_per_day`.
 - **S19. Pozycja społeczna** liczona (majątek w skrzyniach i budynkach + opinia innych), nie przechowywana.
+- **S21. Przydział to miejsce + zawód** (uwaga autora 02.11.2026, jak w Cultures): zaznaczona osoba, PPM na budynek, las albo pole → „przydziel: …”. Na cudzym miejscu tylko, gdy jest wakat; widać płacę i warunki, a przydział zawiera umowę (S15).
 - **S20. Brak klas rodów.** Dwór to budynek i przedsięwzięcie, nie rola. Zachowanie AI wynika z majątku i przedsięwzięć; znikają role zmieniające zachowanie (`gentry`, `merchant`, `idle_roles`). Każdy ród, także gracza, może dorobić się dworu.
 
 ### Faza K — skarbiec i sakwy
@@ -123,7 +124,7 @@ Pętla gry: ród Wilków (6 osób, 3 pokolenia) w chacie pod lasem. Co 5 dni czy
 - [x] L1 Pola (`SimField`): działki na mapie z właścicielem, cykl pór roku → test: plon tylko w sezonie; pola zmieniają wygląd.
 - [x] L2 Robota polowa krokowa (orka, siew, żniwa na konkretnej działce), plon noszony do spichrza → gracz widzi ludzi na polu i tragarzy ze zbiorem.
 - [ ] L3 Umowy (S15): oferty pracy, wybór AI według stawki, płatnik wręcza wypłatę; koniec `_labor` „w środku dworu” → test: płaca przechodzi z ręki do ręki, za mało płacisz — nikt nie przychodzi, niezapłacony pamięta.
-- [ ] L4 Gracz wystawia oferty (ile osób, stawka) do własnego tartaku/pola → test + zrzut.
+- [ ] L4 Przydział jak w Cultures (S21): zaznaczona osoba + PPM na budynek/las → „przydziel: drwal”; na cudzym miejscu tylko wakat z płacą (umowa S15). Gracz wystawia oferty (ile osób, stawka) do własnego tartaku/pola → test + zrzut.
 - [ ] L5 AI bez klas (S20): ród z majątkiem zatrudnia zamiast robić sam, reszta wybiera między ofertami, lasem, warsztatem i straganem → test: w godzinach pracy dorośli AI są poza domem; zero `idle_roles`.
 - [ ] L6 Nadzór: członek rodu przy miejscu pracy jako nadzorca, pracownicy mniej się migają, jeden nadzorca na N ludzi (w danych) → test.
 

@@ -591,15 +591,25 @@ func _labor(a: SimAgent, s: Dictionary, dt: float) -> void:
 	employer.pay(wage)
 	earn_for(a, wage)
 	# Praca posuwa robotę na konkretnym polu (L2); po skończonym zadaniu nowy plan.
+	# Robotnik idzie wzdłuż zagonu razem z postępem.
 	var f := field_by_id(String(s.get("field", "")))
-	if f == null:
+	var i := int(s.get("cell", -1))
+	var season := clock.current_season()
+	if f == null or i < 0 or f.cell_task(i, season) == "":
 		s["left"] = 0.0
 		return
-	var done := f.work(clock.current_season(), dt * a.age_eff * float(s["will"]) * a.trait_mult("labor"))
+	var done := f.work(i, season, dt * a.age_eff * float(s["will"]) * a.trait_mult("labor"))
+	var c: Dictionary = f.cells[i]
+	var from: Vector2 = c["start"]
+	var to: Vector2 = c["end"]
+	a.facing = (to - from).normalized()
 	if done != "":
+		a.position = to
 		s["left"] = 0.0
-		if done == "harvest":
+		if done == "harvest" and f.count("ripe") == 0:
 			note("Żniwa skończone na polu (%s): %d snopów do zniesienia." % [building(f.owner_building).name, f.heap], "info", f.heap_spot())
+	else:
+		a.position = from.lerp(to, f.progress(i, season))
 
 
 # Dwór sprzedaje nadwyżkę plonów kupcowi (pieniądze wracają do dworu i dalej do ludzi).
@@ -792,7 +802,7 @@ func _new_day() -> void:
 			var pr := person_of(a)
 			note("%s zachorował%s." % [pr.name, "" if pr.sex == "m" else "a"], "warn", a.position)
 	for f: SimField in fields:
-		if f.new_day(season) == "rotted":
+		if f.new_day(season) > 0:
 			note("Niezebrane zboże zgniło na polu (%s)." % building(f.owner_building).name, "warn", f.center())
 	together.end_day()
 	_estate_sells()

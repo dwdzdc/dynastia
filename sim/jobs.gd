@@ -142,6 +142,10 @@ func release(a: SimAgent) -> void:
 			var t: SimTree = w.tree_by_id(int(parts[1]))
 			if t != null and t.reserved_by == a.id:
 				t.reserved_by = -1
+		elif parts[0] == "cell":
+			var f := w.field_by_id(parts[1])
+			if f != null:
+				f.release(int(parts[2]), a.id)
 		elif parts[0] == "chore":
 			var key := String(c).substr(6)
 			if w.chore_claims.get(key, -1) == a.id:
@@ -513,8 +517,8 @@ func _plan_laborer(a: SimAgent) -> void:
 		_wait(a, "dwór nie ma dziś roboty w polu")
 		return
 	var season := w.clock.current_season()
-	var t := f.task(season)
-	if f.heap > 0 and (t == "" or f.heap >= int(w.balance["carry"]["food"])):
+	var i := f.free_cell(season)
+	if f.heap > 0 and (i < 0 or f.heap >= int(w.balance["carry"]["food"])):
 		_walk(a, f.heap_spot(), "idzie po snopy na pole")
 		_do(a, "field_pickup", f.id)
 		_walk(a, manor.door(), "niesie snopy do spichrza: %s" % manor.name)
@@ -522,11 +526,19 @@ func _plan_laborer(a: SimAgent) -> void:
 		return
 	var s: Dictionary = w.balance["schedule"]
 	var left := (float(s["work_end"]) - w.clock.time_of_day()) * w.clock.day_seconds
+	# Jeden zagon na raz: rezerwacja, przejście wzdłuż, potem następny (L2).
+	var t := f.cell_task(i, season)
 	var label := String(SimField.TASK_LABELS[t])
-	_walk(a, f.work_spot(a.person_id), "idzie w pole dworu: %s" % label)
+	f.claim(i, a.id)
+	a.claims.append("cell:%s:%d" % [f.id, i])
+	var c: Dictionary = f.cells[i]
+	var from: Vector2 = c["start"]
+	_walk(a, from.lerp(c["end"], f.progress(i, season)), "idzie w pole dworu: %s" % label)
 	_act(a, "labor", maxf(left, 1.0), "%s na polu dworu (dniówka)" % label)
-	a.steps[a.steps.size() - 1]["field"] = f.id
-	a.steps[a.steps.size() - 1]["task"] = t
+	var st: Dictionary = a.steps[a.steps.size() - 1]
+	st["field"] = f.id
+	st["cell"] = i
+	st["task"] = t
 
 
 # Obowiązki domowe (każdy dorosły po pracy i bez przydziału).

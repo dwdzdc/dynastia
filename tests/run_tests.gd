@@ -1000,36 +1000,39 @@ func _money(w) -> float:
 	return s
 
 
-# L1: pole rośnie tylko zasiane i tylko w porach wzrostu; plon tylko z dojrzałego;
+# L1: zagon rośnie tylko zasiany i tylko w porach wzrostu; plon tylko z dojrzałego;
 # niezebrane marnieje, a zima je zabiera.
 func _test_field_cycle() -> void:
 	var w = _new_world()
 	var cfg: Dictionary = w.balance["fields"]
+	var ws: Dictionary = cfg["work_seconds"]
 	check("fields from map data belong to the manor", w.fields.size() > 0 and w.fields[0].owner_building == "manor")
-	var f := SimField.new({ "id": "t", "owner": "manor", "x": 0, "y": 0, "w": 4, "h": 4 }, cfg)
+	var f := SimField.new({ "id": "t", "owner": "manor", "x": 0, "y": 0, "w": 6, "h": 2 }, cfg)
+	check("field is split into strips", f.cells.size() > 1)
 	for i in 10:
 		f.new_day("spring")
-	check("unsown field does not grow", f.stage == "fallow" and is_zero_approx(f.growth))
-	check("no sowing before plowing", f.task("spring") == "plow")
-	check("no plowing in winter", f.task("winter") == "" and f.work("winter", 99999.0) == "")
-	f.work("spring", float(cfg["work_seconds"]["plow"]))
-	f.work("spring", float(cfg["work_seconds"]["sow"]))
-	check("plowed and sown by work", f.stage == "sown")
-	check("harvest only from a ripe field", f.task("summer") == "" and f.heap == 0)
+	check("unsown field does not grow", f.count("fallow") == f.cells.size())
+	check("no sowing before plowing", f.cell_task(0, "spring") == "plow")
+	check("no plowing in winter", f.cell_task(0, "winter") == "" and f.work(0, "winter", 99999.0) == "")
+	f.work(0, "spring", float(ws["plow"]))
+	f.work(0, "spring", float(ws["sow"]))
+	check("one strip plowed and sown by work, the rest untouched", f.cells[0]["stage"] == "sown" and f.count("fallow") == f.cells.size() - 1)
+	check("harvest only from a ripe strip", f.cell_task(0, "summer") == "" and f.heap == 0)
 	for i in int(cfg["grow_days"]):
 		f.new_day("summer")
-	check("sown field ripens over grow_days", f.stage == "ripe")
-	f.work("summer", float(cfg["work_seconds"]["harvest"]))
-	check("harvest leaves the crop on the field", f.stage == "stubble" and f.heap == int(cfg["yield"]))
-	var g := SimField.new({ "id": "u", "owner": "manor", "x": 0, "y": 0, "w": 4, "h": 4 }, cfg)
-	g.stage = "ripe"
-	g.new_day("autumn")
-	g.new_day("autumn")
-	g.work("autumn", float(cfg["work_seconds"]["harvest"]))
-	check("neglected ripe field yields less", g.heap < int(cfg["yield"]))
-	var r := SimField.new({ "id": "v", "owner": "manor", "x": 0, "y": 0, "w": 4, "h": 4 }, cfg)
-	r.stage = "ripe"
-	check("winter takes an unharvested crop", r.new_day("winter") == "rotted" and r.stage == "fallow")
+	check("sown strip ripens over grow_days", f.cells[0]["stage"] == "ripe")
+	f.work(0, "summer", float(ws["harvest"]))
+	check("harvest leaves the crop on the field", f.cells[0]["stage"] == "stubble" and f.heap == int(cfg["yield_per_cell"]))
+	f.cells[1]["stage"] = "ripe"
+	f.new_day("autumn")
+	f.new_day("autumn")
+	var h0: int = f.heap
+	f.work(1, "autumn", float(ws["harvest"]))
+	check("neglected ripe strip yields less", f.heap - h0 < int(cfg["yield_per_cell"]))
+	f.cells[2]["stage"] = "ripe"
+	check("winter takes an unharvested crop", f.new_day("winter") == 1 and f.cells[2]["stage"] == "fallow")
+	f.claim(3, 99)
+	check("claimed strip is not offered to others", f.free_cell("spring") != 3)
 
 
 # K1 (S14): kasa gospodarstwa leży w skrzyni w domu; przeprowadzka zabiera skrzynię,
@@ -1135,44 +1138,56 @@ func _test_estate_pays_wages() -> void:
 	check("the manor household is the employer", est != null and w.family.persons[est.members[0]].surname == "Dworski")
 	var a = w.agent_by_id(_named(w.family, "Piotr").agent_id)
 	var f = w.fields[0]
-	var s := { "t": "act", "act": "labor", "left": 100.0, "why": "dniówka", "will": 1.0, "field": f.id, "task": "plow" }
+	var s := { "t": "act", "act": "labor", "left": 100.0, "why": "dniówka", "will": 1.0, "field": f.id, "cell": 0, "task": "plow" }
 	var est0: float = est.cash
 	var hh0: float = w.household.cash + w.family.persons[a.person_id].purse
 	for i in 60:
 		w._labor(a, s, 1.0)
 	var paid: float = est0 - est.cash
 	check("wage is paid from the employer's cash to the worker", paid > 0.0 and is_equal_approx(w.household.cash + w.family.persons[a.person_id].purse - hh0, paid))
-	check("estate work advances work on a concrete field", f.work_done > 0.0)
+	check("estate work advances work on a concrete strip", f.cells[0]["stage"] != "fallow" or float(f.cells[0]["done"]) > 0.0)
 	est.cash = 0.0
 	s["left"] = 100.0
 	w._labor(a, s, 1.0)
 	check("employer without money stops paying and sends people home", float(s["left"]) <= 0.0)
 
 
-# L2: robotnik dworu idzie na konkretne pole i robi to, co jest w tej porze do zrobienia;
+# L2: robotnik dworu bierze wolny zagon i idzie wzdłuż niego; dwóch nie bierze tego samego;
 # snopy niesie do spichrza dworu, nie do własnego domu; bez roboty w polu czeka z powodem.
 func _test_field_work() -> void:
 	var w = _new_world()
 	var a = w.agent_by_id(_named(w.family, "Piotr").agent_id)
-	a.job = "laborer"
+	var b = w.agent_by_id(_named(w.family, "Maria").agent_id)
 	w.clock.set_time(0, float(w.balance["schedule"]["work_start"]) + 0.05)
-	w.jobs.release(a)
-	a.steps.clear()
-	w.jobs._plan_laborer(a)
+	for x in [a, b]:
+		x.job = "laborer"
+		w.jobs.release(x)
+		x.steps.clear()
+		w.jobs._plan_laborer(x)
 	var st: Dictionary = a.steps[a.steps.size() - 1]
-	check("spring: laborer goes to plow a field, outside, visible", st.get("act") == "labor" and st.get("task") == "plow" and st.get("inside", "") == "")
+	var sb: Dictionary = b.steps[b.steps.size() - 1]
+	check("spring: laborer plows a strip outside, visible", st.get("act") == "labor" and st.get("task") == "plow" and st.get("inside", "") == "")
+	check("two laborers take different strips", st["field"] != sb["field"] or st["cell"] != sb["cell"])
 	var f = w.field_by_id(String(st["field"]))
-	a.position = f.work_spot(a.person_id)
+	var c: Dictionary = f.cells[int(st["cell"])]
+	a.position = c["start"]
 	a.steps = [st]
 	st["will"] = 1.0
 	st["left"] = 99999.0
+	var mid_seen := false
 	for i in 3000:
 		if a.steps.is_empty():
 			break
 		w._act(a, st, 1.0)
-	check("enough work plows the field and ends the shift step", f.stage == "plowed")
-	f.stage = "stubble"
+		if a.position.distance_to(c["start"]) > 0.3 and a.position.distance_to(c["end"]) > 0.3:
+			mid_seen = true
+	check("laborer walks along the strip while plowing", mid_seen and a.position.distance_to(c["end"]) < 0.01)
+	check("work plows that strip and ends the step", c["stage"] == "plowed" and a.steps.is_empty())
+	w.jobs.release(a)
+	check("finished strip is released", int(c["by"]) < 0)
 	f.heap = 12
+	for x in f.cells:
+		x["stage"] = "stubble"
 	var food0: int = w.building("manor").amount("food")
 	a.steps.clear()
 	w.jobs._plan_laborer(a)
@@ -1187,8 +1202,9 @@ func _test_field_work() -> void:
 	w.jobs._fx_deposit(a, "manor")
 	check("manor granary gets the crop, the worker's home does not", w.building("manor").amount("food") > food0 and w.home().amount("food") == home_food)
 	for g in w.fields:
-		g.stage = "sown"
 		g.heap = 0
+		for x in g.cells:
+			x["stage"] = "sown"
 	a.steps.clear()
 	w.jobs._plan_laborer(a)
 	check("no field work: laborer says so instead of vanishing", String(a.steps[a.steps.size() - 1]["why"]).contains("nie ma dziś roboty"))

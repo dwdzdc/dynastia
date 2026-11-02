@@ -24,7 +24,6 @@ const FALLOW := Color(0.45, 0.47, 0.27)      # ugór
 const STUBBLE := Color(0.72, 0.64, 0.4)      # ściernisko
 const CROP_YOUNG := Color(0.38, 0.6, 0.22)
 const CROP_RIPE := Color(0.88, 0.74, 0.3)
-const FIELD_ROW_GAP := 1.0                   # odstęp rzędów zboża
 const CROP_MAX_H := 0.9                      # wysokość dojrzałego zboża
 const SHEAF := Color(0.85, 0.7, 0.32)
 
@@ -75,47 +74,49 @@ func build(w: SimWorld) -> void:
 		_field(fl)
 
 
-# Pole (L1): płyta gleby i rzędy zboża, które rosną i żółkną.
+# Pole (L1, L2): ugór pod spodem, na nim zagony — każdy z własną glebą i zbożem.
 func _field(f: SimField) -> void:
 	var n := Node3D.new()
-	n.position = Vector3(f.rect.get_center().x, 0, f.rect.get_center().y)
 	add_child(n)
-	var base := _add(n, Gfx3D.box(Vector3(f.rect.size.x, 0.06, f.rect.size.y), FALLOW), Vector3(0, 0.03, 0))
-	var rows: Array = []
-	var count := int(f.rect.size.y / FIELD_ROW_GAP)
-	for i in count:
-		var z := -f.rect.size.y * 0.5 + FIELD_ROW_GAP * (i + 0.5)
-		var r := _add(n, Gfx3D.box(Vector3(f.rect.size.x - 0.6, 1.0, 0.45), CROP_YOUNG), Vector3(0, 0.0, z))
-		rows.append(r)
-	var heap := _add(n, Gfx3D.cylinder(0.6, 1.0, SHEAF, 0.35, 8), Vector3(f.rect.size.x * 0.5 - 1.0, 0.5, f.rect.size.y * 0.5 - 1.0))
-	_fields[f.id] = { "base": base, "rows": rows, "heap": heap, "last": "" }
+	_add(n, Gfx3D.box(Vector3(f.rect.size.x, 0.04, f.rect.size.y), FALLOW), Vector3(f.center().x, 0.02, f.center().y))
+	var cs: Array = world.balance["fields"]["cell"]
+	var cells: Array = []
+	for c: Dictionary in f.cells:
+		var mid: Vector2 = ((c["start"] as Vector2) + (c["end"] as Vector2)) * 0.5
+		var length: float = (c["start"] as Vector2).distance_to(c["end"]) + SimField.EDGE
+		var soil := _add(n, Gfx3D.box(Vector3(length, 0.06, float(cs[1]) * 0.8), FALLOW), Vector3(mid.x, 0.04, mid.y))
+		var crop := _add(n, Gfx3D.box(Vector3(length - 0.3, 1.0, float(cs[1]) * 0.45), CROP_YOUNG), Vector3(mid.x, 0.0, mid.y))
+		cells.append({ "soil": soil, "crop": crop, "last": "" })
+	var hs := f.heap_spot()
+	var heap := _add(n, Gfx3D.cylinder(0.6, 1.0, SHEAF, 0.35, 8), Vector3(hs.x, 0.5, hs.y))
+	_fields[f.id] = { "cells": cells, "heap": heap }
 
 
 func _refresh_field(f: SimField) -> void:
 	var d: Dictionary = _fields[f.id]
-	var key := "%s|%.2f|%d" % [f.stage, f.growth, f.heap]
-	if key == d["last"]:
-		return
-	d["last"] = key
-	var soil: Color = FALLOW
-	match f.stage:
-		"plowed", "sown":
-			soil = SOIL
-		"ripe":
-			soil = SOIL
-		"stubble":
-			soil = STUBBLE
-	Gfx3D.set_color(d["base"], soil)
-	var grown := f.stage in ["sown", "ripe"] and f.growth > 0.0
-	var h := maxf(0.05, CROP_MAX_H * f.growth)
-	var col := CROP_YOUNG.lerp(CROP_RIPE, clampf((f.growth - 0.6) / 0.4, 0.0, 1.0)) if f.stage == "sown" else CROP_RIPE
-	for r: MeshInstance3D in d["rows"]:
-		r.visible = grown
-		r.scale = Vector3(1, h, 1)
-		r.position.y = h * 0.5
-		Gfx3D.set_color(r, col)
-	var hp: MeshInstance3D = d["heap"]
-	hp.visible = f.heap > 0
+	for i in f.cells.size():
+		var c: Dictionary = f.cells[i]
+		var v: Dictionary = d["cells"][i]
+		var key := "%s|%.2f" % [c["stage"], c["growth"]]
+		if key == v["last"]:
+			continue
+		v["last"] = key
+		var stage := String(c["stage"])
+		var soil: Color = FALLOW
+		match stage:
+			"plowed", "sown", "ripe":
+				soil = SOIL
+			"stubble":
+				soil = STUBBLE
+		Gfx3D.set_color(v["soil"], soil)
+		var g := float(c["growth"])
+		var crop: MeshInstance3D = v["crop"]
+		crop.visible = stage in ["sown", "ripe"] and g > 0.0
+		var h := maxf(0.05, CROP_MAX_H * g)
+		crop.scale = Vector3(1, h, 1)
+		crop.position.y = h * 0.5
+		Gfx3D.set_color(crop, CROP_YOUNG.lerp(CROP_RIPE, clampf((g - 0.6) / 0.4, 0.0, 1.0)) if stage == "sown" else CROP_RIPE)
+	(d["heap"] as MeshInstance3D).visible = f.heap > 0
 
 
 func _road(a: Vector2, b: Vector2) -> void:

@@ -425,8 +425,9 @@
     "rot_season": "winter",
     "grow_days": 7,
     "ripe_loss_per_day": 0.04,
-    "work_seconds": { "plow": 500.0, "sow": 250.0, "harvest": 600.0 },
-    "yield": 90
+    "cell": [3.0, 1.0],
+    "work_seconds": { "plow": 30.0, "sow": 15.0, "harvest": 35.0 },
+    "yield_per_cell": 5
   },
   "estate": {
     "building": "manor",
