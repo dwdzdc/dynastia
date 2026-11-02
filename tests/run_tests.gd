@@ -85,6 +85,7 @@ func _run_all() -> void:
 	_test_overseer()
 	_test_housing_orders()
 	_test_construction()
+	_test_build_catalog()
 	_test_theft_process()
 	_test_world_deterministic()
 	_test_world_30_days_autonomous()
@@ -1450,9 +1451,9 @@ func _test_construction() -> void:
 	w.build_work(sid, 99999.0)
 	check("without planks no work gets done", is_zero_approx(float(site["work"])))
 	var cfg: Dictionary = w.site_cfg(site)
-	b.add("plank", int(cfg["planks"]) / 2)
+	b.add("plank", int(cfg["materials"]["plank"]) / 2)
 	w.build_work(sid, 99999.0)
-	check("half the planks allow half the work", absf(float(site["work"]) - float(cfg["work"]) * 0.5) < 1.0)
+	check("half the planks allow half the work", absf(float(site["work"]) - w.site_total(site) * 0.5) < 1.0)
 	var piotr = _named(w.family, "Piotr")
 	var a = w.agent_by_id(piotr.agent_id)
 	w.assign_job(a.id, "builder", "")
@@ -1462,7 +1463,7 @@ func _test_construction() -> void:
 	a.steps.clear()
 	w.jobs._plan_builder(a)
 	check("builder fetches planks when the site runs out", a.steps.any(func(s): return s["t"] == "do" and s["fn"] == "pickup"))
-	b.add("plank", int(cfg["planks"]))
+	b.add("plank", int(cfg["materials"]["plank"]))
 	w.build_work(sid, 99999.0)
 	check("finished house belongs to the lineage that commissioned it", not w.sites.has(sid) and b.type == "home"
 		and b.owner_kind == "lineage" and b.owner_id == w.family.player_lineage_id and w.is_free_house(b))
@@ -1470,6 +1471,24 @@ func _test_construction() -> void:
 
 # P1–P2: złodziej upatruje niepilnowany stragan, czeka na moment bez świadków; łapie
 # konkretny świadek, który biegnie do straży; kto lubi złodzieja, milczy.
+# T0 (S29): budowa z katalogu — stragan staje się działającym straganem rodu, droga
+# powstaje między dwoma punktami i potrzebuje tylko pracy.
+func _test_build_catalog() -> void:
+	var w = _new_world()
+	check("catalog has house, stall and road", w.buildables.has("house") and w.buildables.has("stall") and w.buildables.has("road"))
+	var sid: String = w.commission("stall", Vector2(40, 62))
+	var site: Dictionary = w.sites[sid]
+	site["b"].add("plank", int(w.site_cfg(site)["materials"]["plank"]))
+	w.build_work(sid, 99999.0)
+	check("finished stall trades for the player's household", w.trade.stalls.has(sid) and w.trade.stalls[sid].owner == w.household.id)
+	var rid: String = w.commission("road", Vector2(40, 66), Vector2(50, 66))
+	var rs: Dictionary = w.sites[rid]
+	check("road costs work by its length, no materials", absf(w.site_total(rs) - float(w.buildables["road"]["work_per_unit"]) * 10.0) < 0.01
+		and is_equal_approx(w.site_work_allowed(rs), w.site_total(rs)))
+	w.build_work(rid, 99999.0)
+	check("finished road is on the map and the site is gone", w.roads_built.size() == 1 and not w.buildings.has(rid))
+
+
 func _test_theft_process() -> void:
 	var w = _new_world()
 	w.clock.set_time(1, 0.5)

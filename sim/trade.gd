@@ -76,20 +76,6 @@ func stall_of_keeper(a: SimAgent) -> SimStall:
 	return own[0] if not own.is_empty() else null
 
 
-# Postaw stragan przy domu (M1): kosztuje deski z własnego składu.
-func build_stall(h: SimHousehold, from: SimBuilding) -> SimStall:
-	var home: SimBuilding = w.buildings.get(h.home_id)
-	var cost := int(_cfg["stall_cost_planks"])
-	if home == null or from == null or from.amount("plank") < cost or not stalls_of(h.id).filter(func(s): return not s.temporary).is_empty():
-		return null
-	from.take("plank", cost)
-	var off: Array = _cfg["home_stall_offset"]
-	var b := SimBuilding.new("stall_h%d" % h.id, "Stragan przy domu", "stall",
-		home.position + Vector2(float(off[0]), float(off[1])), w.balance["storage"]["stall"])
-	w.buildings[b.id] = b
-	return add_stall(b, b, h.id, _cfg["home_stall_goods"])
-
-
 # Wolne miejsce na placu targowym (dla wozów kupców wędrownych).
 func free_slot() -> Vector2:
 	for s: Array in _cfg["slots"]:

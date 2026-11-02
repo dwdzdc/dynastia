@@ -1,0 +1,15 @@
+{
+  "house": {
+    "label": "Dom", "category": "Mieszkanie", "result": "home", "name": "Nowy dom",
+    "materials": { "plank": 30 }, "work": 900.0, "clearance": 6.0
+  },
+  "stall": {
+    "label": "Stragan", "category": "Handel", "result": "stall", "name": "Stragan",
+    "materials": { "plank": 8 }, "work": 150.0, "clearance": 3.5,
+    "goods": ["plank", "chair", "food", "log"]
+  },
+  "road": {
+    "label": "Droga", "category": "Drogi", "result": "road", "name": "Droga", "line": true,
+    "materials": {}, "work_per_unit": 12.0, "clearance": 0.0
+  }
+}

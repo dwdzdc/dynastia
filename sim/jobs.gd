@@ -826,18 +826,23 @@ func _plan_builder(a: SimAgent) -> void:
 		return
 	var site: Dictionary = w.sites[sid]
 	var b: SimBuilding = site["b"]
-	var cfg := w.site_cfg(site)
+	var cc: Dictionary = w.balance["construction"]
 	if float(site["work"]) >= w.site_work_allowed(site) - 0.01:
 		var mill: SimBuilding = w.building("sawmill")
 		if b.space("plank") > 0 and mill.amount("plank") > 0:
-			_pickup_and_deliver(a, mill, "plank", b, "niesie deski na budowę", mini(int(cfg["carry_planks"]), b.space("plank")))
+			_pickup_and_deliver(a, mill, "plank", b, "niesie deski na budowę", mini(int(cc["carry_planks"]), b.space("plank")))
 			return
-		_free_time(a, "budowa czeka na deski")
+		_free_time(a, "budowa czeka na materiał")
 		return
+	var spot: Vector2 = b.position
+	if site["to"] is Vector2 and site["from"] is Vector2:
+		# Droga: pracują wzdłuż wytyczonej linii, tam gdzie robota doszła.
+		spot = (site["from"] as Vector2).lerp(site["to"], clampf(float(site["work"]) / w.site_total(site), 0.0, 1.0))
 	var k := w.rng.next_float(0.0, TAU)
-	_walk(a, b.position + Vector2(cos(k), sin(k)) * BUILD_RADIUS, "idzie na budowę")
-	_act(a, "build", _dur(a, "build", float(cfg["build_seconds"])), "buduje dom (%d%%)" % int(100.0 * float(site["work"]) / float(cfg["work"])))
-	_do(a, "build_work", { "site": sid, "secs": float(cfg["build_seconds"]) })
+	_walk(a, spot + Vector2(cos(k), sin(k)) * BUILD_RADIUS, "idzie na budowę")
+	_act(a, "build", _dur(a, "build", float(cc["build_seconds"])), "buduje: %s (%d%%)" % [String(w.site_cfg(site)["label"]).to_lower(),
+		int(100.0 * float(site["work"]) / w.site_total(site))])
+	_do(a, "build_work", { "site": sid, "secs": float(cc["build_seconds"]) })
 
 
 # Kramarz (M2): staje za ladą, rozkłada towar, sprzedaje i skupuje; na koniec dnia zwija.

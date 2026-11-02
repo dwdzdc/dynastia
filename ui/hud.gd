@@ -50,6 +50,7 @@ var _top_speed: Array = []
 var _top_res: RichTextLabel
 var _family_title: Label
 var _family_panel: PanelContainer
+var _build_panel: PanelContainer
 var _menu: PopupMenu
 var _menu_fns: Array = []
 var _family_box: VBoxContainer
@@ -167,6 +168,7 @@ func _build_top() -> void:
 	_top_res.add_theme_font_size_override("normal_font_size", 21)
 	_top_res.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	h.add_child(_top_res)
+	h.add_child(_button("Budowa (B)", func(): toggle_build(), 17))
 	h.add_child(_button("Ród (G)", func(): toggle_family(), 17))
 	h.add_child(_button("Kronika (K)", func(): toggle_chronicle(), 17))
 	h.add_child(_button("Pomoc (F1)", func(): _help.visible = not _help.visible, 17))
@@ -244,8 +246,50 @@ func show_menu(pos: Vector2, items: Array) -> void:
 	_menu.popup()
 
 
+# Menu budowy (S29, T0) jak w Cultures: katalog z danych pogrupowany w kategorie;
+# wybór wpisu przełącza na wskazywanie miejsca na mapie.
+func toggle_build() -> void:
+	if _build_panel == null:
+		_build_panel = PanelContainer.new()
+		_build_panel.position = Vector2(10, 68)
+		add_child(_build_panel)
+		var v := VBoxContainer.new()
+		v.add_theme_constant_override("separation", 6)
+		_build_panel.add_child(v)
+		v.add_child(_label("Budowa", 22, Color(1.0, 0.85, 0.45)))
+		var cats := {}
+		for kind in world.buildables:
+			var cat := String(world.buildables[kind]["category"])
+			if not cats.has(cat):
+				cats[cat] = []
+			cats[cat].append(kind)
+		for cat in cats:
+			v.add_child(_label(cat, 16, DIM))
+			for kind in cats[cat]:
+				var cfg: Dictionary = world.buildables[kind]
+				var mats: Dictionary = cfg["materials"]
+				var cost := ", ".join(mats.keys().map(func(g): return "%d× %s" % [int(mats[g]), world.good_label(g)]))
+				var k: String = kind
+				var b := _button("%s — %s" % [cfg["label"], cost if cost != "" else "tylko praca"], func():
+					main.placing = k
+					main.placing_from = null
+					_build_panel.visible = false, 17)
+				b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+				v.add_child(b)
+		var tip := _label("Wybierz, potem kliknij miejsce na mapie (droga: początek i koniec). Esc — anuluj.", 14, DIM)
+		tip.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		tip.custom_minimum_size.x = 360
+		v.add_child(tip)
+		_build_panel.visible = false
+	_build_panel.visible = not _build_panel.visible
+	if _build_panel.visible:
+		_family_panel.visible = false
+
+
 func toggle_family() -> void:
 	_family_panel.visible = not _family_panel.visible
+	if _family_panel.visible and _build_panel != null:
+		_build_panel.visible = false
 
 
 func _update_family() -> void:
@@ -667,9 +711,6 @@ func _build_building_info(b: SimBuilding) -> void:
 			_stepper("Opał", func(): return hh.target_firewood, func(d): hh.target_firewood = clampi(hh.target_firewood + d, 0, int(b.capacity["log"])))
 			if b.id == hh.home_id:
 				_build_price_limits(hh)
-				if world.trade.stalls_of(hh.id).filter(func(x): return not x.temporary).is_empty():
-					_info_box.add_child(_button("Postaw stragan przy domu (%d desek z tartaku)" % int(world.balance["trade"]["stall_cost_planks"]),
-						func(): world.build_home_stall(), 16))
 		"sawmill":
 			_dyn(func(): return "Kłody: %d / %d\nDeski: %d / %d" % [b.amount("log"), int(b.capacity["log"]), b.amount("plank"), int(b.capacity["plank"])], 18)
 			_dyn(func(): return "Drwale: %d · tracze: %d · drzewa do ścięcia: %d" % [_count_job("woodcutter"), _count_job("sawyer"),
@@ -702,8 +743,10 @@ func _build_building_info(b: SimBuilding) -> void:
 				if site.is_empty():
 					return "Budowa skończona."
 				var cfg: Dictionary = world.site_cfg(site)
-				return "Budowa domu: %d%%\nDeski: %d / %d (bez desek praca staje)\nBudują: %s" % [
-					int(100.0 * float(site["work"]) / float(cfg["work"])), b.amount("plank"), int(cfg["planks"]),
+				var mats: Dictionary = cfg["materials"]
+				var need := ", ".join(mats.keys().map(func(g): return "%s %d / %d" % [world.good_label(g), b.amount(g), int(mats[g])]))
+				return "Budowa: %s %d%%\nMateriały: %s (bez nich praca staje)\nBudują: %s" % [
+					String(cfg["label"]).to_lower(), int(100.0 * float(site["work"]) / world.site_total(site)), need if need != "" else "nie trzeba",
 					", ".join(world.agents.filter(func(x): return x.activity == "build" and x.position.distance_to(b.position) < 4.0).map(func(x): return world.person_of(x).name))], 17)
 			_build_offers(b)
 		"manor":
@@ -809,7 +852,7 @@ func _build_house_actions(b: SimBuilding) -> void:
 		_info_box.add_child(_button("Kup ten dom (%d zł)" % int(world.house_price(b)), func(): world.buy_house(b.id), 16))
 	if b.id == hh.home_id:
 		_info_box.add_child(_button("Opuść dom (pod gołe niebo)", func(): world.leave_home(), 16))
-		_info_box.add_child(_button("Zleć budowę domu (kliknij miejsce na mapie, Esc — anuluj)", func(): main.placing = "house", 16))
+
 	var tip := _label("Osobę wyprowadzisz albo wyrzucisz: zaznacz ją i PPM na dom.", 14, DIM)
 	tip.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	tip.custom_minimum_size.x = 400
@@ -1009,8 +1052,12 @@ func _text(pos: Vector2, s: String, size: int, col: Color, center := true) -> vo
 
 func _draw_overlay() -> void:
 	var zoom_ok: bool = main.cam_size < 60.0
-	if main.placing == "house":
-		_text(get_viewport().get_mouse_position() + Vector2(0, -24), "Kliknij, gdzie stanie dom (Esc — anuluj)", 17, Color(1, 0.9, 0.5))
+	if main.placing != "":
+		var cfg: Dictionary = world.buildables.get(main.placing, {})
+		var what := String(cfg.get("label", main.placing)).to_lower()
+		var msg := ("Kliknij koniec drogi" if main.placing_from != null else "Kliknij początek drogi") if bool(cfg.get("line", false)) \
+			else "Kliknij, gdzie stanie: %s" % what
+		_text(get_viewport().get_mouse_position() + Vector2(0, -24), msg + " (Esc — anuluj)", 17, Color(1, 0.9, 0.5))
 	# Etykiety budynków z zapasami.
 	for id in world.buildings:
 		var b: SimBuilding = world.buildings[id]

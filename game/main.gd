@@ -17,7 +17,8 @@ var selected_id := -1
 var selected_building := ""
 var hover_id := -1
 
-var placing := ""            # tryb wskazywania miejsca (np. "house" — zlecenie budowy)
+var placing := ""            # tryb wskazywania miejsca: id z katalogu budowy (S29)
+var placing_from: Variant = null   # budowa liniowa (droga): wskazany już początek
 var cam_target := Vector3.ZERO
 var follow_cam := false         # kamera biegnie za zaznaczoną osobą (F)
 var cam_size := 42.0
@@ -291,6 +292,8 @@ func _unhandled_input(event: InputEvent) -> void:
 				hud.toggle_chronicle()
 			KEY_G:
 				hud.toggle_family()
+			KEY_B:
+				hud.toggle_build()
 			KEY_F:
 				follow_cam = not follow_cam and selected_id >= 0
 			KEY_R:
@@ -299,6 +302,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				hud.debug = not hud.debug
 			KEY_ESCAPE:
 				placing = ""
+				placing_from = null
 				follow_cam = false
 				selected_id = -1
 				selected_building = ""
@@ -322,8 +326,13 @@ func _on_left_click(pos: Vector2) -> void:
 	hud._help.visible = false
 	if placing != "":
 		var g := _ground_at(pos)
-		if placing == "house" and world.commission_house(Vector2(g.x, g.z)) != "":
+		var at := Vector2(g.x, g.z)
+		if bool(world.buildables[placing].get("line", false)) and placing_from == null:
+			placing_from = at
+			return
+		if world.commission(placing, placing_from if placing_from != null else at, at if placing_from != null else null) != "":
 			placing = ""
+			placing_from = null
 		return
 	var hit := _agent_under_mouse()
 	if hit >= 0:

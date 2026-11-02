@@ -26,6 +26,7 @@ const CROP_YOUNG := Color(0.38, 0.6, 0.22)
 const CROP_RIPE := Color(0.88, 0.74, 0.3)
 const CROP_MAX_H := 0.9                      # wysokość dojrzałego zboża
 const SHEAF := Color(0.85, 0.7, 0.32)
+const ROAD_PLANNED := Color(0.62, 0.55, 0.4)   # droga wytyczona, jeszcze w budowie
 const SITE_WALL_H := 2.4                    # wysokość ścian gotowego domu na placu budowy
 const MARKET_SQUARE := Vector3(13.0, 0.06, 9.0)
 const AWNINGS := [Color(0.75, 0.2, 0.15), Color(0.2, 0.45, 0.7), Color(0.85, 0.7, 0.2), Color(0.35, 0.6, 0.3), Color(0.6, 0.35, 0.6)]
@@ -43,6 +44,7 @@ var _fields: Dictionary = {}       # field id -> { cells, heap }
 var _stalls: Dictionary = {}       # stall id -> { node, awning, goods, last }
 var _bnodes: Dictionary = {}       # building id -> { node, type } (budynki mogą powstać w trakcie gry, O2)
 var _site_walls: Dictionary = {}   # site id -> MeshInstance3D (ściany rosną z postępem)
+var _roads_drawn := 0              # ile zbudowanych w grze dróg już narysowano
 const SEASON_GRASS := {
 	"spring": Color(0.33, 0.45, 0.22), "summer": Color(0.4, 0.46, 0.21),
 	"autumn": Color(0.47, 0.41, 0.22), "winter": Color(0.84, 0.86, 0.9),
@@ -139,8 +141,18 @@ func _stall(st: SimStall) -> Dictionary:
 	return { "node": s, "awning": aw, "goods": goods, "last": "" }
 
 
-# Nowe place budowy i domy, które z nich wyrosły (O2).
+# Nowe place budowy, domy i drogi, które z nich wyrosły (O2, T0).
 func _refresh_buildings() -> void:
+	for id in _bnodes.keys():
+		var gone: bool = not world.buildings.has(id) or (world.buildings[id].type == "stall" and _bnodes[id]["type"] != "stall")
+		if gone:
+			(_bnodes[id]["node"] as Node3D).queue_free()
+			_bnodes.erase(id)
+			_site_walls.erase(id)
+	while _roads_drawn < world.roads_built.size():
+		var r: Array = world.roads_built[_roads_drawn]
+		_road(r[0], r[1])
+		_roads_drawn += 1
 	for id in world.buildings:
 		var b: SimBuilding = world.buildings[id]
 		if b.type == "stall":
@@ -158,7 +170,7 @@ func _refresh_buildings() -> void:
 		var site: Dictionary = world.sites.get(id, {})
 		if site.is_empty():
 			continue
-		var frac := float(site["work"]) / float(world.site_cfg(site)["work"])
+		var frac := float(site["work"]) / world.site_total(site)
 		var h := maxf(0.01, SITE_WALL_H * frac)
 		var wl: MeshInstance3D = _site_walls[id]
 		wl.scale = Vector3(1, h, 1)
@@ -192,14 +204,17 @@ func _refresh_field(f: SimField) -> void:
 	(d["heap"] as MeshInstance3D).visible = f.heap > 0
 
 
-func _road(a: Vector2, b: Vector2) -> void:
+func _road(a: Vector2, b: Vector2, col: Color = DIRT, parent: Node3D = null) -> MeshInstance3D:
 	var pa := Vector3(a.x, 0, a.y)
 	var pb := Vector3(b.x, 0, b.y)
 	var length := pa.distance_to(pb)
-	var road := Gfx3D.box(Vector3(1.8, 0.04, length + 1.8), DIRT)
+	var road := Gfx3D.box(Vector3(1.8, 0.04, length + 1.8), col)
 	road.position = (pa + pb) * 0.5 + Vector3(0, 0.03, 0)
 	road.rotation.y = atan2(pb.x - pa.x, pb.z - pa.z)
-	add_child(road)
+	if parent != null:
+		road.position -= parent.position
+	(parent if parent != null else self).add_child(road)
+	return road
 
 
 # Kępy trawy, krzaki i kamienie dla tekstury terenu (deterministycznie).
@@ -257,6 +272,10 @@ func _building(b: SimBuilding) -> void:
 	var n := _at(b)
 	_bnodes[b.id] = { "node": n, "type": b.type }
 	match b.type:
+		"site" when world.sites.has(b.id) and bool(world.site_cfg(world.sites[b.id]).get("line", false)):
+			# Droga w budowie: wytyczona linia, jaśniejsza, póki niegotowa.
+			var st: Dictionary = world.sites[b.id]
+			_road(st["from"], st["to"], ROAD_PLANNED, n)
 		"site":
 			# Plac budowy: deski na ziemi, narożne słupy, ściany rosnące z postępem.
 			_add(n, Gfx3D.box(Vector3(5.0, 0.08, 4.0), DIRT), Vector3(0, 0.04, 0))

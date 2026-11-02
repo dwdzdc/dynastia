@@ -81,14 +81,18 @@ func _shoot() -> void:
 	var sid: String = w.commission_house(Vector2(40, 60))
 	if sid != "":
 		var site: Dictionary = w.sites[sid]
-		site["b"].add("plank", int(w.site_cfg(site)["planks"]) / 2)
-		w.build_work(sid, float(w.site_cfg(site)["work"]) * 0.4)
+		site["b"].add("plank", int(w.site_cfg(site)["materials"]["plank"]) / 2)
+		w.build_work(sid, w.site_total(site) * 0.4)
 		game.selected_building = sid
 		game.cam_target = Vector3(40, 0, 58)
 		game.cam_size = 26.0
 		await _frames(20)
 		_save("10_site.png")
 		game.selected_building = ""
+	game.hud.toggle_build()
+	await _frames(15)
+	_save("11_build_menu.png")
+	game.hud.toggle_build()
 	# Noc i zima.
 	game.world.clock.set_time(16, 0.9)
 	await _frames(30)
