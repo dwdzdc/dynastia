@@ -424,7 +424,10 @@
     "pay_wait": 0.04,
     "pay_radius": 3.0,
     "pay_offset": [0.0, 1.8],
-    "unpaid_tolerance": 0.5
+    "unpaid_tolerance": 0.5,
+    "unsupervised_will": 0.75,
+    "oversee_radius": 8.0,
+    "per_overseer": 6
   },
   "fields": {
     "plow_seasons": ["spring"],

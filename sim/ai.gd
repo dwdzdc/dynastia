@@ -28,9 +28,12 @@ func new_day() -> void:
 		# Bez klas (S20): kogo stać, ten nie najmuje się do cudzej roboty — żyje z majątku,
 		# płaci, nadzoruje, bywa. Decyduje skrzynia, nie rola w danych.
 		if not workers.is_empty() and h.cash / float(workers.size()) >= float(cfg["wealthy_cash_per_adult"]):
+			# Jeden pilnuje najętych (L6), jeśli ktoś u nich pracuje; reszta ma wolne.
+			var need := not w.contracts.of_employer(h.id).is_empty()
 			for a: SimAgent in workers:
 				w.contracts.quit(w.person_of(a), "")
-				_assign(a, "none")
+				_assign(a, "overseer" if need else "none")
+				need = false
 			continue
 		# Dorośli bez pary z rodów AI rozglądają się za małżonkiem sami.
 		for pid in h.members:

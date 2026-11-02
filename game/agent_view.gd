@@ -223,6 +223,11 @@ func _animate() -> void:
 					lean = 0.4
 					arm_l = -0.9 + sin(_t * 4.0) * 0.4
 					arm_r = -0.9 - sin(_t * 4.0) * 0.4
+		"oversee":
+			# Ręce za plecami, rozgląda się.
+			arm_l = 0.5
+			arm_r = 0.5
+			lean = -0.05
 		"play":
 			bob = absf(sin(_t * 6.0)) * 0.35
 			arm_l = -2.6

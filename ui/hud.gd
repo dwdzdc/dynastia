@@ -14,7 +14,7 @@ const GOOD := Color(0.55, 0.88, 0.45)
 const WARN := Color(1.0, 0.78, 0.3)
 const BAD := Color(1.0, 0.42, 0.35)
 const ORDER_COLOR := Color(1.0, 0.85, 0.3, 0.85)
-const JOB_ORDER := ["woodcutter", "sawyer", "carpenter", "carrier", "forager", "laborer", "thief", "none"]
+const JOB_ORDER := ["woodcutter", "sawyer", "carpenter", "carrier", "forager", "laborer", "overseer", "thief", "none"]
 const JOB_HINTS := {
 	"woodcutter": "ścina drzewa, nosi kłody do tartaku",
 	"sawyer": "w tartaku tnie kłody na deski",
@@ -22,12 +22,13 @@ const JOB_HINTS := {
 	"carrier": "kupuje jedzenie, nosi opał, wozi deski i krzesła",
 	"forager": "zbiera jedzenie w lesie (za darmo, mało; zimą prawie nic)",
 	"laborer": "robotnik w polu u kogoś: najlepsza oferta, płaca do ręki po robocie",
+	"overseer": "pilnuje najętych przez was ludzi: przy nim się nie migają (kilku na raz)",
 	"thief": "kradnie na targu: szybki grosz, ale złapany idzie do aresztu, grzywna i wstyd",
 	"none": "pomaga w domu: zakupy i opał, gdy trzeba",
 }
 const JOB_BUTTONS := {
 	"woodcutter": "Drwal", "sawyer": "Tracz", "carpenter": "Stolarz", "carrier": "Tragarz",
-	"forager": "Zbieracz", "laborer": "Robotnik", "thief": "Złodziej", "none": "Bez przydziału",
+	"forager": "Zbieracz", "laborer": "Robotnik", "overseer": "Nadzorca", "thief": "Złodziej", "none": "Bez przydziału",
 }
 const PERSON_TABS := [["now", "Teraz"], ["memories", "Wspomnienia"], ["prefs", "Preferencje"], ["traits", "Cechy i charakter"]]
 const MEMORIES_SHORT := 8          # ile wspomnień widać przed „pokaż więcej”

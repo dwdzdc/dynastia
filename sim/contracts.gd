@@ -132,6 +132,32 @@ func accrue(a: SimAgent, s: Dictionary, dt: float) -> void:
 	c["owed"] = float(c["owed"]) + float(c["wage"]) * dt / work_day * float(s.get("will", 1.0))
 
 
+# Nadzór (L6): przy pracowniku stoi nadzorca z gospodarstwa pracodawcy, który nie ma
+# pod okiem więcej ludzi, niż ogarnie (`per_overseer`).
+func supervised(a: SimAgent) -> bool:
+	if a == null:
+		return false
+	var c := of_worker(a.person_id)
+	if c.is_empty():
+		return false
+	var h: SimHousehold = w.households.get(int(c["employer"]))
+	if h == null:
+		return false
+	var r := float(_cfg["oversee_radius"])
+	for pid in h.members:
+		var oa: SimAgent = w.agent_by_id(w.family.persons[pid].agent_id)
+		if oa == null or oa.job != "overseer" or not oa.is_active() or oa.position.distance_to(a.position) > r:
+			continue
+		var near := 0
+		for c2: Dictionary in of_employer(h.id):
+			var wa: SimAgent = w.agent_by_id(w.family.persons[int(c2["worker"])].agent_id)
+			if wa != null and wa.position.distance_to(oa.position) <= r:
+				near += 1
+		if near <= int(_cfg["per_overseer"]):
+			return true
+	return false
+
+
 # Płatnik: dorosły z gospodarstwa pracodawcy, który jest na chodzie (nie pracuje
 # u innych). Najpierw głowa gospodarstwa, potem reszta po kolei.
 func payer(hid: int) -> SimAgent:

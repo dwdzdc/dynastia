@@ -126,7 +126,7 @@ Pętla gry: ród Wilków (6 osób, 3 pokolenia) w chacie pod lasem. Co 5 dni czy
 - [x] L3 Umowy (S15): oferty pracy, wybór AI według stawki, płatnik wręcza wypłatę; koniec `_labor` „w środku dworu” → test: płaca przechodzi z ręki do ręki, za mało płacisz — nikt nie przychodzi, niezapłacony pamięta.
 - [x] L4 Przydział jak w Cultures (S21): zaznaczona osoba + PPM na budynek/las → „przydziel: drwal”; na cudzym miejscu tylko wakat z płacą (umowa S15). Gracz wystawia oferty (ile osób, stawka) do własnego tartaku/pola → test + zrzut.
 - [x] L5 AI bez klas (S20): ród z majątkiem zatrudnia zamiast robić sam, reszta wybiera między ofertami, lasem, warsztatem i straganem → test: w godzinach pracy dorośli AI są poza domem; zero `idle_roles`.
-- [ ] L6 Nadzór: członek rodu przy miejscu pracy jako nadzorca, pracownicy mniej się migają, jeden nadzorca na N ludzi (w danych) → test.
+- [x] L6 Nadzór: członek rodu przy miejscu pracy jako nadzorca, pracownicy mniej się migają, jeden nadzorca na N ludzi (w danych) → test.
 
 ### Faza M — handel
 

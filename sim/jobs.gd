@@ -14,6 +14,7 @@ const JOB_LABELS := {
 	"carrier": "tragarz",
 	"laborer": "robotnik w polu",
 	"forager": "zbieracz (las)",
+	"overseer": "nadzorca (pilnuje najętych)",
 	"thief": "złodziej (targ)",
 }
 
@@ -23,6 +24,8 @@ var recipes: Dictionary          # data/recipes.json (S13): produkcja w budynkac
 var work_acts: Array = ["chop", "forage", "labor"]  # czynności, które są pracą (+ z receptur)
 
 const BASE_WORK_ACTS := ["chop", "forage", "labor"]
+const OVERSEE_OFFSET := Vector2(1.2, 1.2)     # nadzorca staje obok pilnowanego
+const OVERSEE_WAITS := 4.0                    # jak długo stoi przy jednym miejscu
 const PAY_QUEUE_SPREAD := 6                  # ilu ludzi stoi obok siebie po wypłatę
 const FREE_SPOT_RADIUS := Vector2(1.5, 4.0)  # wolne: jak daleko od drzwi domu (min, max)
 const FREE_TIME_WAITS := 3.0                  # wolne trwa tyle „czekań”, potem nowy plan
@@ -412,6 +415,8 @@ func _plan_work(a: SimAgent) -> void:
 				_free_time(a, "nie ma nic do noszenia")
 		"laborer":
 			_plan_laborer(a)
+		"overseer":
+			_plan_oversee(a)
 		"forager":
 			_plan_forage(a)
 		"thief":
@@ -711,6 +716,23 @@ func _plan_payday(a: SimAgent) -> void:
 	_do(a, "hand_out", place)
 
 
+# Nadzorca (L6): chodzi między najętymi ludźmi swojego gospodarstwa i ich pilnuje.
+# Przy nim nikt się nie miga; jeden nadzorca ogarnia kilku ludzi (dane).
+func _plan_oversee(a: SimAgent) -> void:
+	var p := w.person_of(a)
+	var crew: Array = []
+	for c: Dictionary in w.contracts.of_employer(p.household_id):
+		var wa: SimAgent = w.agent_by_id(w.family.persons[int(c["worker"])].agent_id)
+		if wa != null and wa.is_active() and w.jobs.is_work(wa.activity):
+			crew.append(wa)
+	if crew.is_empty():
+		_free_time(a, "nikogo dziś nie trzeba pilnować")
+		return
+	var target: SimAgent = crew[w.rng.next_int(0, crew.size() - 1)]
+	_walk(a, target.position + OVERSEE_OFFSET, "idzie doglądnąć ludzi przy robocie")
+	_act(a, "oversee", float(_cfg["wait_seconds"]) * OVERSEE_WAITS, "pilnuje najętych przy robocie (%d)" % crew.size())
+
+
 # Pracownik po robocie czeka pod miejscem pracy na płatnika.
 func _plan_collect(a: SimAgent) -> void:
 	var c := w.contracts.of_worker(a.person_id)
@@ -783,8 +805,12 @@ func efficiency(a: SimAgent, act: String) -> float:
 # 1.0 = pełna chęć; osoby spoza rodu pracują dla siebie, więc zawsze 1.0.
 func willingness(a: SimAgent, act: String) -> float:
 	var p := w.person_of(a)
+	# Na cudzej robocie bez nadzoru ludzie się migają (L6).
+	var hired := 1.0
+	if p != null and not w.contracts.of_worker(p.id).is_empty() and not w.contracts.supervised(a):
+		hired = float(w.balance["contracts"]["unsupervised_will"])
 	if p == null or w.is_independent(a):
-		return 1.0
+		return hired
 	var cfg: Dictionary = w.balance["will"]
 	var pref := w.bonds.preference(p.id, act)
 	var s := float(w.family.strength.get(p.id, 1.0))
@@ -792,7 +818,7 @@ func willingness(a: SimAgent, act: String) -> float:
 	var e := 1.0
 	e -= clampf(-pref / float(cfg["pref_scale"]), 0.0, 1.0) * float(cfg["pref_penalty"])
 	e -= clampf((below - s) / below, 0.0, 1.0) * float(cfg["weak_penalty"])
-	return maxf(e, float(cfg["min"]))
+	return maxf(e * hired, float(cfg["min"]))
 
 
 # Opisowy powód niechęci: najmocniejsze złe wspomnienie o czynności albo brak serca do rodu.
@@ -801,6 +827,8 @@ func reluctance_reason(a: SimAgent, act: String) -> String:
 	for e in w.bonds.preferences(p.id):
 		if e["act"] == act and float(e["value"]) < 0.0:
 			return "nie znosi tej roboty (%s)" % String(e["from"][0])
+	if not w.contracts.of_worker(p.id).is_empty() and not w.contracts.supervised(w.agent_by_id(p.agent_id)):
+		return "nikt nie pilnuje"
 	return "nie ma serca do roboty dla rodziny"
 
 

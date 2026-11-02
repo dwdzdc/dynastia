@@ -81,6 +81,7 @@ func _run_all() -> void:
 	_test_field_work()
 	_test_assign_by_place()
 	_test_ai_visible_by_day()
+	_test_overseer()
 	_test_world_deterministic()
 	_test_world_30_days_autonomous()
 	_test_economy_chain_produces_income()
@@ -1288,6 +1289,25 @@ func _test_ai_visible_by_day() -> void:
 			if a.inside == a.home_id and a.activity in ["rest", "idle", "wait"]:
 				inside += 1
 	check("AI adults are out in the world during work hours", total > 0 and float(inside) / float(total) < 0.15)
+
+
+# L6: najęty bez nadzoru się miga; nadzorca z gospodarstwa pracodawcy obok to zmienia,
+# ale ma ograniczoną liczbę ludzi pod okiem.
+func _test_overseer() -> void:
+	var w = _new_world()
+	var est = w.estate_owner()
+	var o: Dictionary = w.contracts.find_offer(est.id, "manor", "laborer")
+	var piotr = _named(w.family, "Piotr")
+	var a = w.agent_by_id(piotr.agent_id)
+	w.contracts.hire(o, piotr)
+	var lazy: float = w.jobs.willingness(a, "labor")
+	check("unsupervised hired hand works less willingly", lazy < 1.0 and not w.contracts.supervised(a))
+	var boss = w.agent_by_id(w.family.persons[est.members[0]].agent_id)
+	boss.job = "overseer"
+	boss.position = a.position + Vector2(1, 0)
+	check("overseer nearby: no shirking", w.jobs.willingness(a, "labor") > lazy and w.contracts.supervised(a))
+	boss.position = a.position + Vector2(50, 0)
+	check("overseer far away does not help", not w.contracts.supervised(a))
 
 
 func _state_sig(w) -> String:
