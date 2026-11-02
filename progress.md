@@ -219,7 +219,7 @@ Pętla gry: ród Wilków (6 osób, 3 pokolenia) w chacie pod lasem. Co 5 dni czy
 - [x] X4 Miasta rosną i maleją (S31) → test.
 - [x] X5 Wyjście z bezdomności (S32): szałas, wynajem, budowa → test.
 - [x] X6 AI buduje dom i warsztat, gdy się opłaca (S33) → test.
-- [ ] X7 Monety z procesu (S34): mennica/kopalnia w mieście, podatek → test źródeł.
+- [x] X7 Monety z procesu (S34): mennica/kopalnia w mieście, podatek → test źródeł.
 - [ ] X8 Sonda 200 dób: ludność w paśmie, rody powstają i upadają, AI buduje, miasta się zmieniają.
 
 ## Iteracja 2 — społeczeństwo (wstrzymana w połowie)

@@ -38,6 +38,8 @@ var sites: Dictionary = {}       # plac budowy (O2): id -> { b, kind, lineage, h
 var buildables: Dictionary       # katalog budowy (S29): data/buildables.json
 var needs: SimNeeds              # potrzeby gospodarstw (S23): data/needs.json
 var roads_built: Array = []      # drogi zbudowane w grze: [od, do] (Vector2)
+var money_minted := 0.0          # księga monet (S34): wybite w mennicach
+var money_taxed := 0.0           # ... i wywiezione jako podatek do króla
 var enterprises: Dictionary = {} # przedsięwzięcia (S24, T1): id budynku -> { b, type, owner (gosp.) }
 var _next_site := 1
 var agents: Array = []           # SimAgent (także zmarli — status "dead")
@@ -282,6 +284,21 @@ func pay_stumpage(a: SimAgent, logs: int) -> void:
 	if owner == null or owner == h or logs <= 0:
 		return
 	h.pay_or_debt(float(balance["economy"]["stumpage_per_log"]) * logs, "home:" + owner.home_id)
+
+
+# Podatek do króla (S34): co kilka dób urząd odsyła część kasy poza okolicę — jedyny
+# proces, którym monety ze świata ubywają.
+func _king_tax(day: int) -> void:
+	var eco: Dictionary = balance["economy"]
+	if day <= 0 or day % int(eco["king_tax_every_days"]) != 0:
+		return
+	var auth := authority()
+	if auth == null or auth.cash <= 0.0:
+		return
+	var t := auth.cash * float(eco["king_tax_share"])
+	auth.pay(t)
+	money_taxed += t
+	note("Poborca zabiera podatek dla króla: %d zł z kasy urzędu." % int(t), "info", null)
 
 
 # Wszystkie pieniądze świata: skrzynie, sakwy (także osób w drodze) i kasy miast okolicy.
@@ -1373,6 +1390,7 @@ func _new_day() -> void:
 	contracts.settle_day()
 	together.end_day()
 	traders.new_day()
+	_king_tax(day)
 	standing.new_day()
 	migration.new_day()
 	ai.new_day()

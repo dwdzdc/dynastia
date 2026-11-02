@@ -31,10 +31,12 @@ func _init(spec: Dictionary, refs: Dictionary, cfg: Dictionary) -> void:
 		stock[g] = int(t["start_stock"][g])
 	_produce = t.get("produce", {})
 	_consume = t.get("consume_per_person", {})
+	mint_per_day = float(t.get("mint_per_day", 0.0))
 
 
 var _produce: Dictionary
 var _consume: Dictionary
+var mint_per_day := 0.0           # nowe monety z kopalni i mennicy (S34): jedyne źródło monet
 
 
 func amount(g: String) -> int:
@@ -60,8 +62,10 @@ func buffer(g: String) -> float:
 	return daily_need(g) * float(_cfg["buffer_days"])
 
 
-# Doba w mieście: wytwarza swoje, zużywa, co ma; braki zapamiętuje.
-func new_day() -> void:
+# Doba w mieście: wytwarza swoje, zużywa, co ma; braki zapamiętuje. Mennica bije
+# monety (zwraca ile — do księgi świata, S34).
+func new_day() -> float:
+	cash += mint_per_day
 	for g in _produce:
 		_acc["p:" + g] = float(_acc.get("p:" + g, 0.0)) + float(_produce[g])
 		var n := int(floor(float(_acc["p:" + g])))
@@ -72,6 +76,7 @@ func new_day() -> void:
 		var want := int(floor(float(_acc["c:" + g])))
 		_acc["c:" + g] = float(_acc["c:" + g]) - want
 		shortage[g] = want - take(g, want)
+	return mint_per_day
 
 
 # Cena w mieście: im mniej względem zapasu, którego potrzebuje, tym drożej.

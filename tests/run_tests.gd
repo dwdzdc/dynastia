@@ -1513,8 +1513,9 @@ func _test_money_invariant() -> void:
 	var worst := 0.0
 	for d in 6:
 		_run_days_auto(w, 1.0)
-		worst = maxf(worst, absf(w.money_total() - m0))
-	check("money of the world is constant (closed economy)", worst < 0.01)
+		worst = maxf(worst, absf(w.money_total() - (m0 + w.money_minted - w.money_taxed)))
+	check("every change in the world's money has a source (mint, king's tax)", worst < 0.01)
+	check("the mint and the tax actually ran", w.money_minted > 0.0 and w.money_taxed > 0.0)
 
 
 # R2 (S23): potrzeby w warstwach — bogaty ród chce więcej rzeczy niż biedny.

@@ -81,7 +81,9 @@
           "tools": 20,
           "cloth": 20,
           "plank": 10
-        }
+        },
+        "mint_per_day": 15.0,
+        "mint_name": "kopalnia srebra i mennica"
       }
     }
   ],

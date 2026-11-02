@@ -33,7 +33,7 @@ func town_cash_total() -> float:
 
 func new_day() -> void:
 	for t: SimTown in towns.values():
-		t.new_day()
+		w.money_minted += t.new_day()
 
 
 func tick() -> void:
