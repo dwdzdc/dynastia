@@ -1,0 +1,11 @@
+progress.md
+  ai_agent 166-199,257
+CLAUDE.md
+  ai_agent 18
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "f1054dd51395b5d7bff0162a10ac9796d0f1ff4b",
+  "prompts": {}
+}
