@@ -163,7 +163,7 @@ Pętla gry: ród Wilków (6 osób, 3 pokolenia) w chacie pod lasem. Co 5 dni czy
   - Sonda: `godot --headless -s res://tools/probe_village.gd -- <dni> <seed>`. Stan (seed 1, 30 dób, 02.11.2026): ludzie 22 → 23, pieniądze w okolicy 1123 → 1626 zł (nie wyciekają), dorośli zamknięci w domu w godzinach pracy 1,1%, Wilkowie na autopilocie 70 → 316 zł.
   - **Otwarte (do decyzji z autorem):** biedne rody AI (Kos, Sowa, Nowak) od pierwszych dób mają dług za czynsz i około 20. doby lądują pod gołym niebem; pieniądze zbierają się u dworu (czynsz + sprzedaż jedzenia), a praca w polu jest sezonowa. Kandydaci: praca zimą (młocka, opał dla dworu), ogródki przy chatach, czynsz w naturze albo odrabiany, dwór wydający nadwyżki (budowy, służba).
 
-## Iteracja 3 — gospodarka bez gracza (BIEŻĄCA)
+## Iteracja 3 — gospodarka bez gracza (zrobiona; W nie spełnione → 3b)
 
 Źródło: `docs/design/vision.md` (Port Royale i X4: zamknięty system, gracz opcjonalny, wiele dróg sukcesu). Plan zatwierdzony przez autora 02.11.2026, kolejność według Claude'a. Dawna „Iteracja 3 — codzienność i ciało” przesuwa się dalej.
 
@@ -198,6 +198,29 @@ Pętla gry: ród Wilków (6 osób, 3 pokolenia) w chacie pod lasem. Co 5 dni czy
 - [ ] W Sonda „świat bez gracza”: 100 dób → ktoś awansuje, ktoś bankrutuje, brak masowego głodu, pieniądze krążą.
   - Wynik (seed 1, 02.11.2026, `tools/probe_village.gd -- 100 1`): ród gracza bez decyzji wygasa w 59. dobie (koniec sondy). Do tego czasu ludzi 22 → 9 (6 narodzin, 21 śmierci, około 23 lat życia), Wilkowie awansowali na „mistrzów i kupców” (6. doba), Nowakowie podupadli i sprzedali karczmę Bednarzom (18. doba), sołectwo przeszło na Bednarzy, pieniędzy we wsi przybyło (994 → 1957 zł), żadnej budowy AI.
   - **Otwarte:** (1) demografia — za mało ślubów i dzieci względem śmierci ze starości, biedne rody bez dachu się nie rozmnażają; (2) biedne rody AI dalej bez domu (problem z Q2); (3) AI nie zbudowało niczego (progi `found_cash` i braku towaru za wysokie albo nikt nie spełnia warunku).
+
+## Iteracja 3b — świat, który trwa (BIEŻĄCA)
+
+Źródło: `docs/design/vision.md` (świat nie zależy od gracza). Sonda W pokazała, że wieś bez decyzji gracza wymiera.
+
+### Decyzje szkieletowe
+
+- **S30. Kryterium: świat bez gracza.** Sonda startuje z rodem gracza jako jednym robotnikiem i symuluje 200 dób także po jego śmierci (game over gracza nie zatrzymuje świata w sondzie). Wieś i miasta mają żyć same.
+- **S31. Ludzie przychodzą i odchodzą:** osadnicy z miast zakładają nowe rody, gdy we wsi jest praca, dom albo działka; biedni i młodzi bez perspektyw odchodzą do miast; miasta rosną przy dobrobycie, maleją przy głodzie.
+- **S32. Śluby nie tylko z romansu:** swatanie i małżeństwa z rozsądku, gdy wolny dorosły długo nie ma pary; odbudowa po bezdomności (szałas, wynajem, budowa).
+- **S33. AI buduje:** dom, gdy ciasno; warsztat, gdy się opłaca (progi „opłaca się”, nie „stać mnie”).
+- **S34. Pieniądze:** nowe monety tylko z procesu (kopalnia/mennica w mieście), ubytek przez proces (podatek do króla); test: każda zmiana sumy ma źródło.
+
+### Punkty
+
+- [ ] X1 Sonda „świat bez gracza” (S30): ród gracza jako jeden robotnik, świat trwa po game over → pomiar przyczyn wymierania.
+- [ ] X2 Śluby z rozsądku i swatanie (S32) → test: wolny dorosły bez romansu żeni się po czasie.
+- [ ] X3 Osadnicy i odpływ (S31) → test: praca i wolny dom przyciągają nowy ród; bieda wypycha do miasta.
+- [ ] X4 Miasta rosną i maleją (S31) → test.
+- [ ] X5 Wyjście z bezdomności (S32): szałas, wynajem, budowa → test.
+- [ ] X6 AI buduje dom i warsztat, gdy się opłaca (S33) → test.
+- [ ] X7 Monety z procesu (S34): mennica/kopalnia w mieście, podatek → test źródeł.
+- [ ] X8 Sonda 200 dób: ludność w paśmie, rody powstają i upadają, AI buduje, miasta się zmieniają.
 
 ## Iteracja 2 — społeczeństwo (wstrzymana w połowie)
 
