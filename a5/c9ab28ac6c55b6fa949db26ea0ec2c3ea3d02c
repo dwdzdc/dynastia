@@ -1,0 +1,39 @@
+data/balance.json
+  s_01663f7cfcc9df::t_fc339680227df2 209-213,215-217,240-244
+ui/hud.gd
+  s_01663f7cfcc9df::t_4cbd96c7ebbb20 599-600,602,606-607,649-663
+  s_01663f7cfcc9df::t_98fdb4d970419a 174-176,180-185
+  s_01663f7cfcc9df::t_985833c21b9438 609-612
+tests/run_tests.gd
+  s_01663f7cfcc9df::t_b3d9d0241eefe3 814
+  s_01663f7cfcc9df::t_d58c926ffa41ed 68,783-813,815-816,867
+sim/building.gd
+  s_01663f7cfcc9df::t_fc339680227df2 2-3,15-18
+sim/jobs.gd
+  s_01663f7cfcc9df::t_5b74b097d0c3eb 77-80,175-227,512,625-628,735-741
+  s_01663f7cfcc9df::t_d58c926ffa41ed 385,394-397
+  s_01663f7cfcc9df::t_b3d9d0241eefe3 531-532,556-557
+sim/household.gd
+  s_01663f7cfcc9df::t_fc339680227df2 14,16,36,40,120-121,129-138
+progress.md
+  ai_agent 122
+sim/world.gd
+  s_01663f7cfcc9df::t_5b74b097d0c3eb 646-653
+  s_01663f7cfcc9df::t_fc339680227df2 55,63,65-66,79-80,110,112,115-116,668,670-673,698-773,797
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "a5c9ab28ac6c55b6fa949db26ea0ec2c3ea3d02c",
+  "prompts": {},
+  "sessions": {
+    "s_01663f7cfcc9df": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0628b2b4-7b30-464d-a1f4-7ea1e2566c94",
+        "model": "unknown"
+      },
+      "human_author": "Dawid Dziedzic <24682682+dwdzdc@users.noreply.github.com>"
+    }
+  }
+}
