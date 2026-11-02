@@ -15,6 +15,7 @@ var with_seconds: Dictionary = {}   # "osoba|czynność|kto" -> sekundy przy czy
 
 var _cfg: Dictionary
 var _ctx_of: Dictionary = {}    # czynność -> kontekst
+var _acc := 0.0                 # czas od ostatniej próbki
 
 
 func _init(world: SimWorld, cfg: Dictionary) -> void:
@@ -29,20 +30,38 @@ func _is_work(act: String) -> bool:
 	return w.jobs.is_work(act)
 
 
+# Próbka co `sample_every` sekund (nie co krok symulacji); ludzie grupowani po
+# kontekście i budynku, więc pary sprawdzane są tylko w obrębie grupy.
 func sample(dt: float) -> void:
-	var here: Array = []
+	_acc += dt
+	if _acc < float(_cfg["sample_every"]):
+		return
+	dt = _acc
+	_acc = 0.0
+	var groups := {}   # "kontekst|budynek" -> [agenci]
+	var focus := {}    # osoba -> czynność, przy której spędza ten moment
 	for a: SimAgent in w.agents:
-		if a.status == "active" and a.person_id >= 0 and _ctx_of.has(a.activity):
-			here.append(a)
-	var focus := {}   # osoba -> czynność, przy której spędza ten moment
-	for a: SimAgent in here:
+		if a.status != "active" or a.person_id < 0 or not _ctx_of.has(a.activity):
+			continue
+		var gk := "%s|%s" % [_ctx_of[a.activity], a.inside]
+		if not groups.has(gk):
+			groups[gk] = []
+		groups[gk].append(a)
 		if _is_work(a.activity):
 			focus[a.person_id] = a.activity
+	for gk in groups:
+		_sample_group(groups[gk], focus, dt)
+	for pid in focus:
+		var k := "%d|%s" % [pid, focus[pid]]
+		act_seconds[k] = float(act_seconds.get(k, 0.0)) + dt
+
+
+func _sample_group(here: Array, focus: Dictionary, dt: float) -> void:
 	for i in here.size():
 		var a: SimAgent = here[i]
 		for j in range(i + 1, here.size()):
 			var b: SimAgent = here[j]
-			if not _near(a, b):
+			if a.inside == "" and a.position.distance_to(b.position) > float(_cfg["radius"]):
 				continue
 			var ctx: String = _ctx_of[a.activity]
 			var lo := mini(a.person_id, b.person_id)
@@ -52,15 +71,6 @@ func sample(dt: float) -> void:
 			if ctx == "work":
 				_with(a, b, focus, dt)
 				_with(b, a, focus, dt)
-	for pid in focus:
-		var k := "%d|%s" % [pid, focus[pid]]
-		act_seconds[k] = float(act_seconds.get(k, 0.0)) + dt
-
-
-func _near(a: SimAgent, b: SimAgent) -> bool:
-	if _ctx_of[a.activity] != _ctx_of[b.activity] or a.inside != b.inside:
-		return false
-	return a.inside != "" or a.position.distance_to(b.position) <= float(_cfg["radius"])
 
 
 # `a` jest przy pracy `b`: zapamiętuje, z kim był przy tej czynności. Kto tylko patrzy,

@@ -158,11 +158,14 @@ func preferences(pid: int) -> Array:
 	return out
 
 
+# Sama liczba (bez tekstów skąd) — tania, do decyzji w planowaniu.
 func preference(pid: int, act_name: String) -> float:
-	for e in preferences(pid):
-		if e["act"] == act_name:
-			return float(e["value"])
-	return 0.0
+	var v := value(pid, SimBonds.act(act_name))
+	var p: SimPerson = w.family.persons.get(pid)
+	if p != null:
+		for c in p.character:
+			v += float(w.memories["character_prefs"].get(c, {}).get(act_name, 0.0))
+	return v
 
 
 # Cele, do których `from` ma jakąkolwiek więź (z prefiksem, np. „p:” albo „act:”).

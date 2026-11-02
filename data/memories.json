@@ -26,6 +26,7 @@
   "on_wedding": {"spouses": ["wedding", "married"]},
   "together": {
     "radius": 3.0,
+    "sample_every": 1.0,
     "min_seconds": 20.0,
     "full_seconds": 150.0,
     "activity": {"min_seconds": 20.0, "full_seconds": 200.0, "liked_threshold": 20.0},

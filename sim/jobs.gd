@@ -299,8 +299,12 @@ func aloof_today(a: SimAgent) -> bool:
 	if s >= below:
 		return false
 	var intensity := clampf((below - s) / (below - float(cfg["leave_below"])), 0.0, 1.0)
-	var roll := SimRng.new(SimRng.hash3(int(w.balance["world_seed"]), p.id * 100000 + w.clock.day_index(), "aloof")).next_float()
-	return roll < intensity
+	# Rzut stały przez całą dobę: liczony raz i trzymany przy osobie.
+	var day := w.clock.day_index()
+	if int(p.get_meta("aloof_day", -1)) != day:
+		p.set_meta("aloof_day", day)
+		p.set_meta("aloof_roll", SimRng.new(SimRng.hash3(int(w.balance["world_seed"]), p.id * 100000 + day, "aloof")).next_float())
+	return float(p.get_meta("aloof_roll")) < intensity
 
 
 func _plan_aloof(a: SimAgent) -> void:
