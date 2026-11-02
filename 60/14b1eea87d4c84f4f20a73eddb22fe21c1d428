@@ -1,0 +1,22 @@
+ui/hud.gd
+  s_bb6b65b605000f::t_6a7842c56a85f6 417,420-432
+  s_bb6b65b605000f::t_39c16e3c657148 39
+progress.md
+  ai_agent 161
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "6014b1eea87d4c84f4f20a73eddb22fe21c1d428",
+  "prompts": {},
+  "sessions": {
+    "s_bb6b65b605000f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "8bc32a82-6b1e-41ef-8272-8f242d268239",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Dawid Dziedzic <24682682+dwdzdc@users.noreply.github.com>"
+    }
+  }
+}
