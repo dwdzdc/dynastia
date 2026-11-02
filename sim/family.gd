@@ -13,7 +13,7 @@ var player_lineage_id: int = -1
 var dynasty: String
 var game_over: bool = false
 var generation_of: Dictionary = {}  # person id -> pokolenie (0 = założyciele)
-var strength: Dictionary = {}   # id osoby -> siła przynależności do rodu gracza (raz na dobę)
+var strength: Dictionary = {}   # id osoby -> siła przynależności do własnego rodu (raz na dobę)
 
 var _people: Dictionary
 var _fam: Dictionary
@@ -138,8 +138,15 @@ func _new_id() -> int:
 	return id
 
 
+# Siła liczona per ród od jego roota (S12); wynik scalony w jeden słownik osób.
 func update_strength() -> void:
-	strength = SimBelonging.compute(self, w.bonds, player_lineage(), w.balance["belonging"])
+	strength = {}
+	for l: SimLineage in lineages.values():
+		if l.root_id < 0:
+			continue
+		var s := SimBelonging.compute(self, w.bonds, l, w.balance["belonging"])
+		for id in s:
+			strength[id] = s[id]
 
 
 func new_lineage(lname: String, surname: String = "") -> SimLineage:
@@ -360,9 +367,13 @@ func new_day() -> void:
 # zakłada własny ród jednoosobowy i wyprowadza się. Root nie odchodzi, dzieci też nie.
 func _check_departures() -> void:
 	var cfg: Dictionary = w.balance["belonging"]
-	for p in living():
+	for p in all_living():
+		var pl := lineage_of(p)
+		if pl == null or p.id == pl.root_id:
+			p.weak_days = 0
+			continue
 		var a: SimAgent = w.agent_by_id(p.agent_id)
-		if p.id == root_id or a == null or a.status != "active" or not stage_of(p) in cfg["leave_stages"]:
+		if a == null or a.status != "active" or not stage_of(p) in cfg["leave_stages"]:
 			p.weak_days = 0
 			continue
 		if float(strength.get(p.id, 1.0)) < float(cfg["leave_below"]):
@@ -400,9 +411,10 @@ func depart(p: SimPerson) -> void:
 	w.jobs.replan(a)
 	var pamieta := "niewiele wspólnego z bliskimi" if why.is_empty() else "; ".join(why)
 	var text := "%s odchodzi z rodu %s i wyprowadza się (%s). Pamięta: %s." % [
-		p.name, old.name, w.home_of(a).name, pamieta]
+		p.name, old.name, w.home_of(a).name if w.home_of(a) != null else "bez domu", pamieta]
 	w.chronicle.add(w.clock.now(), "departure", text, [p.id], old.id)
-	w.note("%s wyprowadza się z chaty." % p.name, "warn", a.position)
+	if old.id == player_lineage_id:
+		w.note("%s wyprowadza się z chaty." % p.name, "warn", a.position)
 
 
 func _on_stage_change(p: SimPerson, st: String) -> void:

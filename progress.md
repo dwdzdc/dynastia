@@ -127,7 +127,7 @@ Cel: rodzina przestaje być oderwana od świata. Inne rody żyją z tych samych 
 - [x] G1 Rody startowe w danych (3–4 rody, domy zamiast dekoracji, członkowie, kasa) → wszyscy na mapie z domami → test wczytania i przypisań.
 - [x] G2 Decyzje AI: wybór pracy według potrzeb i dostępnych miejsc, zakupy jedzenia i opału z własnej kasy, ślub i dzieci tymi samymi regułami → test: 30 dób bez zakleszczeń, każdy agent ma powód, rody AI nie głodują przy normalnych warunkach.
 - [x] G3 Obcy odróżnieni w świecie (barwy rodu, oznaczenie przy imieniu), panel osoby z innego rodu bez poleceń → zrzut ekranu.
-- [ ] G4 Więzi między rodami (S12): wspólny czas i wspomnienia działają między rodami, siła przynależności liczona per ród od jego roota → test: sąsiedzi pracujący razem się lubią, nie zmienia to ich rodu.
+- [x] G4 Więzi między rodami (S12): wspólny czas i wspomnienia działają między rodami, siła przynależności liczona per ród od jego roota → test: sąsiedzi pracujący razem się lubią, nie zmienia to ich rodu.
 - [ ] G5 Małżeństwo z istniejącymi ludźmi (S11): kandydaci to wolni dorośli z innych rodów według więzi, kto się przenosi do kogo z danych, AI żeni się też między sobą; koniec materializacji kandydata → test: ślub łączy dwie istniejące osoby, bez kandydatów nie ma ślubu.
 
 ### Faza H — gospodarka

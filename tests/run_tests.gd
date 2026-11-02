@@ -69,6 +69,7 @@ func _run_all() -> void:
 	_test_recipe_from_data()
 	_test_society_from_data()
 	_test_ai_households_live()
+	_test_bonds_across_lineages()
 	_test_world_deterministic()
 	_test_world_30_days_autonomous()
 	_test_economy_chain_produces_income()
@@ -888,6 +889,32 @@ func _test_ai_households_live() -> void:
 	check("AI families are not starving", fed)
 	check("AI adults are assigned work by the AI", worked)
 	check("AI households spend their own money", bought)
+
+
+func _test_bonds_across_lineages() -> void:
+	var w = _new_world()
+	var f = w.family
+	var piotr = _named(f, "Piotr")
+	var jagna = null
+	for p in f.all_living():
+		if p.name == "Jagna":
+			jagna = p
+	var ap = w.agent_by_id(piotr.agent_id)
+	var aj = w.agent_by_id(jagna.agent_id)
+	for a in w.agents:
+		a.activity = "idle"
+	ap.activity = "saw"
+	ap.inside = "sawmill"
+	aj.activity = "saw"
+	aj.inside = "sawmill"
+	for i in 200:
+		w.together.sample(1.0)
+	w.together.end_day()
+	check("neighbours working together build a bond", w.bonds.value(piotr.id, SimBonds.person(jagna.id)) > 0.0 and w.bonds.value(jagna.id, SimBonds.person(piotr.id)) > 0.0)
+	f.update_strength()
+	var kos = f.lineage_of(jagna)
+	check("friendship does not change lineage", piotr.lineage_id == f.player_lineage_id and jagna.lineage_id == kos.id)
+	check("strength computed per lineage from its own root", is_equal_approx(float(f.strength[kos.root_id]), 1.0) and float(f.strength[jagna.id]) > 0.0 and is_equal_approx(float(f.strength[f.root_id]), 1.0))
 
 
 func _state_sig(w) -> String:
