@@ -21,6 +21,7 @@ func new_day() -> void:
 	set_prices()
 	found_enterprises()
 	_merchant_trips()
+	_sell_when_broke()
 	for h: SimHousehold in w.households.values():
 		if h == w.household or h.members.is_empty():
 			continue
@@ -172,6 +173,44 @@ func _surplus(h: SimHousehold, g: String) -> float:
 		if cap > 0.0:
 			best = maxf(best, clampf(float(st.stock.amount(g)) / cap, 0.0, 1.0))
 	return best
+
+
+# Upadek (V3): ród AI, któremu dług przerósł kredyt, sprzedaje majątek (warsztat albo
+# dom, w którym nie mieszka, a w ostateczności ten, w którym mieszka) temu, kogo stać.
+func _sell_when_broke() -> void:
+	var mult := float(w.balance["ai"]["fire_sale_mult"])
+	for h: SimHousehold in w.households.values():
+		if h == w.household or h.members.is_empty() or h.debt <= h.debt_limit:
+			continue
+		var lid: int = w.family.persons[h.members[0]].lineage_id
+		var bv: Dictionary = w.standing._cfg["building_value"]
+		var asset: SimBuilding = null
+		for b: SimBuilding in w.buildings.values():
+			if b.owner_kind == "lineage" and b.owner_id == lid and b.id != h.home_id and float(bv.get(b.type, bv["default"])) > 0.0 \
+					and not w.trade.stalls.has(b.id):
+				asset = b
+				break
+		if asset == null:
+			continue
+		var price: float = float(bv.get(asset.type, bv["default"])) * mult
+		var buyer: SimHousehold = null
+		for o: SimHousehold in w.households.values():
+			if o == h or o.members.is_empty() or o.home_id == "" or o.cash < price:
+				continue
+			if buyer == null or o.cash > buyer.cash:
+				buyer = o
+		if buyer == null:
+			continue
+		buyer.pay(price)
+		h.earn(price)
+		asset.owner_id = w.family.persons[buyer.members[0]].lineage_id
+		if w.enterprises.has(asset.id):
+			w.enterprises[asset.id]["owner"] = buyer.id
+		var sl: SimLineage = w.family.lineages[lid]
+		var bl: SimLineage = w.family.lineages[asset.owner_id]
+		var text := "Ród %s, zadłużony, sprzedaje %s rodowi %s za %d zł." % [sl.name, asset.name, bl.name, int(price)]
+		w.chronicle.add(w.clock.now(), "sale", text, [], lid)
+		w.note(text, "info", asset.door())
 
 
 # Kupiec AI jeździ do miasta (U3), gdy ma na półce coś, czego miastu brakuje, a tam

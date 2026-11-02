@@ -97,6 +97,7 @@ func _run_all() -> void:
 	_test_towns()
 	_test_trip_to_town()
 	_test_standing()
+	_test_ai_falls()
 	_test_theft_process()
 	_test_world_deterministic()
 	_test_world_30_days_autonomous()
@@ -1760,6 +1761,23 @@ func _test_standing() -> void:
 	check("wealth lifts the lineage up the ranks", w.standing.rank(wilk) > r0)
 	w.standing.new_day()
 	check("a higher rank gives more credit", w.household.debt_limit >= float(w.standing._cfg["ranks"][r0]["credit"]))
+
+
+# V3: ród AI upada tym samym mechanizmem — dług ponad kredyt zmusza do sprzedaży
+# majątku temu, kogo stać; pieniądze idą do wierzycieli.
+func _test_ai_falls() -> void:
+	var w = _new_world()
+	var bed = w.household_at("t1")
+	var lid: int = w.family.persons[bed.members[0]].lineage_id
+	var t2 = w.building("t2")
+	check("merchant lineage owns a spare house", t2.owner_kind == "lineage" and t2.owner_id == lid)
+	bed.cash = 0.0
+	bed.owe("authority", 999.0)
+	var rich = w.estate_owner()
+	rich.cash = 1000.0
+	w.ai._sell_when_broke()
+	check("a broke lineage sells an asset to someone who can pay", t2.owner_id != lid or w.building("t3").owner_id != lid)
+	check("the sale pays down the debt", bed.debt < 999.0)
 
 
 func _test_theft_process() -> void:

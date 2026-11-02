@@ -194,7 +194,7 @@ Pętla gry: ród Wilków (6 osób, 3 pokolenia) w chacie pod lasem. Co 5 dni czy
 - [x] U3 Wyjazd z wioski do miasta (kupiec znika za krawędzią, wraca z towarem, ryzyko), także dla gracza.
 - [x] V1 Pozycja widoczna opisowo (co mówią o rodzie i dlaczego) → zrzut.
 - [x] V2 Szczeble i co dają (kredyt, dzierżawa, śluby wyżej, urząd) → test.
-- [ ] V3 Rody AI awansują i bankrutują tym samym mechanizmem → sonda.
+- [x] V3 Rody AI awansują i bankrutują tym samym mechanizmem → sonda.
 - [ ] W Sonda „świat bez gracza”: 100 dób → ktoś awansuje, ktoś bankrutuje, brak masowego głodu, pieniądze krążą.
 
 ## Iteracja 2 — społeczeństwo (wstrzymana w połowie)
