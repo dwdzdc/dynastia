@@ -6,6 +6,8 @@ Najwyższe źródło prawdy o tym, czym ta gra jest. Kolejność pierwszeństwa:
 
 Autor jako dziecko grał w Cultures (8th Wonder of the World) i lubił wybrać jedną rodzinę w osadzie i śledzić jej losy. Było to trudne, bo w Cultures dorosły człowiek nie miał żadnego związku ze swoją rodziną. Dynastia ma drapać dokładnie to miejsce: **survival rodziny w społeczeństwie**. Blisko, ale nie w punkt, były Simsy, Bannerlord, RimWorld i klony Dwarf Fortress.
 
+**Wzór dla społeczeństwa: Port Royale i X4: Foundations.** Świat jest większy niż gracz i działa bez niego: ludzie i rody produkują, konsumują, handlują i budują z własnych potrzeb, a ceny i popyt biorą się z tego, co się w nim faktycznie dzieje. Gracz jest jedną z wielu części tego społeczeństwa, a nie jego osią. Wniosek dla projektu: każde źródło pieniędzy i popytu ma mieć w świecie konkretnego konsumenta albo producenta (żadnego „kupca z nieskończoną kasą”), a gospodarka bez gracza ma żyć sama.
+
 ## O czym jest ta gra (słowa autora)
 
 To gra o rodzinie próbującej utrzymać się i wyjść wyżej w świecie, który jej nic nie jest winien. Nie o bohaterze, nie o państwie, nie o frakcji. O kilku konkretnych ludziach, którzy się znają, kochają, wkurzają i od siebie zależą, i o tym, co z nimi robi czas.
