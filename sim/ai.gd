@@ -77,26 +77,61 @@ func new_day() -> void:
 				_assign(a, "none" if winter else "forager")
 
 
-# Granice cen rodów AI (M3): zwykły dom sprzedaje taniej, niż kupuje, a w głodzie
-# zapłaci więcej za jedzenie; ród ze straganem, który skupuje (kupiec), kupuje tanio
-# i sprzedaje drogo — z tej różnicy żyje.
+# Granice cen rodów AI (M3, R4): z zapasu i potrzeb. Czego brakuje — za to zapłacą
+# więcej; czego mają za dużo — sprzedadzą taniej. Ród ze straganem, który skupuje
+# (kupiec), kupuje tanio i sprzedaje drogo, a przy pustej półce podnosi cenę.
 func set_prices() -> void:
 	var tc: Dictionary = w.balance["trade"]
-	var cfg: Dictionary = w.balance["ai"]
 	for h: SimHousehold in w.households.values():
 		if h == w.household or h.members.is_empty() or h.home_id == "":
 			continue
-		var merchant := w.trade.stalls_of(h.id).any(func(x): return not x.temporary and not x.buys.is_empty())
+		var own: Array = w.trade.stalls_of(h.id).filter(func(x): return not x.temporary)
+		var merchant: bool = own.any(func(x): return not x.buys.is_empty())
 		var home: SimBuilding = w.buildings.get(h.home_id)
-		var hungry := home != null and home.amount("food") < int(cfg["forage_when_food_below"])
 		for g in tc["ref"]:
 			var r := w.trade.ref(g)
 			if merchant:
-				w.trade.set_limit(h, g, "sell_min", r * float(tc["stall_sell_min"]))
-				w.trade.set_limit(h, g, "buy_max", r * float(tc["stall_buy_max"]))
-			else:
-				w.trade.set_limit(h, g, "sell_min", r * float(tc["ai_sell_min"]))
-				w.trade.set_limit(h, g, "buy_max", r * float(tc["ai_buy_max_hungry" if hungry and g == "food" else "ai_buy_max"]))
+				var st: SimStall = own[0]
+				var target := maxf(1.0, float(tc["restock_target"].get(g, 1)))
+				var scarce := clampf(1.0 - float(st.stock.amount(g)) / target, -1.0, 1.0)
+				w.trade.set_limit(h, g, "sell_min", r * float(tc["stall_sell_min"]) * (1.0 + float(tc["scarcity_price"]) * scarce))
+				w.trade.set_limit(h, g, "buy_max", r * float(tc["stall_buy_max"]) * (1.0 + float(tc["scarcity_price"]) * scarce))
+				continue
+			var shortage := _shortage(h, home, g)
+			var surplus := _surplus(h, g)
+			w.trade.set_limit(h, g, "buy_max", r * float(tc["ai_buy_max"]) * (1.0 + float(tc["need_price"]) * shortage))
+			w.trade.set_limit(h, g, "sell_min", r * float(tc["ai_sell_min"]) * (1.0 - float(tc["glut_price"]) * surplus))
+
+
+# Brak 0..1: jak bardzo czegoś brakuje w domu względem tego, co dom chce mieć.
+func _shortage(h: SimHousehold, home: SimBuilding, g: String) -> float:
+	if home == null:
+		return 1.0
+	var target := 0
+	match g:
+		"food":
+			target = h.target_food
+		"log":
+			target = h.target_firewood
+		"plank":
+			target = w.needs.repair_planks(home) if w.needs.needs_repair(home) else 0
+		_:
+			target = w.needs.target(h, g)
+	if target <= 0:
+		return 0.0
+	return clampf(1.0 - float(home.amount(g)) / float(target), 0.0, 1.0)
+
+
+# Nadmiar 0..1: producent z pełnym składem (np. dwór z pełnym spichrzem) sprzedaje taniej.
+func _surplus(h: SimHousehold, g: String) -> float:
+	var best := 0.0
+	for st: SimStall in w.trade.stalls_of(h.id):
+		if st.temporary or not st.deals_in(g):
+			continue
+		var cap := float(st.stock.capacity.get(g, 0))
+		if cap > 0.0:
+			best = maxf(best, clampf(float(st.stock.amount(g)) / cap, 0.0, 1.0))
+	return best
 
 
 func _assign(a: SimAgent, job: String) -> void:

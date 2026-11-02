@@ -89,6 +89,7 @@ func _run_all() -> void:
 	_test_money_invariant()
 	_test_needs_tiers()
 	_test_wear_and_repair()
+	_test_prices_from_stock()
 	_test_theft_process()
 	_test_world_deterministic()
 	_test_world_30_days_autonomous()
@@ -1538,6 +1539,7 @@ func _test_wear_and_repair() -> void:
 	adult.steps.clear()
 	w.home_of(adult).add("food", 30)
 	w.home_of(adult).add("log", 12)
+	w.ai.set_prices()
 	check("village household without the player goes to buy planks for repairs", w.jobs._repair_trip(adult)
 		and adult.steps.any(func(x): return x["t"] == "do" and x["fn"] == "buy_at" and x["arg"]["good"] == "plank"))
 	home.add("plank", 14)
@@ -1553,6 +1555,35 @@ func _test_wear_and_repair() -> void:
 	ra.steps.clear()
 	w.trade.stalls["stall_bednarz"].stock.add("cloth", 5)
 	check("a well-off household shops for what it lacks", w.jobs._wants_trip(ra) or w.needs.wants(rich).is_empty())
+
+
+# R4 (S26): ceny AI z zapasu i potrzeb — pusta półka u kupca to wyższa cena,
+# pusta spiżarnia to gotowość, by zapłacić więcej; pełny spichrz sprzedaje taniej.
+func _test_prices_from_stock() -> void:
+	var w = _new_world()
+	var st = w.trade.stalls["stall_bednarz"]
+	var mh = w.households[st.owner]
+	st.stock.take("food", 9999)
+	w.ai.set_prices()
+	var scarce: float = w.trade.sell_min(mh, "food")
+	st.stock.add("food", 60)
+	w.ai.set_prices()
+	check("merchant with an empty shelf asks more than with a full one", scarce > w.trade.sell_min(mh, "food"))
+	var h = w.household_at("n1")
+	w.building("n1").take("food", 9999)
+	w.ai.set_prices()
+	var hungry: float = w.trade.buy_max(h, "food")
+	w.building("n1").add("food", 30)
+	w.ai.set_prices()
+	check("empty pantry: household pays more for food", hungry > w.trade.buy_max(h, "food"))
+	var est = w.estate_owner()
+	var mst = w.trade.stalls["stall_manor"]
+	mst.stock.take("food", 9999)
+	w.ai.set_prices()
+	var lean: float = w.trade.sell_min(est, "food")
+	mst.stock.add("food", 190)
+	w.ai.set_prices()
+	check("full granary sells cheaper", w.trade.sell_min(est, "food") < lean)
 
 
 func _test_theft_process() -> void:
