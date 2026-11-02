@@ -163,6 +163,40 @@ Pętla gry: ród Wilków (6 osób, 3 pokolenia) w chacie pod lasem. Co 5 dni czy
   - Sonda: `godot --headless -s res://tools/probe_village.gd -- <dni> <seed>`. Stan (seed 1, 30 dób, 02.11.2026): ludzie 22 → 23, pieniądze w okolicy 1123 → 1626 zł (nie wyciekają), dorośli zamknięci w domu w godzinach pracy 1,1%, Wilkowie na autopilocie 70 → 316 zł.
   - **Otwarte (do decyzji z autorem):** biedne rody AI (Kos, Sowa, Nowak) od pierwszych dób mają dług za czynsz i około 20. doby lądują pod gołym niebem; pieniądze zbierają się u dworu (czynsz + sprzedaż jedzenia), a praca w polu jest sezonowa. Kandydaci: praca zimą (młocka, opał dla dworu), ogródki przy chatach, czynsz w naturze albo odrabiany, dwór wydający nadwyżki (budowy, służba).
 
+## Iteracja 3 — gospodarka bez gracza (BIEŻĄCA)
+
+Źródło: `docs/design/vision.md` (Port Royale i X4: zamknięty system, gracz opcjonalny, wiele dróg sukcesu). Plan zatwierdzony przez autora 02.11.2026, kolejność według Claude'a. Dawna „Iteracja 3 — codzienność i ciało” przesuwa się dalej.
+
+### Decyzje szkieletowe
+
+- **S22. Zamknięty obieg pieniędzy.** Suma pieniędzy w świecie (wieś + miasta okolicy) stała; na mapę i z mapy tylko z ludźmi.
+- **S23. Popyt z potrzeb** w warstwach: przetrwanie (jedzenie, opał), wygoda (narzędzia, ubranie, remont domu), prestiż na pokaz (luksus, służba, większy dom, meble). Tempo zużycia w danych.
+- **S24. Przedsięwzięcie jako byt:** budynek + receptura + właściciel + pracownicy na umowach + zapas + kasa. Tartak gracza to jedno z wielu; AI zakłada, prowadzi i zamyka tym samym kodem.
+- **S25. Miasta okolicy jako agregaty LOD** (ADR-0003): populacja, produkcja, konsumpcja, zapasy, kasa, ceny jako liczby; wozy wiozą ich faktyczne nadwyżki i braki.
+- **S26. Ceny AI z zapasu i potrzeb.** Granice gracza zostają ręczne.
+- **S27. Ziemia i surowce mają właściciela** (las, pola, działki): wyrąb za zgodą/opłatą, dzierżawa, kupno.
+- **S28. Pozycja z wielu walut** (majątek, reputacja w zawodzie, opinia we wsi, później respekt w półświatku i wiedza). Szczeble biedota → gospodarz → mistrz/kupiec → ziemianin/rajca to droga majątku i urzędu, nie jedyna droga (`intro` §7).
+- **S29. Budowa z katalogu** (`data/buildables.json`), osobne menu jak w Cultures: dom, później tartak, stragan, młyn, droga… Gracz i AI budują z tego samego katalogu.
+
+### Punkty
+
+- [ ] T0 Menu budowy (S29): katalog z danych, menu jak w Cultures, tryb wskazywania miejsca; dom i stragan w menu; droga jako budowa liniowa → test + zrzut.
+- [ ] R1 Niezmiennik pieniędzy świata (S22) → test: suma stała przez 60 dób.
+- [ ] R2 Potrzeby gospodarstw z danych (S23) → lista braków → test: bogaty chce więcej niż biedny.
+- [ ] R3 Zużycie: dom niszczeje i jest remontowany deskami, narzędzia się zużywają → test: wieś bez gracza kupuje deski; gracz widzi łatanie chat.
+- [ ] R4 Ceny AI z zapasu i potrzeb (S26) → test: brak → drożej, nadmiar → taniej.
+- [ ] T1 Przedsięwzięcie jako byt (S24), tartak gracza przepięty → test: łańcuch jak dziś.
+- [ ] T2 AI prowadzi przedsięwzięcie (najmuje, kupuje wejścia, sprzedaje, zamyka przy stratach) → test.
+- [ ] T3 AI zakłada przedsięwzięcie z katalogu, gdy ceny dają zysk → test: drogie deski → ktoś stawia tartak.
+- [ ] T4 Las i działki mają właściciela (S27) → test.
+- [ ] U1 Miasto-agregat (S25) z danych → test: bez handlu braki i rosnące ceny.
+- [ ] U2 Wóz jako przewóz między miastem a wsią, skończona kasa, czas drogi → test: suma pieniędzy świata stała.
+- [ ] U3 Wyjazd z wioski do miasta (kupiec znika za krawędzią, wraca z towarem, ryzyko), także dla gracza.
+- [ ] V1 Pozycja widoczna opisowo (co mówią o rodzie i dlaczego) → zrzut.
+- [ ] V2 Szczeble i co dają (kredyt, dzierżawa, śluby wyżej, urząd) → test.
+- [ ] V3 Rody AI awansują i bankrutują tym samym mechanizmem → sonda.
+- [ ] W Sonda „świat bez gracza”: 100 dób → ktoś awansuje, ktoś bankrutuje, brak masowego głodu, pieniądze krążą.
+
 ## Iteracja 2 — społeczeństwo (wstrzymana w połowie)
 
 Cel: rodzina przestaje być oderwana od świata. Inne rody żyją z tych samych danych i tym samym kodem, popyt i ceny biorą się z ich pieniędzy i potrzeb, małżonek to ktoś, kogo się zna, a dom to aktywo, które można wynająć, kupić albo zbudować. Decyzje S6–S12 zatwierdzone przez autora (02.11.2026), S9 rozszerzona o kupców wędrownych, S13 dopisana (do potwierdzenia). Podział na punkty niżej (format jak w iteracji 1).
@@ -220,7 +254,7 @@ Cel: rodzina przestaje być oderwana od świata. Inne rody żyją z tych samych 
 - [ ] J2 Panel targu: kupiec, ceny, wozy z ofertami i czasem do odjazdu → zrzut ekranu.
 - [ ] J3 Sonda społeczeństwa: strategie gracza + 60 dób → brak zakleszczeń, pieniądze krążą (nie rosną bez końca), rody AI przeżywają → sonda i test długi.
 
-## Iteracja 3 — codzienność i ciało
+## Później — codzienność i ciało
 
 Zegar pór dnia zamiast godzin (tarcza jak w Don't Starve: poranek, dzień, zmierzch, noc, z długościami zależnymi od pory roku) razem z płynnymi fazami dnia. Zróżnicowany rytm dnia jak w RimWorldzie (różne pory snu i pracy, droga do domu trwa, kolacja nie jest natychmiastowa), temperatura i ubiór, kontrola poczęć (przełącznik, szanse w danych, nigdy 0 i 100%), cmentarze i pomniki, czytelna progresja doświadczenia, płeć jako składnik naśladowania dorosłych (`goals.md`).
 
