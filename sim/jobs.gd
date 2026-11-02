@@ -663,6 +663,13 @@ func _food_trip(a: SimAgent, urgent: bool) -> bool:
 		want = maxi(want, 1)
 	if want <= 0 or w.chore_claims.has(_claim(a, "food")):
 		return false
+	# Własny stragan z jedzeniem: domownik bierze z zapasu rodu, bez płacenia.
+	for st: SimStall in w.trade.stalls_of(hh.id):
+		if not st.temporary and st.stock.amount("food") > 0 and st.stock != home:
+			_pickup_and_deliver(a, st.stock, "food", home, "niesie jedzenie z własnego zapasu do domu", mini(want, home.space("food")))
+			w.chore_claims[_claim(a, "food")] = a.id
+			a.claims.append("chore:" + _claim(a, "food"))
+			return true
 	if not _buy_trip(a, "food", mini(want, home.space("food")), home, "idzie kupić jedzenie", "niesie jedzenie do chaty"):
 		return false
 	w.chore_claims[_claim(a, "food")] = a.id
