@@ -57,6 +57,7 @@ func _run_all() -> void:
 	_test_drift_never_below_stranger()
 	_test_strength_scenarios()
 	_test_switch_root()
+	_test_departure_and_ai_life()
 	_test_world_deterministic()
 	_test_world_30_days_autonomous()
 	_test_economy_chain_produces_income()
@@ -586,6 +587,43 @@ func _test_switch_root() -> void:
 	check("strength recomputed from the new root", is_zero_approx(before) and is_equal_approx(float(f.strength[piotr.id]), 1.0) and float(f.strength[jan.id]) > 0.4 and float(f.strength[jan.id]) < 1.0)
 
 
+func _test_departure_and_ai_life() -> void:
+	var w = _new_world(31)
+	var f = w.family
+	var jan = f.root()
+	var piotr = _named(f, "Piotr")
+	var zofia = _named(f, "Zofia")
+	# Zaniedbany: Piotr nie ma żadnych więzi z bliskimi i nic ich nie odnawia.
+	for t in w.bonds.targets_of(piotr.id, "p:"):
+		w.bonds.bonds.erase("%d>%s" % [piotr.id, t])
+	w.memories["kinds"]["evening_together"]["weight"] = 0.0
+	w.memories["kinds"]["meal_together"]["weight"] = 0.0
+	w.memories["kinds"]["worked_together"]["weight"] = 0.0
+	var leave_days := int(w.balance["belonging"]["leave_days"])
+	_run_days_auto(w, float(leave_days) + 1.2)
+	var l = f.lineage_of(piotr)
+	check("neglected adult leaves the lineage", l.id != f.player_lineage_id and l.root_id == piotr.id and l.members == [piotr.id])
+	check("cared-for member stays", zofia.lineage_id == f.player_lineage_id and jan.lineage_id == f.player_lineage_id)
+	check("departed is no longer in the family list", not piotr in f.living())
+	var ap = w.agent_by_id(piotr.agent_id)
+	check("departed moves out to the neighbours", ap.home_id == String(w.balance["belonging"]["leave_home"]))
+	check("departure is in the chronicle", w.chronicle.of_kind("departure").size() == 1 and piotr.id in w.chronicle.of_kind("departure")[0]["who"])
+	w.set_job(ap.id, "sawyer")
+	check("player can no longer command the departed", ap.job == String(w.balance["belonging"]["leave_job"]))
+	var cash0: float = w.household.cash
+	var purse0: float = piotr.purse
+	_run_days_auto(w, 3.0)
+	check("departed lives on after leaving", piotr.alive() and ap.status == "active")
+	check("departed earns into own purse, not family cash", piotr.purse > purse0 or ap.needs["food"] > 0.0)
+	var labored := false
+	for i in 2000:
+		w.step_sim(0.3)
+		if ap.activity == "labor":
+			labored = true
+			break
+	check("departed works on own autopilot", labored)
+
+
 func _state_sig(w) -> String:
 	var parts: Array = ["%.3f" % w.household.cash, str(w.building("sawmill").stock)]
 	for a in w.agents:
@@ -683,8 +721,11 @@ func _test_marriage_and_birth() -> void:
 	_run_days_auto(w, 40.0)
 	check("married couples have children", w.family.persons.size() > n0)
 	var in_lineage := true
+	var departed := []
+	for e in w.chronicle.of_kind("departure"):
+		departed.append_array(e["who"])
 	for p in w.family.persons.values():
-		if p.lineage_id != w.family.player_lineage_id:
+		if p.lineage_id != w.family.player_lineage_id and not p.id in departed:
 			in_lineage = false
 	check("spouses and newborns join player lineage", in_lineage)
 

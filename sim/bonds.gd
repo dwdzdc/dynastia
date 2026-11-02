@@ -106,6 +106,33 @@ func _char_mult(p: SimPerson, kind: String, weight: float, field: String) -> flo
 	return mult
 
 
+# Tekst wspomnienia z szablonu w danych: {with} → imiona, {act} → czynność, {place} → budynek.
+func describe(m: Dictionary, target: String = "") -> String:
+	var text := String(_kinds[String(m["kind"])]["text"])
+	var names: Array = []
+	for id in m["with"]:
+		var o: SimPerson = w.family.persons.get(int(id))
+		if o != null:
+			names.append(o.name)
+	text = text.replace("{with}", ", ".join(names))
+	var act_name := target.substr(4) if target.begins_with("act:") else ""
+	text = text.replace("{act}", String(w.memories["act_labels"].get(act_name, act_name)))
+	var b: SimBuilding = w.buildings.get(String(m.get("at", "")))
+	text = text.replace("{place}", b.name if b != null else "")
+	return text
+
+
+# Najmocniej odczuwane (co do wartości bezwzględnej) wspomnienia osoby o podanych celach.
+func strongest(from: int, targets: Array, count: int) -> Array:
+	var p: SimPerson = w.family.persons.get(from)
+	var all: Array = []
+	for t in targets:
+		for m: Dictionary in memories(from, String(t)):
+			all.append({ "m": m, "t": String(t), "v": faded(p, m) })
+	all.sort_custom(func(x, y): return absf(float(x["v"])) > absf(float(y["v"])))
+	return all.slice(0, count)
+
+
 # Cele, do których `from` ma jakąkolwiek więź (z prefiksem, np. „p:” albo „act:”).
 func targets_of(from: int, prefix: String = "") -> Array:
 	var out: Array = []

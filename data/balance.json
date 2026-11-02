@@ -227,7 +227,8 @@
     },
     "default_target_food": 20,
     "default_target_firewood": 6,
-    "debt_jail_forgive": 0.5
+    "debt_jail_forgive": 0.5,
+    "meal_away_price": 1.5
   },
   "risk": {
     "chop_accident": 0.003,
@@ -320,6 +321,14 @@
     "bond_scale": 100.0,
     "iterations": 30,
     "damping": 0.6,
-    "epsilon": 0.0005
+    "epsilon": 0.0005,
+    "leave_below": 0.2,
+    "leave_days": 3,
+    "leave_stages": [
+      "adult",
+      "elder"
+    ],
+    "leave_home": "n1",
+    "leave_job": "laborer"
   }
 }

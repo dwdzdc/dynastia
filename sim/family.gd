@@ -160,7 +160,17 @@ func root() -> SimPerson:
 	return persons.get(root_id)
 
 
+# Żywi członkowie rodu gracza (to, co gracz nazywa „rodziną”), po id.
 func living() -> Array:
+	var out: Array = []
+	for id in _sorted_ids():
+		if persons[id].alive() and persons[id].lineage_id == player_lineage_id:
+			out.append(persons[id])
+	return out
+
+
+# Wszyscy żywi, także ci, którzy odeszli z rodu.
+func all_living() -> Array:
 	var out: Array = []
 	for id in _sorted_ids():
 		if persons[id].alive():
@@ -292,21 +302,68 @@ func apply_modifiers(p: SimPerson) -> void:
 func new_day() -> void:
 	if game_over:
 		return
-	for p in living():
+	for p in all_living():
 		var before := String(p.get_meta("stage", ""))
 		var now_stage := stage_of(p)
 		p.set_meta("stage", now_stage)
 		apply_modifiers(p)
-		if before != "" and before != now_stage:
+		if before != "" and before != now_stage and p.lineage_id == player_lineage_id:
 			_on_stage_change(p, now_stage)
 		_roll_old_age(p)
-	for p in living():
+	for p in all_living():
 		_tick_pregnancy(p)
 	for p in living():
 		_roll_conception(p)
 	for p in living():
 		_roll_courtship(p)
 	update_strength()
+	_check_departures()
+
+
+# Odejście (C3): kto ma siłę przynależności poniżej progu przez kilka dób z rzędu,
+# zakłada własny ród jednoosobowy i wyprowadza się. Root nie odchodzi, dzieci też nie.
+func _check_departures() -> void:
+	var cfg: Dictionary = w.balance["belonging"]
+	for p in living():
+		var a: SimAgent = w.agent_by_id(p.agent_id)
+		if p.id == root_id or a == null or a.status != "active" or not stage_of(p) in cfg["leave_stages"]:
+			p.weak_days = 0
+			continue
+		if float(strength.get(p.id, 1.0)) < float(cfg["leave_below"]):
+			p.weak_days += 1
+		else:
+			p.weak_days = 0
+		if p.weak_days >= int(cfg["leave_days"]):
+			depart(p)
+
+
+func depart(p: SimPerson) -> void:
+	var cfg: Dictionary = w.balance["belonging"]
+	var old := lineage_of(p)
+	var kin: Array = []
+	for o in living_members(old.id):
+		if o.id != p.id:
+			kin.append(SimBonds.person(o.id))
+	var why: Array = []
+	for e in w.bonds.strongest(p.id, kin, int(w.memories["departure_memories"]) * 4):
+		var txt := w.bonds.describe(e["m"], e["t"])
+		if not txt in why and why.size() < int(w.memories["departure_memories"]):
+			why.append(txt)
+	old.remove(p)
+	var l := new_lineage("%s (%s)" % [p.surname, p.name])
+	l.add(p)
+	l.root_id = p.id
+	p.weak_days = 0
+	p.seeking_spouse = false
+	var a: SimAgent = w.agent_by_id(p.agent_id)
+	a.home_id = String(cfg["leave_home"])
+	a.job = String(cfg["leave_job"])
+	w.jobs.replan(a)
+	var pamieta := "niewiele wspólnego z bliskimi" if why.is_empty() else "; ".join(why)
+	var text := "%s odchodzi z rodu %s i wyprowadza się (%s). Pamięta: %s." % [
+		p.name, old.name, w.home_of(a).name, pamieta]
+	w.chronicle.add(w.clock.now(), "departure", text, [p.id], old.id)
+	w.note("%s wyprowadza się z chaty." % p.name, "warn", a.position)
 
 
 func _on_stage_change(p: SimPerson, st: String) -> void:
@@ -339,7 +396,7 @@ func _roll_conception(p: SimPerson) -> void:
 	if not _fertile(p) or p.pregnant_left >= 0.0 or p.spouse_id < 0:
 		return
 	var s: SimPerson = persons.get(p.spouse_id)
-	if s == null or not s.alive() or p.children.size() >= int(_fam["max_children"]):
+	if s == null or not s.alive() or s.lineage_id != p.lineage_id or p.children.size() >= int(_fam["max_children"]):
 		return
 	# Ciasnota: w przepełnionej chacie nie przybywa dzieci.
 	if living().size() >= int(_fam["max_household"]):
@@ -415,6 +472,8 @@ func _give_birth(mother: SimPerson) -> void:
 		if not child.traits.is_empty():
 			trait_txt = " (%s)" % ", ".join(child.traits.map(func(t): return trait_label(t)))
 		w.note("Narodziny! %s %s urodził%s się%s." % [child.name, dynasty, "" if child.sex == "m" else "a", trait_txt], "good", where)
+		w.chronicle.add(w.clock.now(), "birth", "Narodziny: %s, dziecko %s%s." % [child.name, mother.name,
+			(" i " + father.name) if father != null else ""], [child.id, mother.id], child.lineage_id)
 	if mother_dies and ma != null:
 		w.kill(ma, "zmarła w połogu")
 
@@ -543,6 +602,7 @@ func resolve_marriage(data: Dictionary, accepted: bool) -> void:
 	s.unions.append({ "spouse": p.id, "start": w.clock.now(), "end": -1.0 })
 	persons[s.id] = s
 	lineage_of(p).add(s)
+	w.chronicle.add(w.clock.now(), "wedding", "Ślub: %s i %s %s." % [p.name, s.name, String(cand["surname"])], [p.id, s.id], p.lineage_id)
 	_remember_all(p.id, s.id, w.memories["on_wedding"]["spouses"])
 	_remember_all(s.id, p.id, w.memories["on_wedding"]["spouses"])
 	generation_of[s.id] = int(generation_of.get(p.id, 0))

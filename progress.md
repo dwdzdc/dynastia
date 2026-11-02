@@ -78,9 +78,9 @@ Pętla gry: ród Wilków (6 osób, 3 pokolenia) w chacie pod lasem. Co 5 dni czy
 
 - [x] C1 Siła od roota (S4) → wartość per osoba raz na dobę → testy scenariuszowe: łańcuch słabnie, gęsta sieć trzyma, małżonek nie wciąga swojej rodziny.
 - [x] C2 Przełączanie roota na członka rodu → wyraźny znacznik w świecie i panelu → test: siła przeliczona od nowego roota.
-- [ ] C3 Odejście: siła poniżej progu przez N dni → nowy ród jednoosobowy z sobą jako rootem, poza kontrolą, wyprowadzka (na razie do chaty sąsiadów albo poza mapę), wpis w kronice → test: zaniedbany odchodzi, zadbany zostaje.
-- [ ] C4 Minimalny ród AI: odszedły żyje dalej na autopilocie (praca, jedzenie, sen) → test: żyje po odejściu i ma własne decyzje.
-- [ ] C5 Kronika rodu: trwały zapis ważnych zdarzeń (narodziny, śluby, śmierci, odejścia) oddzielony od dziennika bieżącego → test: odejście jest w kronice.
+- [x] C3 Odejście: siła poniżej progu przez N dni → nowy ród jednoosobowy z sobą jako rootem, poza kontrolą, wyprowadzka (na razie do chaty sąsiadów albo poza mapę), wpis w kronice → test: zaniedbany odchodzi, zadbany zostaje.
+- [x] C4 Minimalny ród AI: odszedły żyje dalej na autopilocie (praca, jedzenie, sen) → test: żyje po odejściu i ma własne decyzje.
+- [x] C5 Kronika rodu: trwały zapis ważnych zdarzeń (narodziny, śluby, śmierci, odejścia) oddzielony od dziennika bieżącego → test: odejście jest w kronice.
 
 ### Faza D — sygnały i wola
 

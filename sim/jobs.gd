@@ -51,7 +51,7 @@ func desired_kind(a: SimAgent) -> String:
 	var block := block_at(w.clock.time_of_day())
 	if block == "sleep" or a.needs["sleep"] < float(w.balance["needs"]["sleep"]["low"]):
 		return "sleep"
-	if block == "dinner":
+	if block == "dinner" and not w.is_independent(a):
 		return "dinner"
 	if a.is_child:
 		return "child"
@@ -68,6 +68,10 @@ func replan(a: SimAgent) -> void:
 	a.alert = false
 	a.hungry_no_food = false
 	var kind := desired_kind(a)
+	if w.is_independent(a):
+		a.plan_kind = kind
+		_plan_independent(a, kind)
+		return
 	# Przed wyjściem z domu zjedz, jeśli już trochę burczy w brzuchu — inaczej agent
 	# zawraca w pół drogi.
 	var low := float(w.balance["needs"]["food"]["low"])
@@ -140,6 +144,34 @@ func _go_inside(a: SimAgent, b: SimBuilding, act: String, secs: float, why: Stri
 
 
 # --- Plany ---
+
+# Minimalny autopilot osoby spoza rodu (C4): mieszka u siebie, chodzi na dniówkę,
+# zarobek trzyma w sakiewce, a jedzenie kupuje i zjada na targu.
+func _plan_independent(a: SimAgent, kind: String) -> void:
+	var home: SimBuilding = w.home_of(a)
+	var p := w.person_of(a)
+	match kind:
+		"sick":
+			_go_inside(a, home, "rest", 3.0, "chory — leży u siebie")
+		"sleep":
+			_go_inside(a, home, "sleep", 4.0, "śpi u siebie")
+		"eat":
+			var price := float(w.balance["economy"]["meal_away_price"])
+			if p.purse >= price:
+				var market: SimBuilding = w.building("market")
+				_walk(a, market.door(), "idzie coś zjeść na targu")
+				_do(a, "meal_away", price)
+				_act(a, "eat", 1.5, "je na targu za swoje", market.id)
+			elif a.can_work():
+				_plan_forage(a)
+				_do(a, "eat_carried")
+			else:
+				a.hungry_no_food = true
+				_go_inside(a, home, "wait", float(_cfg["wait_seconds"]), "GŁODNY — bez grosza")
+		"work":
+			_plan_work(a)
+		_:
+			_go_inside(a, home, "rest", 3.0, "odpoczywa u siebie")
 
 func _plan_eat(a: SimAgent) -> void:
 	var home: SimBuilding = w.home()
@@ -472,6 +504,15 @@ func apply(a: SimAgent, step: Dictionary) -> bool:
 		"dinner":
 			_fx_dinner(a)
 			return true
+		"meal_away":
+			return _fx_meal_away(a, float(step["arg"]))
+		"eat_carried":
+			if a.carrying == "food" and a.carrying_qty > 0:
+				a.carrying_qty -= 1
+				a.needs["food"] = minf(100.0, a.needs["food"] + float(w.balance["needs"]["food"]["meal"]))
+				if a.carrying_qty <= 0:
+					a.clear_carry()
+			return true
 		"deposit":
 			return _fx_deposit(a, String(step["arg"]))
 		"pickup":
@@ -495,6 +536,15 @@ func _fx_eat(a: SimAgent) -> bool:
 	var home: SimBuilding = w.home()
 	if home.take("food", 1) <= 0:
 		return false
+	a.needs["food"] = minf(100.0, a.needs["food"] + float(w.balance["needs"]["food"]["meal"]))
+	return true
+
+
+func _fx_meal_away(a: SimAgent, price: float) -> bool:
+	var p := w.person_of(a)
+	if p == null or p.purse < price:
+		return false
+	p.purse -= price
 	a.needs["food"] = minf(100.0, a.needs["food"] + float(w.balance["needs"]["food"]["meal"]))
 	return true
 

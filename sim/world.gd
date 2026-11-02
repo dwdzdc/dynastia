@@ -18,6 +18,7 @@ var jobs: SimJobs
 var family: SimFamily
 var bonds: SimBonds
 var together: SimTogether
+var chronicle: SimChronicle
 
 var buildings: Dictionary = {}   # id -> SimBuilding
 var trees: Array = []            # SimTree
@@ -65,6 +66,7 @@ func _init(seed: int, p_balance: Dictionary, p_map: Dictionary, p_people: Dictio
 
 	family = SimFamily.new(self, people)
 	bonds = SimBonds.new(self, memories)
+	chronicle = SimChronicle.new()
 	together = SimTogether.new(self, memories["together"])
 	family.setup_start()
 	for p in family.living():
@@ -98,6 +100,24 @@ func _generate_trees() -> void:
 
 func home() -> SimBuilding:
 	return buildings["home"]
+
+
+func home_of(a: SimAgent) -> SimBuilding:
+	return buildings[a.home_id]
+
+
+# Ciało osoby spoza rodu gracza: żyje na autopilocie, gracz nim nie steruje (C4).
+func is_independent(a: SimAgent) -> bool:
+	var p := person_of(a)
+	return p != null and p.lineage_id != family.player_lineage_id
+
+
+# Zarobek trafia do wspólnej kasy rodu gracza albo do sakiewki osoby spoza rodu.
+func earn_for(a: SimAgent, amount: float) -> void:
+	if is_independent(a):
+		person_of(a).purse += amount
+	else:
+		household.earn(amount)
 
 
 func building(id: String) -> SimBuilding:
@@ -177,7 +197,7 @@ func ask_ok(title: String, text: String) -> void:
 
 func set_job(agent_id: int, job: String) -> void:
 	var a := agent_by_id(agent_id)
-	if a == null or a.status != "active":
+	if a == null or a.status != "active" or is_independent(a):
 		return
 	a.job = job
 	jobs.replan(a)
@@ -197,7 +217,7 @@ func _begin_manual(a: SimAgent, append: bool) -> void:
 
 func manual_move(agent_id: int, to: Vector2, append := false) -> void:
 	var a := agent_by_id(agent_id)
-	if a == null or a.status != "active":
+	if a == null or a.status != "active" or is_independent(a):
 		return
 	_begin_manual(a, append)
 	a.steps.append({ "t": "walk", "to": to, "why": "idzie tam, gdzie kazano" })
@@ -207,7 +227,7 @@ func manual_move(agent_id: int, to: Vector2, append := false) -> void:
 func manual_chop(agent_id: int, tree_id: int, append := false) -> void:
 	var a := agent_by_id(agent_id)
 	var t := tree_by_id(tree_id)
-	if a == null or t == null or a.status != "active" or t.wood <= 0 or not a.can_work():
+	if a == null or t == null or a.status != "active" or t.wood <= 0 or not a.can_work() or is_independent(a):
 		return
 	_begin_manual(a, append)
 	if t.reserved_by >= 0 and t.reserved_by != a.id:
@@ -402,7 +422,7 @@ func _act(a: SimAgent, s: Dictionary, dt: float) -> void:
 	a.hidden = inside != ""
 	a.inside = inside
 	if act == "labor":
-		household.earn(float(balance["jobs"]["laborer_wage_day"]) / (float(balance["schedule"]["work_end"]) - float(balance["schedule"]["work_start"])) / clock.day_seconds * dt * a.age_eff)
+		earn_for(a, float(balance["jobs"]["laborer_wage_day"]) / (float(balance["schedule"]["work_end"]) - float(balance["schedule"]["work_start"])) / clock.day_seconds * dt * a.age_eff)
 	if act in ["chop", "saw", "craft"]:
 		var target_face: Vector2 = s.get("face", Vector2.ZERO)
 		if target_face != Vector2.ZERO:
@@ -514,8 +534,10 @@ func kill(a: SimAgent, cause: String) -> void:
 	var age := int(family.age_of(p))
 	note("ŚMIERĆ: %s %s %s w wieku %d lat." % [p.name, p.surname, cause, age], "critical", a.position)
 	var was_root := p.id == family.root_id
+	var ours := not is_independent(a)
+	chronicle.add(clock.now(), "death", "%s %s %s w wieku %d lat." % [p.name, p.surname, cause, age], [p.id], p.lineage_id)
 	family.on_death(p, cause)
-	if not was_root and not family.game_over:
+	if ours and not was_root and not family.game_over:
 		ask_ok("Śmierć w rodzinie", "%s %s (%s) %s.\nMiał%s %d lat." % [p.name, p.surname, family.relation_to_root(p), cause,
 			"" if p.sex == "m" else "a", age])
 
