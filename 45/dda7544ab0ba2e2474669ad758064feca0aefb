@@ -1,0 +1,11 @@
+docs/design/vision.md
+  ai_agent 67-68
+progress.md
+  ai_agent 166,202-223
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "45dda7544ab0ba2e2474669ad758064feca0aefb",
+  "prompts": {}
+}
