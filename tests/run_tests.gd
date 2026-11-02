@@ -72,6 +72,7 @@ func _run_all() -> void:
 	_test_bonds_across_lineages()
 	_test_marriage_with_existing_people()
 	_test_merchant_is_a_person()
+	_test_buyers_pay_from_own_money()
 	_test_world_deterministic()
 	_test_world_30_days_autonomous()
 	_test_economy_chain_produces_income()
@@ -974,6 +975,37 @@ func _test_merchant_is_a_person() -> void:
 	till.cash = 1000.0
 	mk.building.add("plank", 200)
 	check("merchant with a full store wants no more", mk.wants("plank") == 0 and int(mk.buy_from(seller, "plank", 1, [])["qty"]) == 0)
+
+
+func _money(w) -> float:
+	var s := 0.0
+	for h in w.households.values():
+		s += h.cash
+	for p in w.family.persons.values():
+		s += p.purse
+	return s
+
+
+func _test_buyers_pay_from_own_money() -> void:
+	var w = _new_world()
+	var mk = w.market
+	var buyer = w.agent_by_id(w.family.root().agent_id)
+	var m0: float = _money(w)
+	w.jobs._fx_buy_food(buyer, 3)
+	mk.buy_from(w.household, "plank", 2, [])
+	check("trade between people only moves money (sum unchanged)", absf(_money(w) - m0) < 0.001)
+	w.household.cash = 0.0
+	buyer.clear_carry()
+	check("household without money buys nothing", not w.jobs._fx_buy_food(buyer, 1))
+	w.household.cash = 100.0
+	mk.building.take("food", 9999)
+	check("merchant without stock sells nothing", not w.jobs._fx_buy_food(buyer, 1))
+	w.jobs.replan(buyer)
+	buyer.needs["food"] = 1.0
+	w.building("home").take("food", 9999)
+	w.jobs.replan(buyer)
+	var why := String(buyer.steps[buyer.steps.size() - 1].get("why", ""))
+	check("hungry person explains the market is empty", why.contains("na targu nie ma jedzenia") or buyer.plan_kind == "eat")
 
 
 func _state_sig(w) -> String:
