@@ -1,0 +1,41 @@
+data/map.json
+  s_bb6b65b605000f::t_95ec20f8940e0f 1
+sim/household.gd
+  s_bb6b65b605000f::t_417407e8251219 40
+ui/hud.gd
+  ai_agent 1142
+sim/building.gd
+  s_bb6b65b605000f::t_417407e8251219 19
+sim/world.gd
+  s_bb6b65b605000f::t_417407e8251219 1183-1186
+sim/jobs.gd
+  s_bb6b65b605000f::t_417407e8251219 34,648-651,661-707,1129-1136
+sim/needs.gd
+  s_bb6b65b605000f::t_417407e8251219 85-122
+data/needs.json
+  s_bb6b65b605000f::t_417407e8251219 2-6,8-22,25-58
+progress.md
+  ai_agent 186
+data/balance.json
+  s_bb6b65b605000f::t_95ec20f8940e0f 351
+  s_bb6b65b605000f::t_417407e8251219 191
+  s_bb6b65b605000f::t_37b439bd8a64ee 194
+tests/run_tests.gd
+  s_bb6b65b605000f::t_41c0b7fbc4a18b 91,1519-1555
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "2605b3c6fc09e4f51d2633cd43e7e16cb2b2fe30",
+  "prompts": {},
+  "sessions": {
+    "s_bb6b65b605000f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "8bc32a82-6b1e-41ef-8272-8f242d268239",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Dawid Dziedzic <24682682+dwdzdc@users.noreply.github.com>"
+    }
+  }
+}
