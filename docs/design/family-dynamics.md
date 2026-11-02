@@ -103,6 +103,10 @@ Kto odpada, przede wszystkim **wychodzi spod kontroli gracza**. Może wejść do
 - Jak w Simsach: długa doba (codzienność) i wiele pokoleń.
 - Długość każdego procesu ustawiona osobno w danych w dobach (np. ciąża ok. 3 doby, dzieciństwo kilkanaście, dorosłość kilkadziesiąt), a nie wyliczana z „lat”. Wiek w latach to tylko etykieta.
 
+## Rody AI
+
+- Oderwana część rodu staje się **rodem AI** z własnym rootem. Rody AI mają tę samą strukturę i te same mechaniki co ród gracza (więzi, przynależność, rytuały, odejścia), tylko decyzje podejmuje AI.
+
 ## Na później (świadomie poza pierwszą iteracją)
 
 - Śluby między krewnymi jako możliwość (z konsekwencjami społecznymi i zdrowotnymi).
@@ -112,7 +116,4 @@ Kto odpada, przede wszystkim **wychodzi spod kontroli gracza**. Może wejść do
 
 ## Otwarte pytania
 
-(w trakcie uzgadniania — patrz rozmowa)
-## Rody AI
-
-- Oderwana część rodu staje się **rodem AI** z własnym rootem. Rody AI mają tę samą strukturę i te same mechaniki co ród gracza (więzi, przynależność, rytuały, odejścia), tylko decyzje podejmuje AI.
+(w trakcie uzgadniania)
