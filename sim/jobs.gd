@@ -23,6 +23,7 @@ var recipes: Dictionary          # data/recipes.json (S13): produkcja w budynkac
 var work_acts: Array = ["chop", "forage", "labor"]  # czynności, które są pracą (+ z receptur)
 
 const BASE_WORK_ACTS := ["chop", "forage", "labor"]
+const AT_DOOR := 1.0   # skrzynia: trzeba stać przy drzwiach domu (albo w środku)
 
 
 func _init(world: SimWorld, p_recipes: Dictionary) -> void:
@@ -233,7 +234,7 @@ func _plan_homeless(a: SimAgent, kind: String) -> void:
 func _plan_eat_away(a: SimAgent) -> void:
 	var price := float(w.balance["economy"]["meal_away_price"])
 	var p := w.person_of(a)
-	if p.purse >= price or _hh(a).cash >= price:
+	if p.purse >= price or (_hh(a).chest == null and _hh(a).cash >= price):
 		var market: SimBuilding = w.building("market")
 		_walk(a, market.door(), "idzie coś zjeść na targu")
 		_do(a, "meal_away", price)
@@ -539,12 +540,13 @@ func _food_trip(a: SimAgent, urgent: bool) -> bool:
 	if want <= 0 or w.chore_claims.has(_claim(a, "food")):
 		return false
 	var cap := int(w.balance["carry"]["food"])
-	var afford := int(floor(hh.cash / w.market.sell_price("food")))
+	var afford := int(floor(_budget(a) / w.market.sell_price("food")))
 	var qty := mini(mini(want, cap), mini(mini(afford, home.space("food")), w.market.building.amount("food")))
 	if qty <= 0:
 		return false
 	w.chore_claims[_claim(a, "food")] = a.id
 	a.claims.append("chore:" + _claim(a, "food"))
+	_fetch_coins(a, w.market.sell_price("food") * qty)
 	var market: SimBuilding = w.building("market")
 	_walk(a, market.door(), "idzie na targ kupić jedzenie")
 	_do(a, "buy_food", qty)
@@ -565,10 +567,11 @@ func _firewood_trip(a: SimAgent) -> bool:
 	var hh = _hh(a)
 	if mill.amount("log") <= 0:
 		# Bez własnego drewna opał trzeba kupić na targu.
-		if not hh.can_afford(w.market.sell_price("log") * 2.0) or w.market.building.amount("log") <= 0:
+		if _budget(a) < w.market.sell_price("log") * 2.0 or w.market.building.amount("log") <= 0:
 			return false
 		w.chore_claims[_claim(a, "firewood")] = a.id
 		a.claims.append("chore:" + _claim(a, "firewood"))
+		_fetch_coins(a, w.market.sell_price("log") * 2.0)
 		_walk(a, w.building("market").door(), "idzie kupić opał na targu")
 		_do(a, "buy_firewood", 2)
 		_walk(a, home.door(), "niesie opał do chaty")
@@ -581,6 +584,25 @@ func _firewood_trip(a: SimAgent) -> bool:
 	_walk(a, home.door(), "niesie opał do chaty")
 	_do(a, "deposit", home.id)
 	return true
+
+
+# Na zakupy dla domu: sakwa i skrzynia (albo tobołek, gdy bez domu).
+func _budget(a: SimAgent) -> float:
+	var p := w.person_of(a)
+	return (p.purse if p != null else 0.0) + _hh(a).cash
+
+
+# Pieniądze mają miejsce (S14, K2): komu w sakwie brakuje, ten najpierw idzie do skrzyni
+# w domu i bierze z zapasem (kieszonkowe zostaje na okazję).
+func _fetch_coins(a: SimAgent, need: float) -> void:
+	var p := w.person_of(a)
+	var hh := _hh(a)
+	if p == null or hh.chest == null or p.purse >= need:
+		return
+	var pc: Dictionary = w.balance["purse"]
+	var amt := need * (1.0 + float(pc["fetch_margin"])) + float(pc["pocket_money"]) - p.purse
+	_go_inside(a, hh.chest, "fetch", float(pc["fetch_seconds"]), "bierze pieniądze ze skrzyni")
+	_do(a, "take_coins", amt)
 
 
 func _carpenter_present() -> bool:
@@ -716,6 +738,8 @@ func apply(a: SimAgent, step: Dictionary) -> bool:
 			return _fx_deposit(a, String(step["arg"]))
 		"pickup":
 			return _fx_pickup(a, step["arg"])
+		"take_coins":
+			return _fx_take_coins(a, float(step["arg"]))
 		"buy_food":
 			return _fx_buy_food(a, int(step["arg"]))
 		"buy_firewood":
@@ -745,7 +769,8 @@ func _fx_meal_away(a: SimAgent, price: float) -> bool:
 		return false
 	if p.purse >= price:
 		p.purse -= price
-	elif _hh(a).cash >= price:
+		p.held = minf(p.held, p.purse)
+	elif _hh(a).chest == null and _hh(a).cash >= price:
 		_hh(a).pay(price)
 	else:
 		return false
@@ -761,10 +786,36 @@ func _fx_dinner(a: SimAgent) -> void:
 		_fx_eat(a)
 
 
+func _fx_take_coins(a: SimAgent, amt: float) -> bool:
+	var p := w.person_of(a)
+	var hh := _hh(a)
+	if p == null or hh.chest == null or a.position.distance_to(hh.chest.door()) > AT_DOOR:
+		return false
+	var n := clampf(amt, 0.0, maxf(hh.cash, 0.0))
+	hh.cash -= n
+	p.purse += n
+	p.held += n
+	return true
+
+
+# Po powrocie do domu: pieniądze gospodarstwa ponad kieszonkowe wracają do skrzyni.
+func _return_coins(a: SimAgent) -> void:
+	var p := w.person_of(a)
+	var hh := _hh(a)
+	if p == null or hh.chest == null:
+		return
+	var back := maxf(0.0, minf(p.held, p.purse) - float(w.balance["purse"]["pocket_money"]))
+	p.purse -= back
+	p.held = minf(p.held, p.purse) if back <= 0.0 else p.held - back
+	hh.cash += back
+
+
 func _fx_deposit(a: SimAgent, bid: String) -> bool:
+	var b: SimBuilding = w.building(bid)
+	if _hh(a).chest == b:
+		_return_coins(a)
 	if a.carrying == "":
 		return true
-	var b: SimBuilding = w.building(bid)
 	if b.type == "market":
 		# Najpierw na wóz kupca wędrownego (lepsza cena), resztę miejscowemu kupcowi (H1, H3).
 		var rw: Dictionary = w.traders.sell_to_wagon(_hh(a), a.carrying, a.carrying_qty, a.carrying_qualities)
@@ -829,11 +880,28 @@ func _fx_buy_firewood(a: SimAgent, qty: int) -> bool:
 
 # Zakup u kupca za pieniądze gospodarstwa (H2): tylko to, co ma w zapasie.
 func _buy(a: SimAgent, good: String, qty: int) -> bool:
-	var cash0 := _hh(a).cash
-	var n := w.market.sell_to(_hh(a), good, qty)
+	var p := w.person_of(a)
+	var hh := _hh(a)
+	if p == null:
+		return false
+	# Bez domu tobołek gospodarstwa jest przy nich: płacą z niego jak z sakwy.
+	var bundle := 0.0
+	if hh.chest == null:
+		bundle = maxf(hh.cash, 0.0)
+		hh.cash -= bundle
+		p.purse += bundle
+	var purse0 := p.purse
+	var n := w.market.sell_to(p, good, qty)
+	var spent := purse0 - p.purse
+	hh.spent_today += spent
+	if hh.chest == null:
+		var back := minf(bundle, p.purse)
+		p.purse -= back
+		hh.cash += back
+	p.held = minf(p.held, p.purse)
 	if n <= 0:
 		return false
-	w.events.float_text(w.market.building.door(), "-%d zł" % int(round(cash0 - _hh(a).cash)), "cost")
+	w.events.float_text(w.market.building.door(), "-%d zł" % int(round(spent)), "cost")
 	a.carrying = good
 	a.carrying_qty = n
 	return true

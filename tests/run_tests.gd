@@ -73,6 +73,7 @@ func _run_all() -> void:
 	_test_marriage_with_existing_people()
 	_test_merchant_is_a_person()
 	_test_money_in_chest()
+	_test_buy_through_purse()
 	_test_buyers_pay_from_own_money()
 	_test_traveling_traders()
 	_test_estate_pays_wages()
@@ -779,6 +780,8 @@ func _test_households_separate() -> void:
 	var buyer = w.agent_by_id(f.persons[ids[2]].agent_id)
 	var cash_a: float = w.household.cash
 	var food_b: int = w.building("n1").amount("food")
+	buyer.position = w.building("n1").door()
+	w.jobs._fx_take_coins(buyer, 10.0)
 	w.jobs._fx_buy_food(buyer, 3)
 	buyer.position = w.building("n1").door()
 	w.jobs._fx_deposit(buyer, "n1")
@@ -1010,18 +1013,49 @@ func _test_money_in_chest() -> void:
 	check("money is conserved by moving chests", absf(_money(w) - 5.0 - (m0 - 10.0)) < 0.001)
 
 
+# K2: zakup idzie przez sakwę — kto ma w niej za mało, najpierw zagląda do skrzyni w domu;
+# reszta ponad kieszonkowe wraca do skrzyni po powrocie.
+func _test_buy_through_purse() -> void:
+	var w = _new_world()
+	var root = w.family.root()
+	var a = w.agent_by_id(root.agent_id)
+	var h = w.household
+	root.purse = 0.0
+	a.position = w.building("market").door()
+	check("away from home: no money in purse, no purchase", not w.jobs._fx_take_coins(a, 10.0) and not w.jobs._fx_buy_food(a, 1))
+	w.home().take("food", 9999)
+	a.job = "none"
+	w.jobs.release(a)
+	w.jobs._food_trip(a, true)
+	var first_walk: Vector2 = a.steps[0]["to"]
+	check("food trip starts at the chest at home", first_walk.distance_to(w.home().door()) < 0.01
+		and a.steps.any(func(s): return s["t"] == "do" and s["fn"] == "take_coins"))
+	var chest0: float = h.cash
+	a.position = w.home().door()
+	w.jobs._fx_take_coins(a, 12.0)
+	check("coins move from chest to purse", is_equal_approx(root.purse, 12.0) and is_equal_approx(h.cash, chest0 - 12.0))
+	a.position = w.building("market").door()
+	w.jobs._fx_buy_food(a, 2)
+	a.position = w.home().door()
+	w.jobs._fx_deposit(a, w.home().id)
+	var pocket := float(w.balance["purse"]["pocket_money"])
+	check("change above pocket money goes back to the chest", is_equal_approx(root.purse, pocket) and h.cash > chest0 - 12.0)
+
+
 func _test_buyers_pay_from_own_money() -> void:
 	var w = _new_world()
 	var mk = w.market
 	var buyer = w.agent_by_id(w.family.root().agent_id)
 	var m0: float = _money(w)
+	buyer.position = w.home().door()
+	w.jobs._fx_take_coins(buyer, 10.0)
 	w.jobs._fx_buy_food(buyer, 3)
 	mk.buy_from(w.household, "plank", 2, [])
 	check("trade between people only moves money (sum unchanged)", absf(_money(w) - m0) < 0.001)
-	w.household.cash = 0.0
+	w.family.root().purse = 0.0
 	buyer.clear_carry()
-	check("household without money buys nothing", not w.jobs._fx_buy_food(buyer, 1))
-	w.household.cash = 100.0
+	check("person with an empty purse buys nothing, even with a full chest", not w.jobs._fx_buy_food(buyer, 1))
+	w.family.root().purse = 100.0
 	mk.building.take("food", 9999)
 	check("merchant without stock sells nothing", not w.jobs._fx_buy_food(buyer, 1))
 	w.jobs.replan(buyer)

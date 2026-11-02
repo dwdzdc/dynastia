@@ -96,15 +96,15 @@ func buy_from(seller: SimHousehold, good: String, qty: int, qualities: Array) ->
 	return { "qty": n, "paid": paid }
 
 
-# Kupujący bierze towar z zapasu kupca. Zwraca liczbę kupionych sztuk.
-func sell_to(buyer: SimHousehold, good: String, qty: int) -> int:
+# Kupujący bierze towar z zapasu kupca i płaci z sakwy (S14). Zwraca liczbę kupionych sztuk.
+func sell_to(buyer: SimPerson, good: String, qty: int) -> int:
 	var n := 0
 	var t := till()
 	while n < qty and building.amount(good) > 0:
 		var price := sell_price(good)
-		if buyer.cash < price:
+		if buyer.purse < price:
 			break
-		buyer.pay(price)
+		buyer.purse -= price
 		if t != null:
 			t.earn(price)
 		building.take(good, 1)
