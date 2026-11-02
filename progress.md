@@ -84,7 +84,7 @@ Pętla gry: ród Wilków (6 osób, 3 pokolenia) w chacie pod lasem. Co 5 dni czy
 
 ### Faza D — sygnały i wola
 
-- [ ] D1 Sakiewki (S5): wypłata do osoby, część do wspólnej kasy według siły → test: oddalający się oddaje mniej.
+- [x] D1 Sakiewki (S5): wypłata do osoby, część do wspólnej kasy według siły → test: oddalający się oddaje mniej.
 - [ ] D2 Sygnały dryfu w zachowaniu: je osobno, wraca późno, unika kolacji, wieczór poza domem; słaby, opisowy `idle_reason` bez liczb → test: przy niskiej sile pojawiają się te zachowania.
 - [ ] D3 Preferencje: wyliczane z więzi do czynności i charakteru, z informacją skąd → test: preferencja wynika ze wspomnień.
 - [ ] D4 Wymiganie się: praca nielubiana albo przy słabej więzi trwa krócej, porzucana w połowie, z opisowym powodem; przydział wbrew woli zostawia wspomnienie → test: niechętny robi mniej, rozkaz wbrew woli ma ślad.

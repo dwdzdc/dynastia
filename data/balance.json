@@ -330,5 +330,9 @@
     ],
     "leave_home": "n1",
     "leave_job": "laborer"
+  },
+  "purse": {
+    "share_at_zero": 0.2,
+    "share_at_full": 1.0
   }
 }

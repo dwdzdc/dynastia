@@ -58,6 +58,7 @@ func _run_all() -> void:
 	_test_strength_scenarios()
 	_test_switch_root()
 	_test_departure_and_ai_life()
+	_test_purse_share_by_strength()
 	_test_world_deterministic()
 	_test_world_30_days_autonomous()
 	_test_economy_chain_produces_income()
@@ -622,6 +623,25 @@ func _test_departure_and_ai_life() -> void:
 			labored = true
 			break
 	check("departed works on own autopilot", labored)
+
+
+func _test_purse_share_by_strength() -> void:
+	var w = _new_world()
+	var f = w.family
+	var piotr = _named(f, "Piotr")
+	var zofia = _named(f, "Zofia")
+	var ap = w.agent_by_id(piotr.agent_id)
+	var az = w.agent_by_id(zofia.agent_id)
+	f.strength[piotr.id] = 1.0
+	f.strength[zofia.id] = 0.25
+	var c0: float = w.household.cash
+	w.earn_for(ap, 10.0)
+	var close_gives: float = w.household.cash - c0
+	c0 = w.household.cash
+	w.earn_for(az, 10.0)
+	var far_gives: float = w.household.cash - c0
+	check("close member hands over everything", is_equal_approx(close_gives, 10.0) and is_zero_approx(piotr.purse))
+	check("drifting member hands over less and keeps the rest", far_gives < close_gives and is_equal_approx(zofia.purse, 10.0 - far_gives))
 
 
 func _state_sig(w) -> String:

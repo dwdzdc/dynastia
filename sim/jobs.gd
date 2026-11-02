@@ -652,7 +652,7 @@ func _fx_steal(a: SimAgent) -> bool:
 	else:
 		var cr: Array = c["loot_coins"]
 		var got := w.rng.next_int(int(cr[0]), int(cr[1]))
-		w.household.earn(float(got))
+		w.earn_for(a, float(got))
 		w.events.float_text(a.position, "+%d zł (kradzione)" % got, "money")
 	w.stats["thefts"] = int(w.stats.get("thefts", 0)) + 1
 	return true
