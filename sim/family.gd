@@ -7,7 +7,8 @@ extends RefCounted
 
 var w: SimWorld
 var persons: Dictionary = {}    # id -> SimPerson
-var root_id: int = -1
+var lineages: Dictionary = {}   # id -> SimLineage
+var player_lineage_id: int = -1
 var dynasty: String
 var game_over: bool = false
 var generation_of: Dictionary = {}  # person id -> pokolenie (0 = założyciele)
@@ -18,6 +19,15 @@ var _aging: Dictionary
 var _stages: Array              # etapy życia z danych, w kolejności
 var _stage_start := {}          # id etapu -> przeżyte doby na jego początku
 var _next_id := 1
+var _next_lineage := 1
+
+# Root rodu gracza; mieszka w SimLineage, tu tylko skrót.
+var root_id: int:
+	get:
+		var l := player_lineage()
+		return l.root_id if l != null else -1
+	set(v):
+		player_lineage().root_id = v
 
 const SPAWN_SPREAD_X := 2.0             # rozrzut miejsca startu przy drzwiach chaty
 const SPAWN_DEPTH := Vector2(0.5, 2.5)  # odległość przed drzwiami (min, max)
@@ -35,6 +45,7 @@ func _init(world: SimWorld, people: Dictionary) -> void:
 		_stage_start[String(st["id"])] = start
 		start += float(st["days"])
 	dynasty = String(people["dynasty"])
+	player_lineage_id = new_lineage(dynasty).id
 
 
 func setup_start() -> void:
@@ -53,6 +64,7 @@ func setup_start() -> void:
 		p.blood = not p.attached
 		by_key[String(spec["key"])] = p
 		persons[p.id] = p
+		player_lineage().add(p)
 		var a: SimAgent = w.spawn_agent(p, w.home().door() + Vector2(w.rng.next_float(-SPAWN_SPREAD_X, SPAWN_SPREAD_X), w.rng.next_float(SPAWN_DEPTH.x, SPAWN_DEPTH.y)))
 		a.job = String(spec.get("job", "none"))
 		for s in spec.get("skills", {}):
@@ -82,6 +94,32 @@ func _new_id() -> int:
 	var id := _next_id
 	_next_id += 1
 	return id
+
+
+func new_lineage(lname: String) -> SimLineage:
+	var l := SimLineage.new(_next_lineage, lname)
+	_next_lineage += 1
+	lineages[l.id] = l
+	return l
+
+
+func player_lineage() -> SimLineage:
+	return lineages.get(player_lineage_id)
+
+
+func lineage_of(p: SimPerson) -> SimLineage:
+	return lineages.get(p.lineage_id)
+
+
+func living_members(lineage_id: int) -> Array:
+	var out: Array = []
+	var l: SimLineage = lineages.get(lineage_id)
+	if l == null:
+		return out
+	for id in l.members:
+		if persons[id].alive():
+			out.append(persons[id])
+	return out
 
 
 func root() -> SimPerson:
@@ -312,6 +350,7 @@ func _give_birth(mother: SimPerson) -> void:
 	child.traits = _inherit("traits", mother.traits, father.traits if father else [])
 	child.character = _inherit("character", mother.character, father.character if father else [])
 	persons[child.id] = child
+	_lineage_for_child(mother, father).add(child)
 	mother.children.append(child.id)
 	if father != null:
 		father.children.append(child.id)
@@ -344,6 +383,16 @@ func _give_birth(mother: SimPerson) -> void:
 
 # Dziedziczenie listy (cechy albo charakter) według people.json → inheritance[kind].
 # Sprzeczne pary [zostaje, odpada] rozstrzyga kolejność w danych.
+# Dziecko wchodzi do rodu krwi; gdy oboje rodzice są krwią różnych rodów,
+# do rodu gracza, jeśli któreś z nich w nim jest, w przeciwnym razie do rodu matki.
+func _lineage_for_child(mother: SimPerson, father: SimPerson) -> SimLineage:
+	var opts: Array = [mother] if father == null else [mother, father]
+	for par: SimPerson in opts:
+		if par.lineage_id == player_lineage_id:
+			return player_lineage()
+	return lineage_of(mother) if lineage_of(mother) != null else player_lineage()
+
+
 func _inherit(kind: String, from_mother: Array, from_father: Array) -> Array:
 	var cfg: Dictionary = _people["inheritance"][kind]
 	var pool: Array = cfg["pool"]
@@ -455,6 +504,7 @@ func resolve_marriage(data: Dictionary, accepted: bool) -> void:
 	p.unions.append({ "spouse": s.id, "start": w.clock.now(), "end": -1.0 })
 	s.unions.append({ "spouse": p.id, "start": w.clock.now(), "end": -1.0 })
 	persons[s.id] = s
+	lineage_of(p).add(s)
 	generation_of[s.id] = int(generation_of.get(p.id, 0))
 	var from: SimBuilding = w.building("n1")
 	var a: SimAgent = w.spawn_agent(s, from.door())

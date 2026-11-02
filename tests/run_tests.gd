@@ -47,6 +47,7 @@ func _run_all() -> void:
 	_test_life_stages_in_days()
 	_test_pregnancy_lasts_data_days()
 	_test_traits_and_character_split()
+	_test_lineage_start()
 	_test_world_deterministic()
 	_test_world_30_days_autonomous()
 	_test_economy_chain_produces_income()
@@ -292,6 +293,21 @@ func _test_traits_and_character_split() -> void:
 	check("trait conflicts resolved from data, injuries not inherited", tr == ["pracowity"])
 
 
+func _test_lineage_start() -> void:
+	var w = _new_world()
+	var f = w.family
+	var l = f.player_lineage()
+	check("player lineage exists with dynasty name", l != null and l.name == "Wilk")
+	var all_in := true
+	for p in f.living():
+		if p.lineage_id != l.id or not l.has(p.id):
+			all_in = false
+	check("all starting people belong to player lineage", all_in and l.members.size() == 6)
+	check("lineage root is Jan", l.root_id == f.root().id and f.root().name == "Jan")
+	f.set_root(f.living()[3].id)
+	check("root lives in lineage", l.root_id == f.living()[3].id)
+
+
 func _state_sig(w) -> String:
 	var parts: Array = ["%.3f" % w.household.cash, str(w.building("sawmill").stock)]
 	for a in w.agents:
@@ -388,6 +404,11 @@ func _test_marriage_and_birth() -> void:
 			w.family.set_seeking(p.id, true)
 	_run_days_auto(w, 40.0)
 	check("married couples have children", w.family.persons.size() > n0)
+	var in_lineage := true
+	for p in w.family.persons.values():
+		if p.lineage_id != w.family.player_lineage_id:
+			in_lineage = false
+	check("spouses and newborns join player lineage", in_lineage)
 
 
 func _test_manual_queue_auto_release() -> void:

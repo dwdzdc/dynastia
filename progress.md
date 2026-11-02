@@ -62,7 +62,7 @@ Pętla gry: ród Wilków (6 osób, 3 pokolenia) w chacie pod lasem. Co 5 dni czy
 
 ### Faza A — fundamenty danych
 
-- [ ] A1 `sim/lineage.gd` (S1) → ród startowy z rootem, `Person.lineage_id` → test: wszyscy startowi w rodzie gracza, root ustawiony.
+- [x] A1 `sim/lineage.gd` (S1) → ród startowy z rootem, `Person.lineage_id` → test: wszyscy startowi w rodzie gracza, root ustawiony.
 - [ ] A2 `sim/bonds.gd` (S2, S3): dodaj wspomnienie, wartość więzi z blaknięciem, ciężkie trwałe → test: asymetria, blaknięcie, trwałe nie blakną.
 - [ ] A3 `data/memories.json`: rodzaje wspomnień (waga, blaknięcie, szablon tekstu), modyfikatory od charakteru → test: pamiętliwy pamięta dłużej, porywczy mocniej przeżywa kłótnię.
 - [ ] A4 Więzi startowe: rodzina startowa dostaje wspomnienia z „przeszłości” (wychowanie, małżeństwo) → sensowne więzi na starcie → test: dzieci–rodzice dodatnie.

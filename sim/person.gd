@@ -17,6 +17,7 @@ var father_id: int = -1
 var spouse_id: int = -1
 var blood: bool = false         # krew rodu (linia, którą czyta sukcesja i game over)
 var attached: bool = false      # wżeniony małżonek
+var lineage_id: int = -1        # ród, do którego należy (S1); -1 = żaden
 var traits: Array = []          # cechy ciała i talentu (silny, chorowity…), z wpływem na ciało
 var character: Array = []       # charakter (lojalny, porywczy…), wpływa na więzi i wolę
 var agent_id: int = -1
