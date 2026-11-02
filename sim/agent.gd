@@ -1,157 +1,107 @@
-# SimAgent — anonimowy agent (Etap 2): id, wiek, umiejętności, potrzeby,
-# harmonogram i powód bezczynności. BEZ traitów, rodzin i więzi (te wchodzą
-# w etapach 5–7). Czysta logika (RefCounted), testowalna headless.
+# SimAgent — ciało w świecie: pozycja, potrzeby, zdrowie, przydział pracy, niesiony
+# towar i kolejka kroków planu. Warstwa logistyki (ADR-0001): nie zna rodziny ani
+# więzi — warstwa tożsamości (sim/family.gd) ustawia tylko modyfikatory
+# (work_mult, speed_mult, is_child) i czyta zdrowie.
+#
+# Plan to kolejka kroków (Dictionary):
+#   { t = "walk", to: Vector2, why }                 — idź
+#   { t = "act", act, left, why, inside?, at? }      — czynność przez `left` sekund sim
+#   { t = "do", fn, arg }                            — natychmiastowy efekt w SimJobs
 class_name SimAgent
 extends RefCounted
 
 
 var id: int
-var name: String
-var age: int
-var skills: Dictionary = {}
-var needs: Dictionary = { "sleep": 100.0, "food": 100.0 }
-
-var home_place_id: String
-var work_place_id: String
-var food_place_id: String
-
+var person_id: int = -1
 var position: Vector2 = Vector2.ZERO
-var activity: String = "free"      # sleep | work | eat | free | commute
-var pending_activity: String = ""
-var target_place_id: String = ""
-var location_place_id: String = ""
-var controlled: bool = false
+var facing: Vector2 = Vector2.DOWN
+var home_id: String = "home"
+
+var job: String = "none"            # none | woodcutter | sawyer | carpenter | carrier | laborer
+var skills: Dictionary = {}         # chop | saw | craft -> 0..max
+var needs: Dictionary = { "food": 100.0, "sleep": 100.0 }
+var health: float = 100.0
+var sick_days: float = 0.0
+var injured_days: float = 0.0
+var status: String = "active"       # active | jailed | dead
+var jail_days: float = 0.0
+
+var carrying: String = ""
+var carrying_qty: int = 0
+var carrying_qualities: Array = []
+
+var steps: Array = []
+var plan_kind: String = ""          # eat | sleep | work | chore | rest | child | sick | manual
+var claims: Array = []              # rezerwacje (np. "tree:12", "chore:food")
+
+# Stan do odczytu przez widok
+var activity: String = "idle"       # walk | chop | saw | craft | labor | sleep | eat | rest | play | wait | idle
 var idle_reason: String = ""
-var commute_accum: float = 0.0      # sekund w bieżącym dojeździe (detekcja zakleszczeń)
+var alert: bool = false             # problem wymagający uwagi gracza
+var hidden: bool = false            # wewnątrz budynku
+var inside: String = ""             # id budynku, w którym jest
+var controlled: bool = false
+var hungry_no_food: bool = false
+var cold: bool = false
+
+# Modyfikatory od warstwy tożsamości
+var is_child: bool = false
+var age_eff: float = 1.0
+var work_mult: Dictionary = {}      # act -> mnożnik (z traitów), klucz "all" dla wszystkiego
+var speed_mult: float = 1.0
+var accident_mult: float = 1.0
+var quality_bonus: float = 0.0
+var sick_mult: float = 1.0
+var regen_mult: float = 1.0
 
 
-# wartości stałych pieczone w konstrukcji (rate = na dobę / sekund_na_dobę)
-var _sleep_decay: float
-var _sleep_rec: float
-var _food_decay: float
-var _food_rec: float
-var _sleep_low: float
-var _food_low: float
-var _wake: float
-var _sleep_at: float
-var _work_start: float
-var _work_end: float
-var _places: Dictionary
-
-
-func _init(
-	p_id: int, p_name: String, p_age: int, p_skills: Dictionary,
-	p_home: String, p_work: String, p_food: String,
-	places: Dictionary, balance: Dictionary,
-) -> void:
+func _init(p_id: int) -> void:
 	id = p_id
-	name = p_name
-	age = p_age
-	skills = p_skills
-	home_place_id = p_home
-	work_place_id = p_work
-	food_place_id = p_food
-	_places = places
-
-	var day_seconds := float(balance["time"]["day_seconds"])
-	var n: Dictionary = balance["needs"]
-	_sleep_decay = float(n["sleep"]["decay_day"]) / day_seconds
-	_sleep_rec = float(n["sleep"]["recover_day"]) / day_seconds
-	_food_decay = float(n["food"]["decay_day"]) / day_seconds
-	_food_rec = float(n["food"]["recover_day"]) / day_seconds
-	_sleep_low = float(n["sleep"]["low"])
-	_food_low = float(n["food"]["low"])
-	var s: Dictionary = balance["schedule"]
-	_wake = float(s["wake"])
-	_sleep_at = float(s["sleep"])
-	_work_start = float(s["work_start"])
-	_work_end = float(s["work_end"])
 
 
-# delta_sim w sekundach symulacyjnych (nie realnych!).
-func tick(tod: float, delta_sim: float) -> void:
-	if controlled:
-		idle_reason = "przejęty — sterowanie ręczne"
-		return
-
-	needs["sleep"] = clampf(needs["sleep"] - _sleep_decay * delta_sim, 0.0, 100.0)
-	needs["food"] = clampf(needs["food"] - _food_decay * delta_sim, 0.0, 100.0)
-
-	match activity:
-		"sleep":
-			needs["sleep"] = clampf(needs["sleep"] + _sleep_rec * delta_sim, 0.0, 100.0)
-			idle_reason = "śpi"
-			_maybe_switch(tod)
-		"work":
-			idle_reason = "pracuje (wycinka drewna)"
-			_maybe_switch(tod)
-		"eat":
-			needs["food"] = clampf(needs["food"] + _food_rec * delta_sim, 0.0, 100.0)
-			idle_reason = "je"
-			_maybe_switch(tod)
-		"free":
-			idle_reason = "wypoczywa w domu"
-			_maybe_switch(tod)
-		"commute":
-			idle_reason = "idzie do " + _place_name(target_place_id)
+func is_active() -> bool:
+	return status == "active"
 
 
-func _desired(tod: float) -> String:
-	if needs["food"] < _food_low:
-		return "eat"
-	if needs["sleep"] < _sleep_low or tod < _wake or tod >= _sleep_at:
-		return "sleep"
-	if tod >= _work_start and tod < _work_end:
-		return "work"
-	return "free"
+func disabled() -> bool:
+	return sick_days > 0.0 or injured_days > 0.0
 
 
-func _maybe_switch(tod: float) -> void:
-	var d := _desired(tod)
-	if d != activity:
-		_start_commute(d)
+func can_work() -> bool:
+	return not is_child and age_eff > 0.0 and not disabled()
 
 
-func _start_commute(target: String) -> void:
-	activity = "commute"
-	pending_activity = target
-	target_place_id = _place_for(target)
+func inside_home() -> bool:
+	return inside == home_id
 
 
-func _place_for(a: String) -> String:
-	match a:
-		"work":
-			return work_place_id
-		"eat":
-			return food_place_id
-		_:
-			return home_place_id
+func skill(name: String) -> float:
+	return float(skills.get(name, 0.0))
 
 
-func _place_name(place_id: String) -> String:
-	if _places.has(place_id):
-		return String(_places[place_id]["name"])
-	return place_id
+func trait_mult(act: String) -> float:
+	return float(work_mult.get("all", 1.0)) * float(work_mult.get(act, 1.0))
 
 
-# Wywoływane przez świat po dotarciu na miejsce.
-func on_arrival() -> void:
-	location_place_id = target_place_id
-	activity = pending_activity
-	target_place_id = ""
-	commute_accum = 0.0
-	idle_reason = _reason_for(activity)
+func clear_carry() -> void:
+	carrying = ""
+	carrying_qty = 0
+	carrying_qualities = []
 
 
-func _reason_for(a: String) -> String:
-	match a:
-		"sleep":
-			return "śpi"
-		"work":
-			return "pracuje (wycinka drewna)"
-		"eat":
-			return "je"
-		"free":
-			return "wypoczywa w domu"
-		_:
-			return "wykonuje zadanie"
+func current_step() -> Dictionary:
+	if steps.is_empty():
+		return {}
+	return steps[0]
+
+
+# Krok, który można przerwać bez utraty wykonanej pracy.
+func interruptible() -> bool:
+	if steps.is_empty():
+		return true
+	var s: Dictionary = steps[0]
+	if s["t"] == "walk":
+		return true
+	if s["t"] == "act":
+		return String(s["act"]) in ["wait", "rest", "sleep", "labor", "play", "idle"]
+	return false

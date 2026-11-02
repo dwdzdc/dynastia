@@ -85,3 +85,18 @@ Pole lub krawędź celowo nie-wygenerowane — np. relacje postaci LOD 0 do osó
 **attention** (uwaga):
 Miara zadbania o członka rodziny, nie waluta: wyłania się z `last_interaction_day`, oddelegowania do mechanicznej pracy i liczebności rdzenia. Nie ma pola w `sim/` i nie pojawia się w UI.
 _Avoid_: budżet, punkty uwagi (jej nie wydajesz — o nią dbasz).
+
+## Praca i plan dnia (MVP)
+
+**job** (przydział):
+Stała rola osoby nadana przez gracza (drwal, tracz, stolarz, nosiciel, zbieracz, dniówka, złodziej, bez przydziału). Wypełnia blok pracy w harmonogramie; reszta dnia to potrzeby i obowiązki.
+_Avoid_: occupation (to fakt biograficzny), worker (status względem rdzenia).
+
+**plan**:
+Krótka kolejka kroków agenta (`walk` / `act` / `do`) zbudowana z przydziału, potrzeb i bloku dnia; przeliczana, gdy się skończy albo zmieni się sytuacja. Ostatni krok zawsze ma `idle_reason`.
+
+**chore** (obowiązek domowy):
+Zakup jedzenia i donoszenie opału, gdy zapas w chacie spada poniżej celu; robi to nosiciel, osoba bez przydziału albo każdy dorosły po pracy. Jedna osoba na raz (rezerwacja).
+
+**scenario** (scenariusz):
+Zestaw danych startowych: mapa, rodzina, reguły (czynsz, odległość od targu). MVP ma jeden („drwale pod wsią"); kolejne, np. „sami na odludziu", mają być nowymi plikami danych.

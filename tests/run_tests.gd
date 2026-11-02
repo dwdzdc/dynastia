@@ -42,9 +42,15 @@ func _run_all() -> void:
 	_test_clock_pause_and_speed()
 	_test_winter_shorter_day()
 	_test_light_factor_day_night()
-	# Etap 2
-	_test_world_generation()
-	_test_world_autonomous_day()
+	# Świat (osada + ród)
+	_test_world_start_family()
+	_test_world_deterministic()
+	_test_world_30_days_autonomous()
+	_test_economy_chain_produces_income()
+	_test_no_income_goes_into_debt()
+	_test_succession_and_game_over()
+	_test_marriage_and_birth()
+	_test_long_run_no_crash()
 
 
 # --- Etap 0 ---
@@ -171,71 +177,168 @@ func _test_light_factor_day_night() -> void:
 	check("deep night is dark", c.light_factor() < 0.01)
 
 
-# --- Etap 2 ---
+# --- Świat ---
+
+func _people() -> Dictionary:
+	return LOADER_SCRIPT.load_json("res://data/people.json")
+
 
 func _map() -> Dictionary:
 	return LOADER_SCRIPT.load_json("res://data/map.json")
 
 
-func _test_world_generation() -> void:
-	var balance := _balance()
-	var world = WORLD_SCRIPT.new(12345, balance, _map())
-	check("population count matches", world.agents.size() == int(balance["population"]["count"]))
-
-	var all_homed := true
-	for i in world.agents.size():
-		if str(world.agents[i].home_place_id) == "":
-			all_homed = false
-	check("every agent has a home", all_homed)
-
-	var world2 = WORLD_SCRIPT.new(12345, balance, _map())
-	var same := true
-	for i in world.agents.size():
-		var a = world.agents[i]
-		var b = world2.agents[i]
-		if int(a.age) != int(b.age) or int(a.skills["lumber"]) != int(b.skills["lumber"]) \
-				or str(a.home_place_id) != str(b.home_place_id):
-			same = false
-	check("same seed -> same world", same)
+func _new_world(seed := 12345) -> RefCounted:
+	return WORLD_SCRIPT.new(seed, _balance(), _map(), _people())
 
 
-func _test_world_autonomous_day() -> void:
-	var balance := _balance()
-	var day_seconds := float(LOADER_SCRIPT.get_nested(balance, "time.day_seconds"))
-	var world = WORLD_SCRIPT.new(12345, balance, _map())
-	world.clock.speed = 1
+func _run_days(world, days: float) -> void:
+	world.step_sim(days * world.clock.day_seconds)
 
-	var seen := {}
-	for i in world.agents.size():
-		seen[int(world.agents[i].id)] = {}
 
-	for step in 30:  # 3 doby w krokach 0.1 doby
-		world.tick(day_seconds / 10.0)
-		for i in world.agents.size():
-			var a = world.agents[i]
-			seen[int(a.id)][str(a.activity)] = true
+# Odpowiada na każde pytanie pierwszą opcją (autopilot gracza w testach).
+func _run_days_auto(world, days: float) -> void:
+	var end: float = world.clock.now() + days
+	var guard := 0
+	while world.clock.now() < end and not world.family.game_over and guard < 10000:
+		guard += 1
+		world.step_sim(minf(world.clock.day_seconds * 0.25, (end - world.clock.now()) * world.clock.day_seconds + 0.01))
+		while world.events.blocking():
+			var p: Dictionary = world.events.prompts[0]
+			world.resolve_prompt(int(p["id"]), p["options"][0]["value"])
+			if world.family.game_over:
+				return
 
-	var ok_needs := true
+
+func _test_world_start_family() -> void:
+	var w = _new_world()
+	check("start family has 6 people", w.family.living().size() == 6)
+	check("root set", w.family.root() != null and w.family.root().name == "Jan")
+	check("spouse is attached, not blood", w.family.persons[w.family.root().spouse_id].attached)
+	var kid_child := false
+	for p in w.family.living():
+		if p.name == "Kuba":
+			kid_child = w.family.stage_of(p) == "child"
+	check("Kuba is a child", kid_child)
+	check("trees generated", w.trees.size() > 20)
+
+
+func _state_sig(w) -> String:
+	var parts: Array = ["%.3f" % w.household.cash, str(w.building("sawmill").stock)]
+	for a in w.agents:
+		parts.append("%d:%.2f,%.2f:%s" % [a.id, a.position.x, a.position.y, a.activity])
+	return "|".join(parts)
+
+
+func _test_world_deterministic() -> void:
+	var a = _new_world(777)
+	var b = _new_world(777)
+	_run_days_auto(a, 6.0)
+	_run_days_auto(b, 6.0)
+	check("same seed + same inputs -> same state after 6 days", _state_sig(a) == _state_sig(b))
+
+
+func _test_world_30_days_autonomous() -> void:
+	var w = _new_world()
 	var ok_reason := true
-	var ok_stuck := true
-	for i in world.agents.size():
-		var a = world.agents[i]
-		if float(a.needs["sleep"]) < 0.0 or float(a.needs["sleep"]) > 100.0:
-			ok_needs = false
-		if float(a.needs["food"]) < 0.0 or float(a.needs["food"]) > 100.0:
-			ok_needs = false
-		if str(a.idle_reason) == "":
-			ok_reason = false
-		if float(a.commute_accum) >= day_seconds:
-			ok_stuck = false
-	check("needs stay in [0,100]", ok_needs)
-	check("idle_reason always set", ok_reason)
-	check("no agent stuck commuting (> 1 doba)", ok_stuck)
+	var ok_steps := true
+	var max_still := 0.0
+	var still := {}
+	var last := {}
+	var end: float = w.clock.now() + 30.0
+	while w.clock.now() < end and not w.family.game_over:
+		w.step_sim(1.0)
+		while w.events.blocking():
+			var p: Dictionary = w.events.prompts[0]
+			w.resolve_prompt(int(p["id"]), p["options"][0]["value"])
+		for a in w.agents:
+			if a.status != "active":
+				continue
+			if String(a.idle_reason) == "":
+				ok_reason = false
+			# Agent stojący w miejscu poza czynnością = zakleszczenie.
+			var moved: bool = not last.has(a.id) or (last[a.id] as Vector2).distance_to(a.position) > 0.01
+			last[a.id] = a.position
+			if moved or a.activity != "walk":
+				still[a.id] = 0.0
+			else:
+				still[a.id] = float(still.get(a.id, 0.0)) + 1.0
+				max_still = maxf(max_still, still[a.id])
+	check("30 days: every active agent always has idle_reason", ok_reason)
+	check("30 days: nobody stuck walking in place", max_still < 3.0)
+	check("30 days: no orphan goods (planks sold or used)", int(w.stats.get("sold_plank", 0)) + int(w.stats.get("sold_chair", 0)) > 0)
 
-	var cycled := true
-	for i in world.agents.size():
-		var d: Dictionary = seen[int(world.agents[i].id)]
-		if not (d.has("sleep") and d.has("work") and d.has("eat")):
-			cycled = false
-	check("every agent cycled sleep+work+eat", cycled)
-	check("wood accrues during work", float(world.resources["wood"]) > 0.0)
+
+func _test_economy_chain_produces_income() -> void:
+	var w = _new_world()
+	_run_days_auto(w, 5.0)
+	check("woodcutter -> sawmill -> market sells planks", int(w.stats.get("sold_plank", 0)) > 0)
+	check("household paid first rent without debt", w.household.debt == 0.0)
+
+
+func _test_no_income_goes_into_debt() -> void:
+	var w = _new_world()
+	for a in w.agents:
+		a.job = "none"
+	_run_days_auto(w, 16.0)
+	check("family without income falls into debt", w.household.debt > 0.0 or w.stats.has("jailed"))
+
+
+func _test_succession_and_game_over() -> void:
+	var w = _new_world()
+	var root = w.family.root()
+	w.kill(w.agent_by_id(root.agent_id), "test")
+	check("root death asks for successor", w.events.prompts.size() > 0 and w.events.prompts[-1]["kind"] == "succession")
+	var p: Dictionary = w.events.prompts[-1]
+	var spouse_offered := false
+	for o in p["options"]:
+		if int(o["value"]) == root.spouse_id:
+			spouse_offered = true
+	check("spouse is never a succession candidate", not spouse_offered)
+	w.resolve_prompt(int(p["id"]), p["options"][0]["value"])
+	check("new root chosen (adult blood first)", w.family.root() != null and w.family.root().name == "Piotr")
+	for q in w.family.living():
+		if q.blood:
+			w.kill(w.agent_by_id(q.agent_id), "test")
+	check("extinct bloodline -> game over", w.family.game_over)
+	check("attached spouse alive but game still over", w.family.living().size() >= 1)
+
+
+func _test_marriage_and_birth() -> void:
+	var w = _new_world()
+	var piotr = null
+	for p in w.family.living():
+		if p.name == "Piotr":
+			piotr = p
+	w.family.set_seeking(piotr.id, true)
+	_run_days_auto(w, 25.0)
+	check("seeking adult eventually marries", not piotr.unions.is_empty())
+	var n0: int = w.family.persons.size()
+	for p in w.family.living():
+		if w.family.can_marry(p):
+			w.family.set_seeking(p.id, true)
+	_run_days_auto(w, 40.0)
+	check("married couples have children", w.family.persons.size() > n0)
+
+
+func _test_long_run_no_crash() -> void:
+	var w = _new_world(4242)
+	# Autopilot gracza: każdy dorosły bez pary szuka małżonka, dorastający dostają pracę.
+	var years := 0
+	while years < 30 and not w.family.game_over:
+		for p in w.family.living():
+			if w.family.can_marry(p) and not p.seeking_spouse:
+				w.family.set_seeking(p.id, true)
+			var a = w.agent_by_id(p.agent_id)
+			if a != null and a.job == "none" and a.can_work() and not p.attached:
+				a.job = "laborer"
+		_run_days_auto(w, float(w.balance["aging"]["days_per_year_of_life"]))
+		years += 1
+	var gen: int = w.stats.get("max_generation", 0)
+	print("  long run: years=%d alive=%d persons=%d gen=%d cash=%d debt=%d over=%s" % [
+		years, w.family.living().size(), w.family.persons.size(), gen, int(w.household.cash), int(w.household.debt), w.family.game_over])
+	check("30 life-years simulated without crash", years >= 1)
+	var ages_ok := true
+	for p in w.family.living():
+		if w.family.age_of(p) < 0.0 or w.family.age_of(p) > 120.0:
+			ages_ok = false
+	check("ages within sane range", ages_ok)

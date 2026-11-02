@@ -1,120 +1,561 @@
-# SimWorld — świat symulacji (Etap 2): zegar, miejsca, anonimowi agenci.
-# Własność pozycji/ruchu leży tutaj (deterministycznie, prosty dojazd liniowy),
-# dzięki czemu cały dzień osady da się przewinąć headless. game/ tylko renderuje.
-#
-# Patrz ADR-0002 (determinizm) — generowanie i ruch są w pełni deterministyczne
-# z seeda; nie ma randifa() ani iteracji po nieuporządkowanych mapach (sortujemy id).
+# SimWorld — świat symulacji: zegar, osada (budynki, drzewa), ciała, gospodarstwo,
+# ród, zdarzenia. Cała logika i ruch są tu (deterministycznie, ADR-0002); game/ i ui/
+# tylko czytają stan i wołają komendy (set_job, manual_move, resolve_prompt...).
 class_name SimWorld
 extends RefCounted
 
 
-const SimClock := preload("res://sim/time.gd")
-const SimAgent := preload("res://sim/agent.gd")
-const SimRng := preload("res://sim/rng.gd")
+var balance: Dictionary
+var map: Dictionary
+var people: Dictionary
 
 var clock: SimClock
-var agents: Array = []
-var places: Dictionary = {}   # id -> { name, type, position: Vector2 }
-var move_speed: float
-var arrive_radius: float
+var rng: SimRng
+var events: SimEvents
+var household: SimHousehold
+var jobs: SimJobs
+var family: SimFamily
 
-# Zasoby osady (prymitywny "znak życia" gospodarki, rozbudowa w Etapie 3/4).
-var resources: Dictionary = { "wood": 0.0 }
-var wood_rate: float = 0.0
+var buildings: Dictionary = {}   # id -> SimBuilding
+var trees: Array = []            # SimTree
+var agents: Array = []           # SimAgent (także zmarli — status "dead")
+var chore_claims: Dictionary = {}  # "food"/"firewood" -> agent id
+var stats: Dictionary = {}
+
+var _tree_index: Dictionary = {}
+var _next_agent := 1
+var _last_day := 0
+var _regrow_total: float
 
 
-func _init(seed: int, balance: Dictionary, map: Dictionary) -> void:
+func _init(seed: int, p_balance: Dictionary, p_map: Dictionary, p_people: Dictionary) -> void:
+	balance = p_balance
+	map = p_map
+	people = p_people
 	clock = SimClock.new(balance)
+	clock.set_time(0, float(balance["schedule"]["wake"]) + 0.02)
+	rng = SimRng.new(seed)
+	events = SimEvents.new()
+	household = SimHousehold.new(balance["economy"])
+	jobs = SimJobs.new(self)
+	_regrow_total = float(balance["trees"]["regrow_days"]) * clock.day_seconds
 
-	for p in map["places"]:
-		places[p["id"]] = {
-			"name": p["name"],
-			"type": p["type"],
-			"position": Vector2(float(p["x"]), float(p["y"])),
-		}
+	var storage: Dictionary = balance["storage"]
+	for b in map["buildings"]:
+		var t := String(b["type"])
+		var cap: Dictionary = storage.get(t, {})
+		buildings[b["id"]] = SimBuilding.new(String(b["id"]), String(b["name"]), t,
+			Vector2(float(b["x"]), float(b["y"])), cap)
+	var eco: Dictionary = balance["economy"]
+	home().add("food", int(eco["start_food"]))
+	home().add("log", int(eco["start_firewood"]))
+	_generate_trees()
 
-	move_speed = float(balance["movement"]["speed"])
-	arrive_radius = float(balance["movement"]["arrive_radius"])
-	wood_rate = float(balance.get("production", {}).get("wood_per_worker_second", 0.0))
-
-	var houses := _ids_of_type("house")
-	var works := _ids_of_type("work")
-	var foods := _ids_of_type("food")
-	var count := int(balance["population"]["count"])
-	var rng := SimRng.new(seed)
-
-	for i in count:
-		var home := _pick_or(houses, i)
-		var work := _pick_random_or(works, rng, home)
-		var food := _pick_random_or(foods, rng, home)
-		var age := rng.next_int(16, 59)
-		var skills := { "lumber": rng.next_int(1, 6) }
-		var agent := SimAgent.new(i, "Osadnik %d" % i, age, skills, home, work, food, places, balance)
-		agent.position = place_position(home)
-		agent.location_place_id = home
-		agents.append(agent)
+	family = SimFamily.new(self, people)
+	family.setup_start()
+	for p in family.living():
+		p.set_meta("stage", family.stage_of(p))
+	note("Ród %s zaczyna w chacie pod lasem. Czynsz %d zł co %d dni — pilnuj kasy." % [
+		family.dynasty, int(household.rent), household.rent_period], "info", home().door())
 
 
-func _ids_of_type(t: String) -> Array:
-	var out: Array = []
-	for id in places:
-		if String(places[id]["type"]) == t:
-			out.append(id)
-	out.sort()
-	return out
+func _generate_trees() -> void:
+	var f: Dictionary = map["forest"]
+	var tc: Dictionary = balance["trees"]
+	var tr := SimRng.new(SimRng.hash3(int(balance["world_seed"]), 0, "trees"))
+	var spacing := float(tc["min_spacing"])
+	var tries := 0
+	while trees.size() < int(tc["count"]) and tries < 4000:
+		tries += 1
+		var p := Vector2(float(f["x"]) + tr.next_float(0.0, float(f["w"])), float(f["y"]) + tr.next_float(0.0, float(f["h"])))
+		var ok := true
+		for t in trees:
+			if t.position.distance_to(p) < spacing:
+				ok = false
+				break
+		if not ok:
+			continue
+		var t := SimTree.new(trees.size(), p, tr.next_int(int(tc["wood_min"]), int(tc["wood_max"])))
+		trees.append(t)
+		_tree_index[t.id] = t
 
 
-func _pick_or(items: Array, idx: int) -> String:
-	if items.is_empty():
-		return ""
-	return String(items[idx % items.size()])
+# --- Dostęp ---
+
+func home() -> SimBuilding:
+	return buildings["home"]
 
 
-func _pick_random_or(items: Array, rng: SimRng, fallback: String) -> String:
-	if items.is_empty():
-		return fallback
-	return String(items[rng.choice_i(items)])
+func building(id: String) -> SimBuilding:
+	return buildings.get(id)
 
 
-func place_position(id: String) -> Vector2:
-	if places.has(id):
-		return places[id]["position"]
-	return Vector2.ZERO
+func tree_by_id(id: int) -> SimTree:
+	return _tree_index.get(id)
 
 
-func place_name(id: String) -> String:
-	if places.has(id):
-		return String(places[id]["name"])
-	return id
+func regrow_total() -> float:
+	return _regrow_total
 
 
-# delta_real: sekundy rzeczywiste (widok). Przeliczamy na sekundy symulacyjne.
-func tick(delta_real: float) -> void:
-	clock.advance(delta_real)
-	var delta_sim := delta_real * float(clock.speed)
-	if delta_sim <= 0.0:
-		return
-	var tod := clock.time_of_day()
-	for a in agents:
-		a.tick(tod, delta_sim)
-		if a.activity == "commute":
-			a.commute_accum += delta_sim
-			var tpos := place_position(a.target_place_id)
-			var step := move_speed * delta_sim
-			var dist: float = a.position.distance_to(tpos)
-			if dist <= maxf(step, arrive_radius):
-				a.position = tpos
-				a.on_arrival()
-			else:
-				a.position = a.position.move_toward(tpos, step)
-		else:
-			a.commute_accum = 0.0
-		if a.activity == "work" and not a.controlled:
-			resources["wood"] += wood_rate * delta_sim
-
-
-func find_agent(id: int) -> SimAgent:
+func agent_by_id(id: int) -> SimAgent:
 	for a in agents:
 		if a.id == id:
 			return a
 	return null
+
+
+func person_of(a: SimAgent) -> SimPerson:
+	return family.persons.get(a.person_id)
+
+
+func active_agents() -> Array:
+	return agents.filter(func(a): return a.status != "dead")
+
+
+func nearest_tree(from: Vector2) -> SimTree:
+	var best: SimTree = null
+	var bd := INF
+	for t in trees:
+		if not t.available():
+			continue
+		var d := from.distance_squared_to(t.position)
+		if d < bd:
+			bd = d
+			best = t
+	return best
+
+
+func good_label(g: String) -> String:
+	match g:
+		"log":
+			return "kłoda"
+		"plank":
+			return "deski"
+		"chair":
+			return "krzesła"
+		"food":
+			return "jedzenie"
+	return g
+
+
+func spawn_agent(p: SimPerson, at: Vector2) -> SimAgent:
+	var a := SimAgent.new(_next_agent)
+	_next_agent += 1
+	a.person_id = p.id
+	a.position = at
+	a.needs["food"] = rng.next_float(70.0, 95.0)
+	p.agent_id = a.id
+	agents.append(a)
+	return a
+
+
+func note(text: String, level: String = "info", focus: Variant = null) -> void:
+	events.add(clock.day_index(), clock.time_of_day(), text, level, focus)
+
+
+func ask_ok(title: String, text: String) -> void:
+	events.ask("notice", title, text, [{ "label": "Dalej", "value": "ok" }])
+
+
+# --- Komendy gracza ---
+
+func set_job(agent_id: int, job: String) -> void:
+	var a := agent_by_id(agent_id)
+	if a == null or a.status != "active":
+		return
+	a.job = job
+	jobs.replan(a)
+
+
+func manual_move(agent_id: int, to: Vector2) -> void:
+	var a := agent_by_id(agent_id)
+	if a == null or a.status != "active":
+		return
+	a.controlled = true
+	jobs.release(a)
+	a.steps.clear()
+	a.plan_kind = "manual"
+	a.steps.append({ "t": "walk", "to": to, "why": "idzie tam, gdzie kazano" })
+	a.steps.append({ "t": "act", "act": "idle", "left": 1e9, "why": "sterowanie ręczne — czeka na rozkaz", "inside": "", "alert": false })
+
+
+# Ręczne ścięcie wskazanego drzewa — przejęcie daje kontrolę nad tym, co i gdzie.
+func manual_chop(agent_id: int, tree_id: int) -> void:
+	var a := agent_by_id(agent_id)
+	var t := tree_by_id(tree_id)
+	if a == null or t == null or a.status != "active" or t.wood <= 0 or not a.can_work():
+		return
+	a.controlled = true
+	jobs.release(a)
+	if t.reserved_by >= 0 and t.reserved_by != a.id:
+		var other := agent_by_id(t.reserved_by)
+		if other != null:
+			jobs.replan(other)
+	t.reserved_by = a.id
+	a.claims.append("tree:%d" % t.id)
+	a.steps.clear()
+	a.plan_kind = "manual"
+	a.steps.append({ "t": "walk", "to": t.position + Vector2(0.9, 0.4), "why": "idzie ściąć wskazane drzewo" })
+	a.steps.append({ "t": "act", "act": "chop", "left": jobs._dur(a, "chop", float(balance["jobs"]["chop_seconds"])) * 0.8,
+		"why": "rąbie wskazane drzewo (ręcznie, szybciej)", "inside": "", "alert": false })
+	a.steps.append({ "t": "do", "fn": "chop_done", "arg": t.id })
+	a.steps.append({ "t": "walk", "to": building("sawmill").door() + Vector2(-1.5, 0.0), "why": "niesie kłodę do tartaku" })
+	a.steps.append({ "t": "do", "fn": "deposit", "arg": "sawmill" })
+	a.steps.append({ "t": "act", "act": "idle", "left": 1e9, "why": "sterowanie ręczne — czeka na rozkaz", "inside": "", "alert": false })
+
+
+func release_manual(agent_id: int) -> void:
+	var a := agent_by_id(agent_id)
+	if a == null:
+		return
+	a.controlled = false
+	jobs.replan(a)
+
+
+func resolve_prompt(prompt_id: int, value: Variant) -> void:
+	var p := events.pop_prompt(prompt_id)
+	if p.is_empty():
+		return
+	match String(p["kind"]):
+		"marriage":
+			family.resolve_marriage(p["data"], String(value) == "yes")
+		"succession":
+			family.set_root(int(value))
+		"arrest":
+			var a := agent_by_id(int(p["data"]["agent"]))
+			if String(value) == "bail" and a != null and a.status == "jailed":
+				household.pay(float(balance["crime"]["bail"]))
+				release_from_jail(a)
+
+
+# --- Symulacja ---
+
+# delta_real: sekundy rzeczywiste klatki. Sim stoi, gdy czeka pytanie do gracza.
+func tick(delta_real: float) -> void:
+	if events.blocking() or family.game_over:
+		return
+	var total := delta_real * clock.multiplier()
+	step_sim(total)
+
+
+func step_sim(total: float) -> void:
+	var sub := float(balance["time"]["substep"])
+	while total > 0.0 and not events.blocking():
+		var dt := minf(sub, total)
+		total -= dt
+		_step(dt)
+
+
+func _step(dt: float) -> void:
+	clock.advance_sim(dt)
+	if clock.day_index() != _last_day:
+		_last_day = clock.day_index()
+		_new_day()
+	var days := dt / clock.day_seconds
+	for t in trees:
+		if t.wood <= 0:
+			t.regrow_left -= dt
+			if t.regrow_left <= 0.0:
+				t.wood = rng.next_int(int(balance["trees"]["wood_min"]), int(balance["trees"]["wood_max"]))
+				t.max_wood = t.wood
+	for a in agents:
+		match a.status:
+			"active":
+				_body(a, days)
+				if a.status == "active":
+					_behave(a, dt)
+			"jailed":
+				a.jail_days -= days
+				a.idle_reason = "w areszcie (jeszcze %.1f dnia)" % maxf(a.jail_days, 0.0)
+				if a.jail_days <= 0.0:
+					release_from_jail(a)
+
+
+func _body(a: SimAgent, days: float) -> void:
+	var n: Dictionary = balance["needs"]
+	var h: Dictionary = balance["health"]
+	a.needs["food"] = maxf(0.0, a.needs["food"] - float(n["food"]["decay_day"]) * days)
+	if a.activity == "sleep":
+		a.needs["sleep"] = minf(100.0, a.needs["sleep"] + float(n["sleep"]["recover_day"]) * days)
+	else:
+		a.needs["sleep"] = maxf(0.0, a.needs["sleep"] - float(n["sleep"]["decay_day"]) * days)
+	var dmg := 0.0
+	if a.needs["food"] <= 0.0:
+		dmg += float(h["starve_damage_day"])
+	if a.cold and a.hidden and a.inside_home():
+		dmg += float(h["cold_damage_day"])
+	if a.sick_days > 0.0:
+		dmg += float(h["sick_damage_day"]) * (float(h["sick_fatal_vulnerable_mult"]) if a.sick_mult > 1.2 else 1.0)
+		a.sick_days = maxf(0.0, a.sick_days - days)
+	if a.injured_days > 0.0:
+		a.injured_days = maxf(0.0, a.injured_days - days)
+	if dmg > 0.0:
+		a.health -= dmg * days
+	elif a.needs["food"] > 20.0:
+		a.health = minf(100.0, a.health + float(h["regen_day"]) * a.regen_mult * days)
+	if a.health <= 0.0:
+		var cause := "zmarł z głodu"
+		if a.sick_days > 0.0:
+			cause = "zmarł na chorobę"
+		elif a.cold:
+			cause = "zamarzł w nieogrzanej chacie"
+		elif a.injured_days > 0.0:
+			cause = "zmarł z ran"
+		var p := person_of(a)
+		if p != null and p.sex == "f":
+			cause = cause.replace("zmarł", "zmarła").replace("zamarzł", "zamarzła")
+		kill(a, cause)
+
+
+func _behave(a: SimAgent, dt: float) -> void:
+	var want := jobs.desired_kind(a)
+	var early_meal := a.plan_kind == "eat" and want in ["work", "chore", "child"]
+	if want != a.plan_kind and not early_meal and a.interruptible():
+		jobs.replan(a)
+	elif a.steps.is_empty():
+		jobs.replan(a)
+	var guard := 0
+	while not a.steps.is_empty() and guard < 8:
+		guard += 1
+		var s: Dictionary = a.steps[0]
+		match String(s["t"]):
+			"do":
+				a.steps.pop_front()
+				if not jobs.apply(a, s):
+					jobs.release(a)
+					a.steps.clear()
+					a.steps.append({ "t": "act", "act": "wait", "left": 1.0, "why": "coś poszło nie tak — zmienia plan", "inside": "", "alert": false })
+					return
+				continue
+			"walk":
+				var to: Vector2 = s["to"]
+				if a.position.distance_to(to) < 0.05:
+					a.steps.pop_front()
+					continue
+				_walk(a, s, dt)
+				return
+			"act":
+				_act(a, s, dt)
+				return
+
+
+func _walk(a: SimAgent, s: Dictionary, dt: float) -> void:
+	a.hidden = false
+	a.inside = ""
+	a.activity = "walk"
+	a.idle_reason = String(s["why"])
+	a.alert = false
+	var to: Vector2 = s["to"]
+	var spd := float(balance["movement"]["child_speed"] if a.is_child else balance["movement"]["speed"])
+	spd *= a.speed_mult
+	if a.carrying == "log":
+		spd *= 0.8
+	if a.health < 40.0:
+		spd *= 0.7
+	var step := spd * dt
+	var d := a.position.distance_to(to)
+	if d > 0.001:
+		a.facing = (to - a.position) / d
+	if d <= maxf(step, float(balance["movement"]["arrive_radius"]) * 0.5):
+		a.position = to
+		a.steps.pop_front()
+	else:
+		a.position = a.position.move_toward(to, step)
+
+
+func _act(a: SimAgent, s: Dictionary, dt: float) -> void:
+	var act := String(s["act"])
+	a.activity = act
+	a.idle_reason = String(s["why"])
+	a.alert = bool(s.get("alert", false))
+	var inside := String(s.get("inside", ""))
+	a.hidden = inside != ""
+	a.inside = inside
+	if act == "labor":
+		household.earn(float(balance["jobs"]["laborer_wage_day"]) / (float(balance["schedule"]["work_end"]) - float(balance["schedule"]["work_start"])) / clock.day_seconds * dt * a.age_eff)
+	if act in ["chop", "saw", "craft"]:
+		var target_face: Vector2 = s.get("face", Vector2.ZERO)
+		if target_face != Vector2.ZERO:
+			a.facing = target_face
+	if a.controlled and a.needs["food"] < float(balance["needs"]["food"]["low"]):
+		a.alert = true
+		a.idle_reason = "GŁODNY — puść wolno, żeby poszedł zjeść"
+	s["left"] = float(s["left"]) - dt
+	if float(s["left"]) <= 0.0:
+		a.steps.pop_front()
+
+
+func roll_accident(a: SimAgent, act: String) -> void:
+	var r: Dictionary = balance["risk"]
+	var key := act + "_accident"
+	if not r.has(key):
+		return
+	var p := float(r[key]) * a.accident_mult
+	p *= maxf(0.25, 1.0 - float(r["skill_accident_reduction"]) * a.skill(act))
+	if clock.light_factor() < 0.5:
+		p *= float(r["dark_accident_mult"])
+	if not rng.chance(p):
+		return
+	var person := person_of(a)
+	var nm := person.name if person else "Ktoś"
+	var what: String = { "chop": "przy wyrębie", "saw": "przy pile", "craft": "w stolarni" }[act]
+	var roll := rng.next_float()
+	if roll < float(r["fatal_share"]):
+		kill(a, "zginął%s w wypadku %s" % ["" if person == null or person.sex == "m" else "a", what])
+		return
+	var sev := "severe" if roll < float(r["fatal_share"]) + float(r["severe_share"]) else "minor"
+	var cfg: Dictionary = r[sev]
+	a.health -= float(cfg["damage"])
+	a.injured_days = float(cfg["days"])
+	if sev == "severe":
+		var t := "kulawy"
+		if person != null and not t in person.traits:
+			person.traits.append(t)
+			family.apply_modifiers(person)
+		note("WYPADEK %s: %s ciężko rann%s — będzie kuleć do końca życia." % [what, nm, "y" if person == null or person.sex == "m" else "a"], "critical", a.position)
+		ask_ok("Wypadek", "%s uległ%s ciężkiemu wypadkowi %s.\nLeży %d dni i już zawsze będzie kuleć (wolniej chodzi i rąbie)." % [
+			nm, "" if person == null or person.sex == "m" else "a", what, int(cfg["days"])])
+	else:
+		note("Wypadek %s: %s rann%s, %d dni bez pracy." % [what, nm, "y" if person == null or person.sex == "m" else "a", int(cfg["days"])], "warn", a.position)
+	jobs.replan(a)
+
+
+# Złapany złodziej: areszt, grzywna (w dług), cios w reputację. Rodzina może wpłacić
+# kaucję — złapanie otwiera fazę następstw, a nie kończy historii (intro §8).
+func arrest(a: SimAgent) -> void:
+	var c: Dictionary = balance["crime"]
+	var p := person_of(a)
+	jobs.release(a)
+	a.steps.clear()
+	a.clear_carry()
+	a.status = "jailed"
+	a.hidden = true
+	a.jail_days = float(c["jail_days"])
+	household.debt += float(c["fine"])
+	household.reputation -= float(c["reputation_hit"])
+	stats["arrests"] = int(stats.get("arrests", 0)) + 1
+	var who := "Złapany" if p.sex == "m" else "Złapana"
+	note("%s na kradzieży: %s trafia do aresztu na %d dni. Grzywna %d zł (w dług)." % [who, p.name, int(a.jail_days), int(c["fine"])], "critical", building("jail").door())
+	var opts: Array = [{ "label": "Niech siedzi (%d dni)" % int(a.jail_days), "value": "stay" }]
+	if household.cash >= float(c["bail"]):
+		opts.push_front({ "label": "Wpłać kaucję %d zł — wychodzi od razu" % int(c["bail"]), "value": "bail" })
+	events.ask("arrest", "Areszt", "%s %s na kradzieży na targu.\nStraż zamknęła %s w areszcie na %d dni. Grzywna %d zł doliczona do długu.\nLudzie gadają — reputacja rodu spada." % [
+		who, p.name, "go" if p.sex == "m" else "ją", int(a.jail_days), int(c["fine"])], opts, { "agent": a.id })
+
+
+func release_from_jail(a: SimAgent) -> void:
+	a.status = "active"
+	a.hidden = false
+	a.jail_days = 0.0
+	a.position = building("jail").door()
+	note("%s wychodzi z aresztu." % person_of(a).name, "info", a.position)
+	jobs.replan(a)
+
+
+func kill(a: SimAgent, cause: String) -> void:
+	if a == null or a.status == "dead":
+		return
+	jobs.release(a)
+	a.steps.clear()
+	a.status = "dead"
+	a.hidden = true
+	a.activity = "dead"
+	a.clear_carry()
+	var p := person_of(a)
+	if p == null:
+		return
+	var age := int(family.age_of(p))
+	note("ŚMIERĆ: %s %s %s w wieku %d lat." % [p.name, p.surname, cause, age], "critical", a.position)
+	var was_root := p.id == family.root_id
+	family.on_death(p, cause)
+	if not was_root and not family.game_over:
+		ask_ok("Śmierć w rodzinie", "%s %s (%s) %s.\nMiał%s %d lat." % [p.name, p.surname, family.relation_to_root(p), cause,
+			"" if p.sex == "m" else "a", age])
+
+
+func _new_day() -> void:
+	var day := clock.day_index()
+	var season := clock.current_season()
+	# Opał: chata zużywa drewno, zwłaszcza zimą.
+	var need := float(balance["economy"]["firewood_per_day"].get(season, 0.0))
+	var burn_acc: float = float(stats.get("burn_acc", 0.0)) + need
+	var burn := int(floor(burn_acc))
+	stats["burn_acc"] = burn_acc - burn
+	var cold := false
+	if burn > 0:
+		var got := home().take("log", burn)
+		cold = got < burn
+	for a in agents:
+		a.cold = cold
+	if cold:
+		note("Zimno w chacie — zabrakło opału! Śpiący tracą zdrowie.", "warn", home().door())
+
+	# Czynsz i dług.
+	var r := household.new_day(day)
+	if not r.is_empty():
+		if bool(r["paid"]):
+			note("Zapłacono czynsz: %d zł." % int(r["amount"]), "info", null)
+		else:
+			note("Brak na czynsz! Dług rośnie o %d zł (razem %d zł)." % [int(r["missing"]), int(household.debt)], "critical", null)
+			if bool(r["over_limit"]):
+				_debt_jail()
+			else:
+				ask_ok("Czynsz niezapłacony", "Zabrakło %d zł na czynsz. Dług: %d zł (+%d%% co %d dni).\nPrzy długu powyżej %d zł straż zabierze kogoś do aresztu." % [
+					int(r["missing"]), int(household.debt), int(household.debt_interest * 100), household.rent_period, int(household.debt_limit)])
+
+	# Choroby.
+	var h: Dictionary = balance["health"]
+	for a in agents:
+		if a.status != "active" or a.sick_days > 0.0:
+			continue
+		var p: float = float(h["sick_base_daily"]) * a.sick_mult
+		if season == "winter":
+			p *= float(h["sick_winter_mult"])
+		if a.cold:
+			p *= float(h["sick_cold_mult"])
+		if a.needs["food"] < 10.0:
+			p *= float(h["sick_hungry_mult"])
+		if rng.chance(p):
+			var sd: Array = h["sick_days"]
+			a.sick_days = rng.next_float(float(sd[0]), float(sd[1]))
+			var pr := person_of(a)
+			note("%s zachorował%s." % [pr.name, "" if pr.sex == "m" else "a"], "warn", a.position)
+	family.new_day()
+	stats["max_generation"] = _max_living_generation()
+
+
+func _debt_jail() -> void:
+	# Straż bierze dorosłego krewnego (nie głowę rodu, jeśli jest ktoś inny).
+	var cands: Array = []
+	for p in family.living():
+		var a := agent_by_id(p.agent_id)
+		if a != null and a.status == "active" and family.stage_of(p) in ["adult", "elder"]:
+			cands.append(p)
+	if cands.is_empty():
+		return
+	var rid: int = family.root_id
+	cands.sort_custom(func(x, y):
+		if (x.id == rid) != (y.id == rid):
+			return y.id == rid
+		return x.id < y.id)
+	var p: SimPerson = cands[0]
+	var a := agent_by_id(p.agent_id)
+	jobs.release(a)
+	a.steps.clear()
+	a.clear_carry()
+	a.status = "jailed"
+	a.hidden = true
+	a.jail_days = float(balance["economy"]["debt_jail_days"])
+	var forgiven := household.debt * 0.5
+	household.debt -= forgiven
+	note("Straż zabrała %s do aresztu za długi rodu (%d dni). Połowa długu umorzona." % [p.name, int(a.jail_days)], "critical", building("jail").door())
+	ask_ok("Areszt za długi", "Dług przekroczył %d zł. Straż zabrała %s do aresztu na %d dni.\nPołowa długu umorzona, reszta (%d zł) zostaje." % [
+		int(household.debt_limit), p.name, int(a.jail_days), int(household.debt)])
+
+
+func _max_living_generation() -> int:
+	var g := 0
+	for p in family.living():
+		g = maxi(g, int(family.generation_of.get(p.id, 0)))
+	return g

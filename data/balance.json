@@ -1,47 +1,250 @@
 {
   "world_seed": 20261101,
   "time": {
-    "day_seconds": 30.0,
+    "day_seconds": 60.0,
     "days_per_season": 5,
     "days_per_year": 20,
-    "seasons": ["spring", "summer", "autumn", "winter"],
+    "seasons": [
+      "spring",
+      "summer",
+      "autumn",
+      "winter"
+    ],
+    "season_names": {
+      "spring": "Wiosna",
+      "summer": "Lato",
+      "autumn": "Jesień",
+      "winter": "Zima"
+    },
     "default_speed": 1,
-    "max_speed": 3,
-    "twilight": 0.06,
+    "max_speed": 4,
+    "speed_multipliers": [
+      0,
+      1,
+      2,
+      4,
+      8
+    ],
+    "twilight": 0.05,
+    "substep": 0.1,
     "daylight": {
-      "spring": { "sunrise": 0.25, "sunset": 0.75 },
-      "summer": { "sunrise": 0.20, "sunset": 0.82 },
-      "autumn": { "sunrise": 0.28, "sunset": 0.72 },
-      "winter": { "sunrise": 0.40, "sunset": 0.58 }
+      "spring": {
+        "sunrise": 0.25,
+        "sunset": 0.78
+      },
+      "summer": {
+        "sunrise": 0.2,
+        "sunset": 0.84
+      },
+      "autumn": {
+        "sunrise": 0.29,
+        "sunset": 0.72
+      },
+      "winter": {
+        "sunrise": 0.36,
+        "sunset": 0.64
+      }
     }
   },
   "aging": {
     "days_per_year_of_life": 4,
     "stages": {
-      "child": { "min": 0, "max": 8 },
-      "teen": { "min": 8, "max": 16 },
-      "adult": { "min": 16, "max": 60 },
-      "elder": { "min": 60, "max": 999 }
-    }
+      "child": {
+        "min": 0,
+        "max": 12
+      },
+      "teen": {
+        "min": 12,
+        "max": 16
+      },
+      "adult": {
+        "min": 16,
+        "max": 55
+      },
+      "elder": {
+        "min": 55,
+        "max": 999
+      }
+    },
+    "work_eff": {
+      "child": 0.0,
+      "teen": 0.7,
+      "adult": 1.0,
+      "elder": 0.65
+    },
+    "old_age_start": 55,
+    "old_age_daily_death": 0.0009,
+    "old_age_growth": 1.12
   },
   "movement": {
-    "speed": 90.0,
-    "arrive_radius": 24.0
-  },
-  "needs": {
-    "sleep": { "decay_day": 90.0, "recover_day": 260.0, "low": 20.0 },
-    "food": { "decay_day": 55.0, "recover_day": 220.0, "low": 25.0 }
+    "speed": 6.5,
+    "child_speed": 4.5,
+    "arrive_radius": 0.6
   },
   "schedule": {
-    "wake": 0.30,
-    "sleep": 0.82,
-    "work_start": 0.35,
-    "work_end": 0.70
+    "work_start": 0.27,
+    "work_end": 0.75,
+    "sleep": 0.87,
+    "wake": 0.25
   },
-  "population": {
-    "count": 8
+  "needs": {
+    "food": {
+      "decay_day": 100.0,
+      "low": 35.0,
+      "meal": 75.0
+    },
+    "sleep": {
+      "decay_day": 70.0,
+      "recover_day": 260.0,
+      "low": 12.0
+    }
   },
-  "production": {
-    "wood_per_worker_second": 0.5
+  "health": {
+    "regen_day": 15.0,
+    "starve_damage_day": 12.0,
+    "cold_damage_day": 10.0,
+    "sick_damage_day": 6.0,
+    "sick_base_daily": 0.004,
+    "sick_winter_mult": 2.5,
+    "sick_cold_mult": 2.0,
+    "sick_hungry_mult": 2.0,
+    "sick_days": [
+      2,
+      5
+    ],
+    "sick_fatal_vulnerable_mult": 1.6
+  },
+  "skills": {
+    "xp_per_work_second": 0.012,
+    "max": 10.0,
+    "eff_base": 0.6,
+    "eff_per_level": 0.07
+  },
+  "jobs": {
+    "chop_seconds": 3.0,
+    "saw_seconds": 3.5,
+    "saw_planks_per_log": 2,
+    "craft_seconds": 9.0,
+    "craft_planks": 2,
+    "dark_work_mult": 0.6,
+    "wait_seconds": 2.0,
+    "laborer_wage_day": 7.0,
+    "forage_seconds": 5.0,
+    "forage_yield": {
+      "spring": 0.7,
+      "summer": 1.0,
+      "autumn": 1.2,
+      "winter": 0.15
+    },
+    "forage_carry": 3
+  },
+  "carry": {
+    "log": 2,
+    "plank": 10,
+    "chair": 4,
+    "food": 8
+  },
+  "storage": {
+    "sawmill": {
+      "log": 12,
+      "plank": 24
+    },
+    "workshop": {
+      "plank": 10,
+      "chair": 6
+    },
+    "home": {
+      "food": 30,
+      "log": 12
+    }
+  },
+  "trees": {
+    "count": 46,
+    "wood_min": 2,
+    "wood_max": 4,
+    "regrow_days": 6.0,
+    "min_spacing": 3.2
+  },
+  "economy": {
+    "start_cash": 40,
+    "start_food": 16,
+    "start_firewood": 4,
+    "rent": 40,
+    "rent_period_days": 5,
+    "debt_interest": 0.1,
+    "debt_limit": 120,
+    "debt_jail_days": 4,
+    "prices": {
+      "food": 1.0,
+      "plank": 3.0,
+      "chair_base": 9.0,
+      "chair_quality_mult": 14.0,
+      "firewood": 2.5
+    },
+    "saturation_per_unit": 0.03,
+    "saturation_min": 0.45,
+    "reputation_per_chair": 0.6,
+    "reputation_price_mult": 0.012,
+    "reputation_decay_day": 0.15,
+    "firewood_per_day": {
+      "spring": 0.5,
+      "summer": 0.0,
+      "autumn": 1.0,
+      "winter": 2.5
+    },
+    "default_target_food": 20,
+    "default_target_firewood": 6
+  },
+  "risk": {
+    "chop_accident": 0.003,
+    "saw_accident": 0.0015,
+    "craft_accident": 0.001,
+    "dark_accident_mult": 2.5,
+    "skill_accident_reduction": 0.07,
+    "severe_share": 0.25,
+    "fatal_share": 0.06,
+    "minor": {
+      "damage": 20.0,
+      "days": 2
+    },
+    "severe": {
+      "damage": 50.0,
+      "days": 6
+    }
+  },
+  "family": {
+    "marry_min_age": 16,
+    "marry_daily_chance": 0.18,
+    "spouse_age_spread": 6,
+    "fertile_min": 16,
+    "fertile_max": 42,
+    "conceive_daily": 0.04,
+    "max_children": 7,
+    "pregnancy_days": 3,
+    "birth_mother_death": 0.04,
+    "birth_child_death": 0.07,
+    "birth_risk_age_mult": 2.0,
+    "birth_risk_age": 36,
+    "birth_risk_low_health_mult": 2.0,
+    "max_household": 12
+  },
+  "crime": {
+    "steal_seconds": 6.0,
+    "caught_base": 0.07,
+    "caught_skill_reduction": 0.06,
+    "caught_dark_mult": 0.6,
+    "loot_coins": [
+      3,
+      9
+    ],
+    "loot_food_chance": 0.4,
+    "loot_food": [
+      2,
+      4
+    ],
+    "jail_days": 3,
+    "fine": 15,
+    "bail": 25,
+    "reputation_hit": 2.0
   }
 }

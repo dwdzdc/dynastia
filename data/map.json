@@ -1,13 +1,128 @@
 {
-  "world_size": [1600, 1200],
-  "places": [
-    { "id": "forest", "name": "Las", "type": "work", "x": 220, "y": 200 },
-    { "id": "market", "name": "Targ", "type": "food", "x": 1400, "y": 260 },
-    { "id": "house_a", "name": "Chata A", "type": "house", "x": 640, "y": 720 },
-    { "id": "house_b", "name": "Chata B", "type": "house", "x": 720, "y": 700 },
-    { "id": "house_c", "name": "Chata C", "type": "house", "x": 800, "y": 760 },
-    { "id": "house_d", "name": "Chata D", "type": "house", "x": 680, "y": 820 },
-    { "id": "house_e", "name": "Chata E", "type": "house", "x": 860, "y": 700 },
-    { "id": "house_f", "name": "Chata F", "type": "house", "x": 760, "y": 860 }
+  "world_size": [
+    95,
+    70
+  ],
+  "forest": {
+    "x": 2,
+    "y": 4,
+    "w": 27,
+    "h": 40
+  },
+  "buildings": [
+    {
+      "id": "home",
+      "name": "Chata rodu",
+      "type": "home",
+      "x": 48,
+      "y": 38
+    },
+    {
+      "id": "workshop",
+      "name": "Stolarnia",
+      "type": "workshop",
+      "x": 54,
+      "y": 31
+    },
+    {
+      "id": "sawmill",
+      "name": "Tartak",
+      "type": "sawmill",
+      "x": 33,
+      "y": 24
+    },
+    {
+      "id": "market",
+      "name": "Targ",
+      "type": "market",
+      "x": 71,
+      "y": 28
+    },
+    {
+      "id": "manor",
+      "name": "Dwór (dniówka)",
+      "type": "manor",
+      "x": 81,
+      "y": 16
+    },
+    {
+      "id": "jail",
+      "name": "Ratusz i areszt",
+      "type": "jail",
+      "x": 82,
+      "y": 41
+    },
+    {
+      "id": "n1",
+      "name": "Chata sąsiadów",
+      "type": "decor_house",
+      "x": 44,
+      "y": 51
+    },
+    {
+      "id": "n2",
+      "name": "Chata sąsiadów",
+      "type": "decor_house",
+      "x": 55,
+      "y": 54
+    },
+    {
+      "id": "n3",
+      "name": "Chata sąsiadów",
+      "type": "decor_house",
+      "x": 62,
+      "y": 44
+    },
+    {
+      "id": "t1",
+      "name": "Kamienica",
+      "type": "decor_town",
+      "x": 78,
+      "y": 26
+    },
+    {
+      "id": "t2",
+      "name": "Kamienica",
+      "type": "decor_town",
+      "x": 68,
+      "y": 40
+    },
+    {
+      "id": "t3",
+      "name": "Kamienica",
+      "type": "decor_town",
+      "x": 88,
+      "y": 30
+    }
+  ],
+  "roads": [
+    [
+      "home",
+      "sawmill"
+    ],
+    [
+      "home",
+      "workshop"
+    ],
+    [
+      "workshop",
+      "market"
+    ],
+    [
+      "market",
+      "manor"
+    ],
+    [
+      "market",
+      "jail"
+    ],
+    [
+      "home",
+      "n1"
+    ],
+    [
+      "home",
+      "n3"
+    ]
   ]
 }

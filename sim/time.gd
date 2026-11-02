@@ -14,6 +14,8 @@ var seasons: Array = ["spring", "summer", "autumn", "winter"]
 var daylight: Dictionary = {}
 var twilight: float = 0.06
 var max_speed: int = 3
+var speed_multipliers: Array = [0, 1, 2, 3]
+var season_names: Dictionary = {}
 
 var speed: int = 1
 var _day: int = 0          # bezwzględny indeks doby
@@ -35,12 +37,26 @@ func _init(cfg: Dictionary = {}) -> void:
 		seasons = (t["seasons"] as Array).duplicate()
 	if t.has("daylight"):
 		daylight = t["daylight"]
+	if t.has("speed_multipliers"):
+		speed_multipliers = (t["speed_multipliers"] as Array).duplicate()
+	season_names = t.get("season_names", {})
 
 
-func advance(delta: float) -> void:
+# Mnożnik czasu dla bieżącego stopnia prędkości (0 = pauza).
+func multiplier() -> float:
 	if speed <= 0:
-		return
-	var frac := delta * float(speed) / day_seconds
+		return 0.0
+	return float(speed_multipliers[mini(speed, speed_multipliers.size() - 1)])
+
+
+# delta w sekundach realnych; przelicza przez mnożnik prędkości.
+func advance(delta: float) -> void:
+	advance_sim(delta * multiplier())
+
+
+# delta w sekundach symulacyjnych (bez mnożnika prędkości).
+func advance_sim(delta: float) -> void:
+	var frac := delta / day_seconds
 	if frac <= 0.0:
 		return
 	_tod += frac
@@ -79,6 +95,15 @@ func time_of_day() -> float:
 
 func current_year() -> int:
 	return int(floor(_day / float(days_per_year)))
+
+
+# Ciągły czas w dobach (dzień + ułamek) — do wieku, terminów, odrostu.
+func now() -> float:
+	return float(_day) + _tod
+
+
+func season_label() -> String:
+	return String(season_names.get(current_season(), current_season()))
 
 
 func current_season() -> String:
