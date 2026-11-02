@@ -1,0 +1,25 @@
+progress.md
+  ai_agent 163-164
+data/balance.json
+  s_bb6b65b605000f::t_58dbbff3711d5b 427
+sim/trade.gd
+  s_bb6b65b605000f::t_58dbbff3711d5b 144-146
+data/traders.json
+  s_bb6b65b605000f::t_58dbbff3711d5b 49,81,88,93
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "f7e73e3cf0485771a247f670ce769422df00f001",
+  "prompts": {},
+  "sessions": {
+    "s_bb6b65b605000f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "8bc32a82-6b1e-41ef-8272-8f242d268239",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Dawid Dziedzic <24682682+dwdzdc@users.noreply.github.com>"
+    }
+  }
+}
