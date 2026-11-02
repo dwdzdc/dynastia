@@ -1,0 +1,27 @@
+ui/hud.gd
+  s_bb6b65b605000f::t_f49a96ce12a3f9 40-41,50,166-167,203,207-208,210,224-227,229-230,245-246,262,818
+game/main.gd
+  s_bb6b65b605000f::t_f49a96ce12a3f9 291-292
+docs/design/living-village.md
+  ai_agent 66-69
+sim/jobs.gd
+  s_bb6b65b605000f::t_f9cabf92346553 26-27,395,516,677-687,709-710,712,906-909
+tools/screenshot.gd
+  s_bb6b65b605000f::t_607903407bb7e0 34,37
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "47a81c1a7de3d303ad3b9f3fb63cad68bac1a28b",
+  "prompts": {},
+  "sessions": {
+    "s_bb6b65b605000f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "8bc32a82-6b1e-41ef-8272-8f242d268239",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Dawid Dziedzic <24682682+dwdzdc@users.noreply.github.com>"
+    }
+  }
+}
