@@ -168,43 +168,48 @@ func set_job(agent_id: int, job: String) -> void:
 	jobs.replan(a)
 
 
-func manual_move(agent_id: int, to: Vector2) -> void:
+# Rozkazy ręczne: kolejka kroków wykonywana zamiast autopilota. append = dopisz na
+# koniec kolejki (Shift+PPM); inaczej zastąp. Po ostatnim kroku agent sam wraca
+# do autopilota (patrz _behave).
+func _begin_manual(a: SimAgent, append: bool) -> void:
+	if append and a.controlled:
+		return
+	jobs.release(a)
+	a.steps.clear()
+	a.controlled = true
+	a.plan_kind = "manual"
+
+
+func manual_move(agent_id: int, to: Vector2, append := false) -> void:
 	var a := agent_by_id(agent_id)
 	if a == null or a.status != "active":
 		return
-	a.controlled = true
-	jobs.release(a)
-	a.steps.clear()
-	a.plan_kind = "manual"
+	_begin_manual(a, append)
 	a.steps.append({ "t": "walk", "to": to, "why": "idzie tam, gdzie kazano" })
-	a.steps.append({ "t": "act", "act": "idle", "left": 1e9, "why": "sterowanie ręczne — czeka na rozkaz", "inside": "", "alert": false })
 
 
-# Ręczne ścięcie wskazanego drzewa — przejęcie daje kontrolę nad tym, co i gdzie.
-func manual_chop(agent_id: int, tree_id: int) -> void:
+# Ręczne ścięcie wskazanego drzewa i odniesienie kłody do tartaku.
+func manual_chop(agent_id: int, tree_id: int, append := false) -> void:
 	var a := agent_by_id(agent_id)
 	var t := tree_by_id(tree_id)
 	if a == null or t == null or a.status != "active" or t.wood <= 0 or not a.can_work():
 		return
-	a.controlled = true
-	jobs.release(a)
+	_begin_manual(a, append)
 	if t.reserved_by >= 0 and t.reserved_by != a.id:
 		var other := agent_by_id(t.reserved_by)
 		if other != null:
 			jobs.replan(other)
 	t.reserved_by = a.id
 	a.claims.append("tree:%d" % t.id)
-	a.steps.clear()
-	a.plan_kind = "manual"
+	var chop_secs := jobs._dur(a, "chop", float(balance["jobs"]["chop_seconds"])) * float(balance["jobs"]["manual_chop_mult"])
 	a.steps.append({ "t": "walk", "to": t.position + Vector2(0.9, 0.4), "why": "idzie ściąć wskazane drzewo" })
-	a.steps.append({ "t": "act", "act": "chop", "left": jobs._dur(a, "chop", float(balance["jobs"]["chop_seconds"])) * 0.8,
-		"why": "rąbie wskazane drzewo (ręcznie, szybciej)", "inside": "", "alert": false })
+	a.steps.append({ "t": "act", "act": "chop", "left": chop_secs, "why": "rąbie wskazane drzewo (ręcznie, szybciej)", "inside": "", "alert": false })
 	a.steps.append({ "t": "do", "fn": "chop_done", "arg": t.id })
 	a.steps.append({ "t": "walk", "to": building("sawmill").door() + Vector2(-1.5, 0.0), "why": "niesie kłodę do tartaku" })
 	a.steps.append({ "t": "do", "fn": "deposit", "arg": "sawmill" })
-	a.steps.append({ "t": "act", "act": "idle", "left": 1e9, "why": "sterowanie ręczne — czeka na rozkaz", "inside": "", "alert": false })
 
 
+# Anuluj resztę rozkazów i wróć do autopilota od razu.
 func release_manual(agent_id: int) -> void:
 	var a := agent_by_id(agent_id)
 	if a == null:
@@ -309,6 +314,8 @@ func _body(a: SimAgent, days: float) -> void:
 
 
 func _behave(a: SimAgent, dt: float) -> void:
+	if a.controlled and a.steps.is_empty():
+		a.controlled = false   # kolejka rozkazów wykonana — wraca do autopilota
 	var want := jobs.desired_kind(a)
 	var early_meal := a.plan_kind == "eat" and want in ["work", "chore", "child"]
 	if want != a.plan_kind and not early_meal and a.interruptible():
@@ -380,7 +387,7 @@ func _act(a: SimAgent, s: Dictionary, dt: float) -> void:
 			a.facing = target_face
 	if a.controlled and a.needs["food"] < float(balance["needs"]["food"]["low"]):
 		a.alert = true
-		a.idle_reason = "GŁODNY — puść wolno, żeby poszedł zjeść"
+		a.idle_reason = "GŁODNY — wykonuje rozkazy, zje po ich skończeniu"
 	s["left"] = float(s["left"]) - dt
 	if float(s["left"]) <= 0.0:
 		a.steps.pop_front()

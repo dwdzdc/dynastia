@@ -50,6 +50,7 @@ func _run_all() -> void:
 	_test_no_income_goes_into_debt()
 	_test_succession_and_game_over()
 	_test_marriage_and_birth()
+	_test_manual_queue_auto_release()
 	_test_long_run_no_crash()
 
 
@@ -318,6 +319,25 @@ func _test_marriage_and_birth() -> void:
 			w.family.set_seeking(p.id, true)
 	_run_days_auto(w, 40.0)
 	check("married couples have children", w.family.persons.size() > n0)
+
+
+func _test_manual_queue_auto_release() -> void:
+	var w = _new_world()
+	_run_days(w, 0.1)   # rano, blok pracy
+	var a = w.agent_by_id(w.family.root().agent_id)
+	var home: Vector2 = w.home().door()
+	w.manual_move(a.id, home + Vector2(5, 0))
+	w.manual_move(a.id, home + Vector2(5, 5), true)
+	check("shift-queue appends orders", a.controlled and a.steps.size() == 2)
+	var guard := 0
+	while a.controlled and guard < 600:
+		w.step_sim(0.1)
+		guard += 1
+	check("agent returns to autopilot after manual queue", not a.controlled)
+	check("after release agent resumes its job plan", a.plan_kind != "manual" and not a.steps.is_empty())
+	w.manual_move(a.id, home + Vector2(20, 0))
+	w.manual_move(a.id, home + Vector2(-20, 0))
+	check("plain order replaces queue", a.steps.size() == 1)
 
 
 func _test_long_run_no_crash() -> void:

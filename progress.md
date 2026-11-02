@@ -51,6 +51,14 @@ Pętla gry: ród Wilków (6 osób, 3 pokolenia) w chacie pod lasem. Co 5 dni czy
 7. [ ] Scenariusz „odludzie" + przełączanie scenariusza w menu startowym.
 8. [ ] LOD i rody w tle (etap 10), materializacja osób spoza chaty.
 
+## Uwagi autora do wdrożenia (02.11.2026)
+
+- [x] Rozkazy ręczne jako kolejka (PPM zastępuje, Shift+PPM dopisuje); po wykonaniu agent sam wraca do autopilota.
+- [ ] Doba wolniej (rzędu 10 min realnych) i płynne fazy dnia: poranek, dzień, zmierzch, noc — długości zależne od pory roku, bez „pyk i ciemno".
+- [ ] Czynsz nie jest osią gry: możliwy własny dom (bez czynszu) i możliwa eksmisja → bezdomność jako stan gry, nie koniec.
+- [ ] Wartości w kodzie (render, UI, sim) wyniesione do dobrze nazwanych stałych / `data/*.json`.
+- [ ] Później: półotwarte budynki albo podgląd wnętrza po kliknięciu, żeby toczyć grę w środku.
+
 ## Otwarte pytania (z `intro` §15)
 
 - Mechanika sporu o spadek.

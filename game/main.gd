@@ -8,6 +8,7 @@ const WorldView := preload("res://game/world_view.gd")
 const CAM_PITCH := deg_to_rad(38.0)
 const SKY_DAY := Color(0.55, 0.7, 0.85)
 const SKY_NIGHT := Color(0.06, 0.08, 0.16)
+const TREE_PICK_RADIUS := 1.6   # m od pnia, w którym PPM trafia w drzewo
 
 var world: SimWorld
 var view: Node3D
@@ -224,7 +225,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				_press_ground = _ground_at(mb.position)
 			MOUSE_BUTTON_RIGHT:
 				if mb.pressed:
-					_on_right_click(mb.position)
+					_on_right_click(mb.position, mb.shift_pressed)
 	elif event is InputEventMouseMotion:
 		var mm := event as InputEventMouseMotion
 		if _lmb_down and not _dragging and mm.position.distance_to(_press_pos) > 8.0:
@@ -294,12 +295,13 @@ func _on_left_click(pos: Vector2) -> void:
 	selected_building = ""
 
 
-func _on_right_click(pos: Vector2) -> void:
+# PPM: rozkaz ręczny (zastępuje kolejkę), Shift+PPM: dopisz do kolejki.
+func _on_right_click(pos: Vector2, append: bool) -> void:
 	if selected_id < 0:
 		return
 	var g := _ground_at(pos)
-	var t: SimTree = view.tree_at(Vector2(g.x, g.z), 1.6)
+	var t: SimTree = view.tree_at(Vector2(g.x, g.z), TREE_PICK_RADIUS)
 	if t != null:
-		world.manual_chop(selected_id, t.id)
+		world.manual_chop(selected_id, t.id, append)
 	else:
-		world.manual_move(selected_id, Vector2(g.x, g.z))
+		world.manual_move(selected_id, Vector2(g.x, g.z), append)

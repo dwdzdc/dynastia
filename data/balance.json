@@ -136,7 +136,8 @@
       "autumn": 1.2,
       "winter": 0.15
     },
-    "forage_carry": 3
+    "forage_carry": 3,
+    "manual_chop_mult": 0.8
   },
   "carry": {
     "log": 2,

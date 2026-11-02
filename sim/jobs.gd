@@ -56,7 +56,9 @@ func desired_kind(a: SimAgent) -> String:
 	return "chore"
 
 
+# Nowy plan z autopilota. Kończy też sterowanie ręczne (np. po wypadku, zmianie pracy).
 func replan(a: SimAgent) -> void:
+	a.controlled = false
 	release(a)
 	a.steps.clear()
 	a.alert = false
@@ -69,8 +71,6 @@ func replan(a: SimAgent) -> void:
 		kind = "eat"
 	a.plan_kind = kind
 	match kind:
-		"manual":
-			_wait(a, "sterowanie ręczne — czeka na rozkaz", "idle")
 		"sick":
 			_go_inside(a, w.home(), "rest", 3.0,
 				"ranny — leży w chacie" if a.injured_days > 0.0 else "chory — leży w chacie")

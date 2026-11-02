@@ -13,6 +13,7 @@ const DIM := Color(0.72, 0.67, 0.58)
 const GOOD := Color(0.55, 0.88, 0.45)
 const WARN := Color(1.0, 0.78, 0.3)
 const BAD := Color(1.0, 0.42, 0.35)
+const ORDER_COLOR := Color(1.0, 0.85, 0.3, 0.85)
 const JOB_ORDER := ["woodcutter", "sawyer", "carpenter", "carrier", "forager", "laborer", "thief", "none"]
 const JOB_HINTS := {
 	"woodcutter": "ścina drzewa, nosi kłody do tartaku",
@@ -389,10 +390,15 @@ func _build_person_info(a: SimAgent) -> void:
 		marry.visible = fam.can_marry(p)
 		marry.text = ("Przestań szukać " if p.seeking_spouse else "Szukaj ") + ("żony" if p.sex == "m" else "męża")
 		marry.button_pressed = p.seeking_spouse)
-	var rel := _button("Puść wolno (wróć do autopilota)", func(): world.release_manual(a.id), 17)
+	var rel := _button("", func(): world.release_manual(a.id), 17)
 	_info_box.add_child(rel)
-	_info_updaters.append(func(): rel.visible = a.controlled)
-	_info_box.add_child(_label("PPM na ziemi: idź tam (przejęcie) · PPM na drzewie: zetnij je", 14, DIM))
+	_info_updaters.append(func():
+		rel.visible = a.controlled
+		rel.text = "Anuluj rozkazy (%d w kolejce)" % a.steps.filter(func(st): return st["t"] != "do").size())
+	var tip := _label("PPM: idź / zetnij drzewo · Shift+PPM: dopisz do kolejki\nPo wykonaniu rozkazów sam wraca do swojej pracy.", 14, DIM)
+	tip.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	tip.custom_minimum_size.x = 400
+	_info_box.add_child(tip)
 
 
 func _build_building_info(b: SimBuilding) -> void:
@@ -570,7 +576,7 @@ Bez pieniędzy: zbieracz przyniesie jedzenie z lasu (zimą prawie nic).
 Ożeń dorosłych, by mieć dzieci — ród trwa, dopóki żyje ktoś z krwi Wilków (♛ = głowa rodu).
 
 STEROWANIE
-LPM — zaznacz osobę / budynek       PPM — każ zaznaczonej osobie iść (lub ściąć drzewo)
+LPM — zaznacz osobę / budynek       PPM — rozkaz: idź / zetnij drzewo (Shift = do kolejki)
 Przeciągnij LPM / ŚPM, WASD, dwa palce — przesuń kamerę       Kółko / szczypanie — zoom
 Q / E — obrót kamery       SPACJA — pauza       1–4 — tempo       TAB — następna osoba       ESC — odznacz
 
@@ -643,6 +649,20 @@ func _draw_overlay() -> void:
 			_text(sp + Vector2(0, -3), "!", 18, Color(1, 1, 1))
 		if main.selected_id == a.id or main.hover_id == a.id or (zoom_ok and main.cam_size < 30.0):
 			_text(sp + Vector2(0, -26 if (a.alert or a.hungry_no_food) else -6), p.name, 16, Color(1, 1, 1))
+	# Kolejka rozkazów zaznaczonej osoby: linia przez kolejne cele marszu.
+	var sel := world.agent_by_id(main.selected_id)
+	if sel != null and sel.controlled and not sel.hidden:
+		var prev := _screen(sel.position, 0.1)
+		var n := 0
+		for st in sel.steps:
+			if st["t"] != "walk":
+				continue
+			n += 1
+			var pt := _screen(st["to"], 0.1)
+			_overlay.draw_line(prev, pt, ORDER_COLOR, 2.0)
+			_overlay.draw_circle(pt, 9, ORDER_COLOR)
+			_text(pt + Vector2(0, 5), str(n), 14, Color(0, 0, 0))
+			prev = pt
 	# Unoszące się teksty (zarobek, koszty).
 	for f in _fx:
 		var t := float(f["t"])
