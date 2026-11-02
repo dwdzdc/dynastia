@@ -29,6 +29,12 @@ const JOB_BUTTONS := {
 	"woodcutter": "Drwal", "sawyer": "Tracz", "carpenter": "Stolarz", "carrier": "Nosiciel",
 	"forager": "Zbieracz", "laborer": "Dniówka", "thief": "Złodziej", "none": "Bez przydziału",
 }
+const PERSON_TABS := [["now", "Teraz"], ["memories", "Wspomnienia"], ["prefs", "Preferencje"], ["traits", "Cechy i charakter"]]
+const MEMORIES_SHORT := 8          # ile wspomnień widać przed „pokaż więcej”
+const MEMORIES_LONG := 30
+const WARM := 15.0                  # progi słów dla więzi i preferencji (bez liczb w UI)
+const MILD := 3.0
+const CHRONICLE_ROWS := 40
 const SKILL_LABELS := { "chop": "rąbanie", "saw": "piłowanie", "craft": "stolarka", "forage": "zbieractwo", "steal": "złodziejstwo" }
 
 var main: Node
@@ -53,6 +59,12 @@ var _modal_id := -1
 var _help: PanelContainer
 var _overlay: Control
 var _fx: Array = []
+var _person_tab := "now"
+var _memories_more := false
+var _chronicle: PanelContainer
+var _chronicle_box: VBoxContainer
+var _chronicle_count := -1
+var debug := false                  # F3: ukryte liczby (więzi, siła) dla dewelopera
 var _tick := 0.0
 
 
@@ -86,6 +98,7 @@ func setup(p_main: Node, w: SimWorld, cam: Camera3D) -> void:
 	_build_info()
 	_build_log()
 	_build_help()
+	_build_chronicle()
 	_build_modal()
 
 
@@ -224,6 +237,8 @@ func _update_family() -> void:
 		var extra := ""
 		if p.pregnant_left >= 0.0:
 			extra = " · w ciąży"
+		if debug:
+			extra += " · [%.2f]" % float(fam.strength.get(p.id, -1.0))
 		b.text = "%s%s, %d · %s%s\n   %s" % [mark, p.name, int(fam.age_of(p)), job, extra, _status_short(a)]
 		var col := TEXT
 		if a.alert or a.hungry_no_food or a.status == "jailed":
@@ -266,7 +281,7 @@ func _build_info() -> void:
 func _update_info() -> void:
 	var key := ""
 	if main.selected_id >= 0:
-		key = "a:%d" % main.selected_id
+		key = "a:%d:%s:%s:%s" % [main.selected_id, _person_tab, _memories_more, debug]
 	elif main.selected_building != "":
 		key = "b:" + main.selected_building
 	if key != _info_key:
@@ -320,19 +335,35 @@ func _build_person_info(a: SimAgent) -> void:
 		return
 	var fam := world.family
 	var p := world.person_of(a)
-	var title := _label("%s %s" % [p.name, p.surname], 26, Color(1.0, 0.85, 0.45))
+	var title := _label("%s%s %s" % ["♛ " if p.id == fam.root_id else "", p.name, p.surname], 26, Color(1.0, 0.85, 0.45))
 	_info_box.add_child(title)
 	_dyn(func():
-		var rel := fam.relation_to_root(p)
+		var rel := fam.relation_to_root(p) if not world.is_independent(a) else "odszedł z rodu"
 		return "%s · %d lat · %s" % [rel, int(fam.age_of(p)), fam.stage_label(p)], 17, DIM)
-	_dyn(func():
-		if p.traits.is_empty():
-			return "Cechy: brak szczególnych"
-		return "Cechy: " + ", ".join(p.traits.map(func(t): return fam.trait_label(t))), 17)
-	_dyn(func():
-		if p.character.is_empty():
-			return "Charakter: nic szczególnego"
-		return "Charakter: " + ", ".join(p.character.map(func(c): return fam.character_label(c))), 17)
+	if debug:
+		_dyn(func(): return "[debug] siła %.2f · sakiewka %.1f zł · dni słabości %d" % [
+			float(fam.strength.get(p.id, -1.0)), p.purse, p.weak_days], 15, WARN)
+	var tabs := HBoxContainer.new()
+	tabs.add_theme_constant_override("separation", 4)
+	_info_box.add_child(tabs)
+	for t in PERSON_TABS:
+		var id: String = t[0]
+		var tb := _button(t[1], func():
+			_person_tab = id
+			_memories_more = false, 15)
+		tb.toggle_mode = true
+		tb.button_pressed = _person_tab == id
+		tabs.add_child(tb)
+	match _person_tab:
+		"memories":
+			_build_memories(p)
+			return
+		"prefs":
+			_build_prefs(p)
+			return
+		"traits":
+			_build_traits(p)
+			return
 	var now := _dyn(func(): return "Teraz: " + (a.idle_reason if a.status == "active" else "w areszcie — " + a.idle_reason), 19)
 	_info_updaters.append(func(): now.add_theme_color_override("font_color", BAD if a.alert or a.status == "jailed" else GOOD))
 	_bar("Zdrowie", func(): return a.health, Color(0.4, 0.75, 0.35))
@@ -361,8 +392,17 @@ func _build_person_info(a: SimAgent) -> void:
 		return " · ".join(s), 16, WARN)
 
 	_info_box.add_child(HSeparator.new())
+	if world.is_independent(a):
+		var gone := _label("Odszedł z rodu i żyje po swojemu (%s). Nie wydasz mu poleceń. Co się stało — w kronice (K)." % world.home_of(a).name, 17, DIM)
+		gone.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		gone.custom_minimum_size.x = 400
+		_info_box.add_child(gone)
+		return
+	if fam.can_be_root(p) and p.id != fam.root_id:
+		_info_box.add_child(_button("♛ Ustaw jako głowę rodu (root)", func(): world.switch_root(p.id), 17))
 	if fam.stage_of(p) == "child":
 		_info_box.add_child(_label("Dziecko — bawi się przy chacie. Do pracy od %d lat." % int(fam.years_label(fam.stage_start("teen"))), 17, DIM))
+		_build_follow(a, p)
 	else:
 		_info_box.add_child(_label("Przydział pracy:", 18, Color(1.0, 0.85, 0.45)))
 		var grid := GridContainer.new()
@@ -403,6 +443,143 @@ func _build_person_info(a: SimAgent) -> void:
 	tip.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	tip.custom_minimum_size.x = 400
 	_info_box.add_child(tip)
+
+
+# Dziecko w godzinach pracy chodzi za lubianym dorosłym; gracz może wskazać za kim (D5).
+func _build_follow(a: SimAgent, p: SimPerson) -> void:
+	_info_box.add_child(_label("W dzień chodzi z:", 17, Color(1.0, 0.85, 0.45)))
+	var grid := GridContainer.new()
+	grid.columns = 2
+	grid.add_theme_constant_override("h_separation", 6)
+	grid.add_theme_constant_override("v_separation", 6)
+	_info_box.add_child(grid)
+	var own := _button("z kim zechce", func(): world.set_follow(a.id, -1), 16)
+	own.toggle_mode = true
+	own.custom_minimum_size = Vector2(198, 34)
+	grid.add_child(own)
+	_info_updaters.append(func(): own.button_pressed = a.follow_id < 0)
+	for o in world.family.living():
+		var oa := world.agent_by_id(o.agent_id)
+		if oa == null or oa.is_child:
+			continue
+		var oid: int = o.id
+		var b := _button("z: " + o.name, func(): world.set_follow(a.id, oid), 16)
+		b.toggle_mode = true
+		b.custom_minimum_size = Vector2(198, 34)
+		grid.add_child(b)
+		_info_updaters.append(func(): b.button_pressed = a.follow_id == oid)
+
+
+# Słowo zamiast liczby (E1): jak ktoś coś odczuwa.
+func _feel(v: float) -> String:
+	if v >= WARM:
+		return "bardzo dobrze"
+	if v >= MILD:
+		return "dobrze"
+	if v <= -WARM:
+		return "bardzo źle"
+	if v <= -MILD:
+		return "źle"
+	return "blado"
+
+
+func _build_memories(p: SimPerson) -> void:
+	var bonds := world.bonds
+	var targets: Array = bonds.targets_of(p.id)
+	var all: Array = bonds.strongest(p.id, targets, MEMORIES_LONG if _memories_more else MEMORIES_SHORT)
+	if all.is_empty():
+		_info_box.add_child(_label("Nic szczególnego jeszcze nie przeżył%s." % ("" if p.sex == "m" else "a"), 17, DIM))
+		return
+	for e in all:
+		var m: Dictionary = e["m"]
+		var v: float = e["v"]
+		var col := GOOD if v >= MILD else (BAD if v <= -MILD else DIM)
+		var who := ""
+		var t: String = e["t"]
+		if t.begins_with("p:"):
+			var o: SimPerson = world.family.persons.get(int(t.substr(2)))
+			who = (o.name + ": ") if o != null and not int(t.substr(2)) in m["with"] else ""
+		var txt := "%s%s — wspomina %s (dzień %d)" % [who, bonds.describe(m, t), _feel(v), int(m["day"]) + 1]
+		if debug:
+			txt += "  [%.1f]" % v
+		var l := _label(txt, 16, col)
+		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		l.custom_minimum_size.x = 400
+		_info_box.add_child(l)
+	_info_box.add_child(_button("Pokaż mniej" if _memories_more else "Pokaż więcej",
+		func(): _memories_more = not _memories_more, 15))
+
+
+func _build_prefs(p: SimPerson) -> void:
+	var prefs: Array = world.bonds.preferences(p.id)
+	if prefs.is_empty():
+		_info_box.add_child(_label("Nie ma jeszcze ulubionych ani znienawidzonych zajęć.", 17, DIM))
+		return
+	for e in prefs:
+		var v: float = e["value"]
+		var word := "uwielbia" if v >= WARM else ("lubi" if v >= MILD else ("nie znosi" if v <= -WARM else ("nie lubi" if v <= -MILD else "obojętne mu")))
+		var label := String(world.memories["act_labels"].get(e["act"], e["act"]))
+		var txt := "%s: %s\n   skąd: %s" % [word, label, "; ".join(e["from"])]
+		if debug:
+			txt += "  [%.1f]" % v
+		var l := _label(txt, 16, GOOD if v >= MILD else (BAD if v <= -MILD else DIM))
+		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		l.custom_minimum_size.x = 400
+		_info_box.add_child(l)
+
+
+func _build_traits(p: SimPerson) -> void:
+	var fam := world.family
+	_info_box.add_child(_label("Cechy (ciało i talent):", 17, Color(1.0, 0.85, 0.45)))
+	_info_box.add_child(_label("brak szczególnych" if p.traits.is_empty() else ", ".join(p.traits.map(func(t): return fam.trait_label(t))), 17))
+	_info_box.add_child(_label("Charakter:", 17, Color(1.0, 0.85, 0.45)))
+	_info_box.add_child(_label("nic szczególnego" if p.character.is_empty() else ", ".join(p.character.map(func(c): return fam.character_label(c))), 17))
+
+
+# --- Kronika rodu (E3) ---
+
+func _build_chronicle() -> void:
+	_chronicle = PanelContainer.new()
+	_chronicle.anchor_left = 0.5
+	_chronicle.anchor_right = 0.5
+	_chronicle.offset_left = -420
+	_chronicle.offset_right = 420
+	_chronicle.offset_top = 80
+	_chronicle.visible = false
+	add_child(_chronicle)
+	var v := VBoxContainer.new()
+	_chronicle.add_child(v)
+	v.add_child(_label("Kronika rodu (K — zamknij)", 22, Color(1.0, 0.85, 0.45)))
+	var sc := ScrollContainer.new()
+	sc.custom_minimum_size = Vector2(800, 460)
+	v.add_child(sc)
+	_chronicle_box = VBoxContainer.new()
+	_chronicle_box.add_theme_constant_override("separation", 4)
+	sc.add_child(_chronicle_box)
+
+
+func toggle_chronicle() -> void:
+	_chronicle.visible = not _chronicle.visible
+	_chronicle_count = -1
+
+
+func _update_chronicle() -> void:
+	if not _chronicle.visible or world.chronicle.entries.size() == _chronicle_count:
+		return
+	_chronicle_count = world.chronicle.entries.size()
+	for c in _chronicle_box.get_children():
+		c.queue_free()
+	var entries: Array = world.chronicle.entries.duplicate()
+	entries.reverse()
+	if entries.is_empty():
+		_chronicle_box.add_child(_label("Na razie nic się nie wydarzyło.", 17, DIM))
+	for e in entries.slice(0, CHRONICLE_ROWS):
+		var day := int(e["day"])
+		var col: Color = {"death": BAD, "departure": WARN, "birth": GOOD, "wedding": GOOD}.get(e["kind"], TEXT)
+		var l := _label("Rok %d, dzień %d — %s" % [day / world.clock.days_per_year + 1, day % world.clock.days_per_year + 1, e["text"]], 16, col)
+		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		l.custom_minimum_size.x = 780
+		_chronicle_box.add_child(l)
 
 
 func _build_building_info(b: SimBuilding) -> void:
@@ -583,6 +760,7 @@ STEROWANIE
 LPM — zaznacz osobę / budynek       PPM — rozkaz: idź / zetnij drzewo (Shift = do kolejki)
 Przeciągnij LPM / ŚPM, WASD, dwa palce — przesuń kamerę       Kółko / szczypanie — zoom
 Q / E — obrót kamery       SPACJA — pauza       1–4 — tempo       TAB — następna osoba       ESC — odznacz
+K — kronika rodu       F3 — tryb debug (ukryte liczby)
 
 KOLORY UBRAŃ: zielony drwal · pomarańczowy tracz · niebieski stolarz · żółty nosiciel
 fioletowy zbieracz · szary dniówka · czarny złodziej · beżowy bez przydziału. Czerwony „!” = problem (kliknij, by zobaczyć jaki).""", 17)
@@ -610,6 +788,7 @@ func _process(delta: float) -> void:
 		_update_top()
 		_update_family()
 		_update_info()
+		_update_chronicle()
 		_update_log()
 	_update_modal()
 	_overlay.queue_redraw()

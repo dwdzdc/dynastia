@@ -92,10 +92,10 @@ Pętla gry: ród Wilków (6 osób, 3 pokolenia) w chacie pod lasem. Co 5 dni czy
 
 ### Faza E — interfejs
 
-- [ ] E1 Panel osoby z zakładkami: Teraz / Wspomnienia (rozwijana lista) / Preferencje / Cechy i charakter, bez liczb → zrzut ekranu.
-- [ ] E2 Panel rodu pokazuje faktycznych członków rodu, root oznaczony, przycisk „ustaw jako roota” → zrzut ekranu.
-- [ ] E3 Podgląd kroniki (osobny panel, klawisz) → zrzut ekranu.
-- [ ] E4 Tryb debug (F3): ukryte liczby (więzi, siła) widoczne dla dewelopera → zrzut ekranu.
+- [x] E1 Panel osoby z zakładkami: Teraz / Wspomnienia (rozwijana lista) / Preferencje / Cechy i charakter, bez liczb → zrzut ekranu.
+- [x] E2 Panel rodu pokazuje faktycznych członków rodu, root oznaczony, przycisk „ustaw jako roota” → zrzut ekranu.
+- [x] E3 Podgląd kroniki (osobny panel, klawisz) → zrzut ekranu.
+- [x] E4 Tryb debug (F3): ukryte liczby (więzi, siła) widoczne dla dewelopera → zrzut ekranu.
 
 ### Iteracja 2 (później)
 

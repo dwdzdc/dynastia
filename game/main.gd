@@ -263,10 +263,16 @@ func _unhandled_input(event: InputEvent) -> void:
 				_select_next()
 			KEY_F1:
 				hud._help.visible = not hud._help.visible
+			KEY_K:
+				hud.toggle_chronicle()
+			KEY_F3:
+				hud.debug = not hud.debug
 			KEY_ESCAPE:
 				selected_id = -1
 				selected_building = ""
 				hud._help.visible = false
+				if hud._chronicle.visible:
+					hud.toggle_chronicle()
 
 
 func _select_next() -> void:
