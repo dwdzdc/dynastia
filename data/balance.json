@@ -370,5 +370,15 @@
     "follow_min_bond": 20.0,
     "watch_seconds": 6.0,
     "watch_offset": 1.2
+  },
+  "ai": {
+    "forage_when_food_below": 8,
+    "forage_when_cash_below": 10.0,
+    "max_foragers": 1,
+    "default_job": "laborer",
+    "idle_roles": [
+      "merchant",
+      "gentry"
+    ]
   }
 }

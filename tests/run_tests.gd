@@ -68,6 +68,7 @@ func _run_all() -> void:
 	_test_rent_eviction_homeless()
 	_test_recipe_from_data()
 	_test_society_from_data()
+	_test_ai_households_live()
 	_test_world_deterministic()
 	_test_world_30_days_autonomous()
 	_test_economy_chain_produces_income()
@@ -619,7 +620,7 @@ func _test_departure_and_ai_life() -> void:
 	check("departed sets up own household elsewhere", ap.home_id != "home" and w.household_of(ap) != w.household and piotr.id in w.household_of(ap).members)
 	check("departure is in the chronicle", w.chronicle.of_kind("departure").size() == 1 and piotr.id in w.chronicle.of_kind("departure")[0]["who"])
 	w.set_job(ap.id, "sawyer")
-	check("player can no longer command the departed", ap.job == String(w.balance["belonging"]["leave_job"]))
+	check("player can no longer command the departed", ap.job != "sawyer")
 	var cash0: float = w.household.cash
 	var purse0: float = piotr.purse
 	_run_days_auto(w, 3.0)
@@ -857,6 +858,36 @@ func _test_society_from_data() -> void:
 	check("player's home is owned by the manor lineage", w.home().owner_kind == "lineage" and f.lineages[w.home().owner_id].name == "Dworscy")
 	check("player family list still shows only the player's lineage", f.living().size() == 6)
 	check("merchant lineage found by role", w.lineage_by_role("merchant") != null and w.lineage_by_role("merchant").name == "Bednarz")
+
+
+func _test_ai_households_live() -> void:
+	var w = _new_world(77)
+	var cash0 := {}
+	for h in w.households.values():
+		cash0[h.id] = h.cash
+	_run_days_auto(w, 8.0)
+	var alive := true
+	var fed := true
+	var worked := false
+	var bought := false
+	for h in w.households.values():
+		if h == w.household:
+			continue
+		for pid in h.members:
+			var p = w.family.persons[pid]
+			var a = w.agent_by_id(p.agent_id)
+			if not p.alive():
+				alive = false
+			elif a.needs["food"] < 5.0:
+				fed = false
+			if a.job in ["laborer", "forager"]:
+				worked = true
+		if h.cash < float(cash0.get(h.id, 0.0)) - 0.5:
+			bought = true
+	check("AI families survive 8 days", alive)
+	check("AI families are not starving", fed)
+	check("AI adults are assigned work by the AI", worked)
+	check("AI households spend their own money", bought)
 
 
 func _state_sig(w) -> String:

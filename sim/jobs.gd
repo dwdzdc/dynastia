@@ -65,9 +65,13 @@ func block_at(tod: float) -> String:
 func desired_kind(a: SimAgent) -> String:
 	if a.controlled:
 		return "manual"
-	if a.disabled():
-		return "sick"
 	var food_low := float(w.balance["needs"]["food"]["low"])
+	if a.disabled():
+		# Chory też je, jeśli w domu jest co (inaczej umiera z głodu w łóżku).
+		var h := _home(a)
+		if a.needs["food"] < food_low and h != null and h.amount("food") > 0:
+			return "eat"
+		return "sick"
 	if a.needs["food"] < food_low:
 		return "eat"
 	var block := block_at(w.clock.time_of_day())
@@ -79,7 +83,7 @@ func desired_kind(a: SimAgent) -> String:
 		return "sleep"
 	if block in ["dinner", "free"] and not a.is_child and aloof_today(a):
 		return "aloof"
-	if block == "dinner" and not w.is_independent(a):
+	if block == "dinner":
 		return "dinner"
 	if a.is_child:
 		return "child"
@@ -99,10 +103,6 @@ func replan(a: SimAgent) -> void:
 	if _home(a) == null:
 		a.plan_kind = kind
 		_plan_homeless(a, kind)
-		return
-	if w.is_independent(a):
-		a.plan_kind = kind
-		_plan_independent(a, kind)
 		return
 	# Przed wyjściem z domu zjedz, jeśli już trochę burczy w brzuchu — inaczej agent
 	# zawraca w pół drogi.
@@ -247,34 +247,6 @@ func _plan_eat_away(a: SimAgent) -> void:
 		_wait(a, "GŁODNY — bez grosza i bez domu", "wait", true)
 
 
-# Minimalny autopilot osoby spoza rodu (C4): mieszka u siebie, chodzi na dniówkę,
-# zarobek trzyma w sakiewce, a jedzenie kupuje i zjada na targu.
-func _plan_independent(a: SimAgent, kind: String) -> void:
-	var home: SimBuilding = w.home_of(a)
-	var p := w.person_of(a)
-	match kind:
-		"sick":
-			_go_inside(a, home, "rest", 3.0, "chory — leży u siebie")
-		"sleep":
-			_go_inside(a, home, "sleep", 4.0, "śpi u siebie")
-		"eat":
-			var price := float(w.balance["economy"]["meal_away_price"])
-			if p.purse >= price:
-				var market: SimBuilding = w.building("market")
-				_walk(a, market.door(), "idzie coś zjeść na targu")
-				_do(a, "meal_away", price)
-				_act(a, "eat", 1.5, "je na targu za swoje", market.id)
-			elif a.can_work():
-				_plan_forage(a)
-				_do(a, "eat_carried")
-			else:
-				a.hungry_no_food = true
-				_go_inside(a, home, "wait", float(_cfg["wait_seconds"]), "GŁODNY — bez grosza")
-		"work":
-			_plan_work(a)
-		_:
-			_go_inside(a, home, "rest", 3.0, "odpoczywa u siebie")
-
 func _plan_eat(a: SimAgent) -> void:
 	var home: SimBuilding = _home(a)
 	if home.amount("food") > 0:
@@ -350,13 +322,14 @@ func follow_target(a: SimAgent) -> SimAgent:
 	var p := w.person_of(a)
 	if p == null:
 		return null
+	var mine: Array = w.family.living_members(p.lineage_id)
 	if a.follow_id >= 0:
 		var fp: SimPerson = w.family.persons.get(a.follow_id)
 		var fa: SimAgent = w.agent_by_id(fp.agent_id) if fp != null and fp.alive() else null
 		return fa if fa != null and fa.status == "active" else null
 	var best: SimAgent = null
 	var best_v := float(w.balance["children"]["follow_min_bond"])
-	for o: SimPerson in w.family.living():
+	for o: SimPerson in mine:
 		var oa: SimAgent = w.agent_by_id(o.agent_id)
 		if oa == null or oa.status != "active" or oa.is_child or oa.plan_kind != "work":
 			continue

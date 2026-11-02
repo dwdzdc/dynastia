@@ -20,6 +20,7 @@ var jobs: SimJobs
 var family: SimFamily
 var bonds: SimBonds
 var together: SimTogether
+var ai: SimAI
 var chronicle: SimChronicle
 
 var buildings: Dictionary = {}   # id -> SimBuilding
@@ -73,6 +74,7 @@ func _init(seed: int, p_balance: Dictionary, p_map: Dictionary, p_people: Dictio
 	bonds = SimBonds.new(self, memories)
 	chronicle = SimChronicle.new()
 	together = SimTogether.new(self, memories["together"])
+	ai = SimAI.new(self)
 	family.setup_start()
 	_spawn_society()
 	for p in family.living():
@@ -182,18 +184,16 @@ func is_independent(a: SimAgent) -> bool:
 	return p != null and p.lineage_id != family.player_lineage_id
 
 
-# Zarobek osoby (dniówka, łup) trafia najpierw do niej (S5, D1). Członek rodu oddaje
-# do wspólnej kasy tym więcej, im silniej należy do rodu; osoba spoza rodu nic.
+# Zarobek osoby (dniówka, łup) trafia najpierw do niej (S5, D1). Do kasy gospodarstwa
+# oddaje tym więcej, im silniej należy do swojego rodu.
 func earn_for(a: SimAgent, amount: float) -> void:
 	var p := person_of(a)
 	if p == null:
 		household.earn(amount)
 		return
-	var share := 0.0
-	if not is_independent(a):
-		var pc: Dictionary = balance["purse"]
-		var s := clampf(float(family.strength.get(p.id, 1.0)), 0.0, 1.0)
-		share = lerpf(float(pc["share_at_zero"]), float(pc["share_at_full"]), s)
+	var pc: Dictionary = balance["purse"]
+	var s := clampf(float(family.strength.get(p.id, 1.0)), 0.0, 1.0)
+	var share := lerpf(float(pc["share_at_zero"]), float(pc["share_at_full"]), s)
 	household_of(a).earn(amount * share)
 	p.purse += amount * (1.0 - share)
 
@@ -717,6 +717,7 @@ func _new_day() -> void:
 			var pr := person_of(a)
 			note("%s zachorował%s." % [pr.name, "" if pr.sex == "m" else "a"], "warn", a.position)
 	together.end_day()
+	ai.new_day()
 	family.new_day()
 	bonds.prune()
 	stats["max_generation"] = _max_living_generation()
