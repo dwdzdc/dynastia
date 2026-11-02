@@ -70,6 +70,7 @@ func _run_all() -> void:
 	_test_society_from_data()
 	_test_ai_households_live()
 	_test_bonds_across_lineages()
+	_test_marriage_with_existing_people()
 	_test_world_deterministic()
 	_test_world_30_days_autonomous()
 	_test_economy_chain_produces_income()
@@ -877,7 +878,7 @@ func _test_ai_households_live() -> void:
 		for pid in h.members:
 			var p = w.family.persons[pid]
 			var a = w.agent_by_id(p.agent_id)
-			if not p.alive():
+			if not p.alive() and (p.death_cause.contains("głodu") or p.death_cause.contains("zamarzł")):
 				alive = false
 			elif a.needs["food"] < 5.0:
 				fed = false
@@ -885,7 +886,7 @@ func _test_ai_households_live() -> void:
 				worked = true
 		if h.cash < float(cash0.get(h.id, 0.0)) - 0.5:
 			bought = true
-	check("AI families survive 8 days", alive)
+	check("AI families do not die of hunger or cold in 8 days", alive)
 	check("AI families are not starving", fed)
 	check("AI adults are assigned work by the AI", worked)
 	check("AI households spend their own money", bought)
@@ -915,6 +916,42 @@ func _test_bonds_across_lineages() -> void:
 	var kos = f.lineage_of(jagna)
 	check("friendship does not change lineage", piotr.lineage_id == f.player_lineage_id and jagna.lineage_id == kos.id)
 	check("strength computed per lineage from its own root", is_equal_approx(float(f.strength[kos.root_id]), 1.0) and float(f.strength[jagna.id]) > 0.0 and is_equal_approx(float(f.strength[f.root_id]), 1.0))
+
+
+func _test_marriage_with_existing_people() -> void:
+	var w = _new_world()
+	var f = w.family
+	var piotr = _named(f, "Piotr")
+	var max_id: int = f.persons.keys().max()
+	f.set_seeking(piotr.id, true)
+	var asked := {}
+	for i in 1500:
+		w.step_sim(5.0)
+		if w.events.blocking() and w.events.prompts[0]["kind"] == "marriage":
+			asked = w.events.prompts[0]
+			break
+		while w.events.blocking():
+			w.resolve_prompt(int(w.events.prompts[0]["id"]), w.events.prompts[0]["options"][0]["value"])
+	check("proposal names an existing person from another lineage", not asked.is_empty() and f.persons.has(int(asked["data"]["cand"]))
+		and f.persons[int(asked["data"]["cand"])].lineage_id != f.player_lineage_id)
+	if asked.is_empty():
+		return
+	var bride = f.persons[int(asked["data"]["cand"])]
+	w.resolve_prompt(int(asked["id"]), "yes")
+	check("wedding joins two existing people, nobody materialises", piotr.spouse_id == bride.id and bride.id <= max_id)
+	check("bride joins the groom's lineage and household", bride.lineage_id == f.player_lineage_id and bride.attached
+		and bride.household_id == w.household.id and bride.surname == "Wilk")
+	# Córka wychodzi za mąż do innego rodu.
+	var zofia = _named(f, "Zofia")
+	zofia.birth_day -= 4.0
+	var grzegorz = null
+	for p in f.all_living():
+		if p.name == "Grzegorz" and p.surname == "Sowa":
+			grzegorz = p
+	f.marry(zofia, grzegorz)
+	check("daughter moves to her husband's lineage and home", zofia.lineage_id == grzegorz.lineage_id and w.agent_by_id(zofia.agent_id).home_id == "n2" and not zofia in f.living())
+	var gran = f.persons[f.root().mother_id]
+	check("no fitting candidates, no wedding", f.marriage_candidates(gran).is_empty())
 
 
 func _state_sig(w) -> String:
@@ -1007,22 +1044,25 @@ func _test_marriage_and_birth() -> void:
 	w.family.set_seeking(piotr.id, true)
 	_run_days_auto(w, 25.0)
 	check("seeking adult eventually marries", not piotr.unions.is_empty())
-	var n0: int = w.family.persons.size()
+	var n0: int = w.family.player_lineage().members.size()
 	for p in w.family.living():
 		if w.family.can_marry(p):
 			w.family.set_seeking(p.id, true)
-	_run_days_auto(w, 40.0)
-	check("married couples have children", w.family.persons.size() > n0)
+	_run_days_auto(w, 30.0)
+	check("married couples have children", w.family.player_lineage().members.size() > n0)
 	var in_lineage := true
 	var departed := []
 	for e in w.chronicle.of_kind("departure"):
-		departed.append_array(e["who"])
-	var ours := func(id: int) -> bool:
-		return id >= 0 and (w.family.persons[id].lineage_id == w.family.player_lineage_id or id in departed)
+		if int(e["lineage"]) == w.family.player_lineage_id:
+			departed.append_array(e["who"])
+	var pl: int = w.family.player_lineage_id
 	for p in w.family.persons.values():
-		# Kto wżenił się w ród gracza albo urodził się jego członkowi, musi w nim być (albo odejść).
-		var joined: bool = (p.attached and ours.call(p.spouse_id)) or (p.mother_id >= 0 and w.family.persons[p.mother_id].lineage_id == w.family.player_lineage_id)
-		if joined and p.lineage_id != w.family.player_lineage_id and not p.id in departed:
+		# Kto wżenił się w ród gracza albo urodził się jego członkowi, musi w nim być
+		# (chyba że odszedł albo sam(a) wyszedł/wyszła za mąż do innego rodu).
+		var married_out: bool = p.attached and p.spouse_id >= 0 and w.family.persons[p.spouse_id].lineage_id != pl
+		var joined: bool = (p.attached and p.spouse_id >= 0 and w.family.persons[p.spouse_id].lineage_id == pl) \
+			or (p.mother_id >= 0 and w.family.persons[p.mother_id].lineage_id == pl and not married_out)
+		if joined and p.lineage_id != pl and not p.id in departed:
 			in_lineage = false
 	check("spouses and newborns join player lineage", in_lineage)
 

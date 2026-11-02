@@ -272,12 +272,6 @@
       "stage": "adult",
       "day": 0.0
     },
-    "spouse_younger_days": 6.0,
-    "spouse_older_days": 3.0,
-    "spouse_oldest": {
-      "stage": "adult",
-      "day": 35.0
-    },
     "fertile_from": {
       "stage": "adult",
       "day": 0.0
@@ -295,16 +289,6 @@
     "conceive_weak_mult": 0.3,
     "pregnancy_days": 3.0,
     "start_age_jitter_days": 0.8,
-    "spouse_candidate": {
-      "trait_chance": 0.6,
-      "character_chance": 0.7,
-      "wedding_cost": 15.0,
-      "skill_max": {
-        "craft": 3.0,
-        "chop": 2.5,
-        "saw": 2.0
-      }
-    },
     "boy_chance": 0.5,
     "newborn_food": 80.0
   },
@@ -380,5 +364,11 @@
       "merchant",
       "gentry"
     ]
+  },
+  "marriage": {
+    "residence": "bride_moves",
+    "max_age_gap_days": 14.0,
+    "wedding_cost": 15.0,
+    "know_well": 15.0
   }
 }

@@ -357,7 +357,7 @@ func new_day() -> void:
 		_tick_pregnancy(p)
 	for p in all_living():
 		_roll_conception(p)
-	for p in living():
+	for p in all_living():
 		_roll_courtship(p)
 	update_strength()
 	_check_departures()
@@ -594,88 +594,121 @@ func _roll_courtship(p: SimPerson) -> void:
 		return
 	if not w.rng.chance(float(_fam["marry_chance_per_day"])):
 		return
-	var cand := _materialize_candidate(p)
-	var traits_txt := "brak szczególnych cech"
-	if not (cand["traits"] as Array).is_empty():
-		traits_txt = ", ".join((cand["traits"] as Array).map(func(t): return trait_label(t)))
-	var char_txt := "nic szczególnego"
-	if not (cand["character"] as Array).is_empty():
-		char_txt = ", ".join((cand["character"] as Array).map(func(c): return character_label(c)))
-	var who := "Panna" if cand["sex"] == "f" else "Kawaler"
+	var cands := marriage_candidates(p)
+	if cands.is_empty():
+		return
+	var c: SimPerson = cands[0]
+	if not is_ours(p) and not is_ours(c):
+		marry(p, c)
+		return
+	# Ktoś z rodu gracza: decyduje gracz. Swój kandydat musi sam szukać pary.
+	if is_ours(c) and not c.seeking_spouse:
+		return
+	var ours: SimPerson = p if is_ours(p) else c
+	var other: SimPerson = c if ours == p else p
+	var mover := _mover(ours, other)
+	var known := w.bonds.value(ours.id, SimBonds.person(other.id))
+	var acquaintance := "znają się dobrze" if known >= float(_marriage()["know_well"]) else ("znają się z widzenia" if known > 0.0 else "prawie się nie znają")
+	var after := ("%s wejdzie do rodu %s i zamieszka z wami." % [other.name, dynasty]) if mover == other \
+		else ("%s przejdzie do rodu %s i zamieszka u nich." % [ours.name, lineage_of(other).name])
+	var traits_txt := "brak szczególnych" if other.traits.is_empty() else ", ".join(other.traits.map(func(t): return trait_label(t)))
+	var char_txt := "nic szczególnego" if other.character.is_empty() else ", ".join(other.character.map(func(x): return character_label(x)))
 	w.events.ask("marriage", "Propozycja ślubu",
-		"%s %s %s (lat %d) z chaty sąsiadów chce poślubić %s.\nCechy: %s.\nCharakter: %s.\nWesele kosztuje %d zł (brakująca kwota pójdzie w dług)." % [
-			who, cand["name"], cand["surname"], int(years_label(float(cand["age_days"]))), p.name, traits_txt, char_txt, int(cand["cost"])],
+		"%s %s (lat %d, ród %s) i %s — %s.\n%s\nCechy: %s. Charakter: %s.\nWesele kosztuje %d zł (płaci rodzina, do której wchodzi panna młoda lub pan młody; brak pójdzie w dług)." % [
+			other.name, other.surname, int(age_of(other)), lineage_of(other).name, ours.name, acquaintance,
+			after, traits_txt, char_txt, int(_marriage()["wedding_cost"])],
 		[{ "label": "Zgoda na ślub", "value": "yes" }, { "label": "Odmowa", "value": "no" }],
-		{ "person": p.id, "cand": cand })
+		{ "person": ours.id, "cand": other.id })
 
 
-# Materializacja kandydata na żądanie: deterministyczna z hash(seed, id, cel) (intro §10).
-func _materialize_candidate(p: SimPerson) -> Dictionary:
-	var rng := SimRng.new(SimRng.hash3(int(w.balance["world_seed"]), p.id * 1000 + int(w.clock.day_index()), "spouse"))
-	var sex := "f" if p.sex == "m" else "m"
-	var age_days := clampf(days_lived(p) + rng.next_float(-float(_fam["spouse_younger_days"]), float(_fam["spouse_older_days"])),
-		life_day(_fam["marry_from"]), life_day(_fam["spouse_oldest"]))
-	var cc: Dictionary = _fam["spouse_candidate"]
-	var traits: Array = []
-	if rng.chance(float(cc["trait_chance"])):
-		traits.append(rng.choice(_people["inheritance"]["traits"]["pool"]))
-	var character: Array = []
-	if rng.chance(float(cc["character_chance"])):
-		character.append(rng.choice(_people["inheritance"]["character"]["pool"]))
-	var skills := {}
-	for k in cc["skill_max"]:
-		skills[k] = rng.next_float(0.0, float(cc["skill_max"][k]))
-	return {
-		"name": String(rng.choice(_people["names"][sex])),
-		"surname": String(rng.choice(_people["surnames"])),
-		"sex": sex,
-		"age_days": age_days,
-		"traits": traits,
-		"character": character,
-		"cost": float(cc["wedding_cost"]),
-		"skills": skills,
-	}
+func _marriage() -> Dictionary:
+	return w.balance["marriage"]
+
+
+# Kandydaci (S11): wolni dorośli przeciwnej płci z innych rodów okolicy, w rozsądnym
+# wieku, od najbardziej lubianych (więź w obie strony). Nikt nie bierze się z powietrza.
+func marriage_candidates(p: SimPerson) -> Array:
+	var gap := float(_marriage()["max_age_gap_days"])
+	var out: Array = []
+	for c in all_living():
+		if c.id == p.id or c.sex == p.sex or c.lineage_id == p.lineage_id or not can_marry(c):
+			continue
+		if absf(days_lived(c) - days_lived(p)) > gap:
+			continue
+		out.append(c)
+	var score := func(c: SimPerson) -> float:
+		return w.bonds.value(p.id, SimBonds.person(c.id)) + w.bonds.value(c.id, SimBonds.person(p.id))
+	out.sort_custom(func(x, y):
+		var sx: float = score.call(x)
+		var sy: float = score.call(y)
+		if not is_equal_approx(sx, sy):
+			return sx > sy
+		return x.id < y.id)
+	return out
+
+
+# Kto się przenosi (reguła z danych): root nigdy; poza tym według zwyczaju („bride_moves”).
+func _mover(a: SimPerson, b: SimPerson) -> SimPerson:
+	for x in [a, b]:
+		var l := lineage_of(x)
+		if l != null and l.root_id == x.id:
+			return b if x == a else a
+	var bride: SimPerson = a if a.sex == "f" else b
+	if String(_marriage()["residence"]) == "bride_moves":
+		return bride
+	return b if bride == a else a
 
 
 func resolve_marriage(data: Dictionary, accepted: bool) -> void:
 	var p: SimPerson = persons.get(int(data["person"]))
-	if p == null or not p.alive():
+	var c: SimPerson = persons.get(int(data["cand"]))
+	if p == null or c == null or not p.alive() or not c.alive() or not can_marry(p) or not can_marry(c):
 		return
 	if not accepted:
-		w.note("%s odrzuca zaloty. Szuka dalej." % p.name, "info", null)
+		w.note("%s odrzuca zaloty %s. Szuka dalej." % [p.name, c.name], "info", null)
 		return
-	var cand: Dictionary = data["cand"]
-	w.households.get(p.household_id, w.household).pay_or_debt(float(cand["cost"]))
-	var s := SimPerson.new()
-	s.id = _new_id()
-	s.name = String(cand["name"])
-	s.surname = String(cand["surname"]) if cand["sex"] == "m" else dynasty
-	s.sex = String(cand["sex"])
-	s.birth_day = w.clock.now() - float(cand["age_days"])
-	s.traits = (cand["traits"] as Array).duplicate()
-	s.character = (cand["character"] as Array).duplicate()
-	s.attached = true
-	s.spouse_id = p.id
-	p.spouse_id = s.id
-	p.seeking_spouse = false
-	p.unions.append({ "spouse": s.id, "start": w.clock.now(), "end": -1.0 })
-	s.unions.append({ "spouse": p.id, "start": w.clock.now(), "end": -1.0 })
-	persons[s.id] = s
-	lineage_of(p).add(s)
-	w.chronicle.add(w.clock.now(), "wedding", "Ślub: %s i %s %s." % [p.name, s.name, String(cand["surname"])], [p.id, s.id], p.lineage_id)
-	_remember_all(p.id, s.id, w.memories["on_wedding"]["spouses"])
-	_remember_all(s.id, p.id, w.memories["on_wedding"]["spouses"])
-	generation_of[s.id] = int(generation_of.get(p.id, 0))
-	var from: SimBuilding = w.building("n1")
-	var a: SimAgent = w.spawn_agent(s, from.door())
-	var ph: SimHousehold = w.households.get(p.household_id)
-	if ph != null:
-		w.join_household(s, ph)
-	for k in cand["skills"]:
-		a.skills[k] = float(cand["skills"][k])
-	apply_modifiers(s)
-	s.set_meta("stage", stage_of(s))
-	w.note("Ślub! %s i %s %s są małżeństwem. Nowa osoba w rodzinie." % [p.name, s.name, String(cand["surname"])], "good", a.position)
+	marry(p, c)
+
+
+# Ślub dwóch istniejących osób: jedna wchodzi do rodu i gospodarstwa drugiej.
+func marry(a: SimPerson, b: SimPerson) -> void:
+	var mover := _mover(a, b)
+	var stayer: SimPerson = b if mover == a else a
+	var old := lineage_of(mover)
+	var new_l := lineage_of(stayer)
+	var sh: SimHousehold = w.households.get(stayer.household_id)
+	if sh != null:
+		sh.pay_or_debt(float(_marriage()["wedding_cost"]))
+	old.remove(mover)
+	new_l.add(mover)
+	mover.attached = true
+	mover.blood = false
+	mover.surname = new_l.surname
+	mover.seeking_spouse = false
+	stayer.seeking_spouse = false
+	a.spouse_id = b.id
+	b.spouse_id = a.id
+	a.unions.append({ "spouse": b.id, "start": w.clock.now(), "end": -1.0 })
+	b.unions.append({ "spouse": a.id, "start": w.clock.now(), "end": -1.0 })
+	if sh != null:
+		w.join_household(mover, sh)
+		var ma: SimAgent = w.agent_by_id(mover.agent_id)
+		if ma != null:
+			w.jobs.replan(ma)
+	_remember_all(a.id, b.id, w.memories["on_wedding"]["spouses"])
+	_remember_all(b.id, a.id, w.memories["on_wedding"]["spouses"])
+	generation_of[mover.id] = int(generation_of.get(stayer.id, 0))
+	var text := "Ślub: %s i %s (z rodu %s)." % [stayer.name, mover.name, old.name]
+	w.chronicle.add(w.clock.now(), "wedding", text, [stayer.id, mover.id], new_l.id)
+	if old.id != new_l.id:
+		w.chronicle.add(w.clock.now(), "wedding", "%s wychodzi za mąż / żeni się do rodu %s (%s)." % [mover.name, new_l.name, stayer.name], [mover.id, stayer.id], old.id)
+	if new_l.id == player_lineage_id:
+		w.note("Ślub! %s i %s. Nowa osoba w rodzinie." % [stayer.name, mover.name], "good", null)
+	elif old.id == player_lineage_id:
+		w.note("Ślub! %s odchodzi do rodu %s (%s)." % [mover.name, new_l.name, stayer.name], "warn", null)
+		if not _blood_alive():
+			_end_game()
+	update_strength()
 
 
 # --- Śmierć i sukcesja ---
