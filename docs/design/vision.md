@@ -57,4 +57,5 @@ Najprościej: RimWorld, tylko zamiast dzikiej planety masz społeczeństwo. Pres
   - śluby między krewnymi;
   - dzieci poza małżeństwem;
   - koszt przełączenia roota.
+- **Proces w świecie, nie funkcja** (playtest iteracji 2): każdy skutek ma wynikać z tego, co fizycznie wydarzyło się między konkretnymi ludźmi w konkretnym miejscu. Szczegóły i ustalenia: `docs/design/living-village.md`.
 - **Cele długoterminowe** (zagrożenia, zaginięcia, ścieżki kariery, tradycja i płeć w preferencjach, budowanie, ziemia, pracownicy, mapa proceduralna, wybór startu): `docs/design/goals.md`.

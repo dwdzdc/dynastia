@@ -97,7 +97,20 @@ Pętla gry: ród Wilków (6 osób, 3 pokolenia) w chacie pod lasem. Co 5 dni czy
 - [x] E3 Podgląd kroniki (osobny panel, klawisz) → zrzut ekranu.
 - [x] E4 Tryb debug (F3): ukryte liczby (więzi, siła) widoczne dla dewelopera → zrzut ekranu.
 
-## Iteracja 2 — społeczeństwo (następna)
+## Iteracja 2b — wieś, która żyje (NASTĘPNA, przed resztą iteracji 2)
+
+Źródło: `docs/design/living-village.md` (playtest 02.11.2026). Reszta iteracji 2 (H4–H6, H7, I, J) wstrzymana; pole i budowa wejdą tu jako miejsca pracy. Zasada: każdy skutek wynika z procesu w świecie, każdy punkt ma w weryfikacji „co gracz zobaczy”.
+
+Zakres (do rozpisania na decyzje szkieletowe i punkty, potem zatwierdzenie autora):
+- [ ] Widoczna praca: pola dworu na mapie, zatrudnienie jako umowa na konkretną robotę w konkretnym miejscu (w tym najem ludzi do własnego tartaku); koniec „dniówki w dworze” jako znikania.
+- [ ] Skarbiec rodu (skrzynia w domu) i sakwy fizycznie: monety brane do sakwy przed zakupem, sens sakwy (wydatki osobiste, sygnał dryfu).
+- [ ] Handel jako miejsce: stragan jako budynek (także przy domu), targ jako plac straganów, kupujący chodzą między straganami, ceny gracza jako granice (min. sprzedaży, maks. kupna), kupiec jako zawód (hurt → detal); kupcy wędrowni widocznymi drogami.
+- [ ] Spotkania i rozmowy jako jedyne źródło więzi spoza domu; romans jako proces; bez przycisku „szukaj żony”; zgoda rodu przy mezaliansie; pozycja społeczna z majątku i opinii.
+- [ ] Bezpośrednie rozkazy mieszkaniowe (wynajmij, kup, zleć budowę, wyprowadź się, wyrzuć), bez automatu dla gracza.
+- [ ] Kradzież jako proces ze świadkami zamiast rzutu kością.
+- [ ] „Nosiciel” → „tragarz”.
+
+## Iteracja 2 — społeczeństwo (wstrzymana w połowie)
 
 Cel: rodzina przestaje być oderwana od świata. Inne rody żyją z tych samych danych i tym samym kodem, popyt i ceny biorą się z ich pieniędzy i potrzeb, małżonek to ktoś, kogo się zna, a dom to aktywo, które można wynająć, kupić albo zbudować. Decyzje S6–S12 zatwierdzone przez autora (02.11.2026), S9 rozszerzona o kupców wędrownych, S13 dopisana (do potwierdzenia). Podział na punkty niżej (format jak w iteracji 1).
 

@@ -7,6 +7,7 @@ Gra w Godot 4.7 (GDScript): ród próbujący przetrwać i wybić się w społecz
 1. `docs/design/vision.md`: czym gra jest i czym nie jest, plus ustalenia z autorem. Najwyższe źródło prawdy.
 2. `docs/design/family-dynamics.md`: model rodu (więzi, przynależność, uwaga, kronika). Rdzeń gry.
    `docs/design/goals.md`: cele długoterminowe (jeszcze nie do roboty, ale nie blokuj ich modelem).
+   `docs/design/living-village.md`: ustalenia po playteście iteracji 2 i zasada „proces w świecie zamiast abstrakcyjnej funkcji”.
 3. `progress.md`: stan, plan bieżącej iteracji (z decyzjami szkieletowymi) i kolejka dalszych kroków.
 4. `intro`: pierwotny szkic (model danych, architektura, MVP). Ważny tam, gdzie powyższe go nie nadpisują.
 
@@ -14,7 +15,7 @@ Decyzje architektoniczne są w `docs/adr/`, terminy w `GLOSSARY.md`.
 
 ## Gdzie jesteśmy
 
-Iteracja 1 (dynamika rodu) jest zrobiona i przetestowana przez autora. Następna jest **Iteracja 2 — społeczeństwo** (`progress.md`): zrobione F1–F4, G1–G5, H1–H3 i H7a (dwór jako pracodawca); czeka na test rozgrywki autora. Dalej: H4–H6 (pole, młyn, piekarnia, kamieniołom; potrzebne ogólne noszenie towarów między budynkami), H7 (zatrudnianie w warsztatach gracza), faza I (budowa), faza J. Testy trwają ok. 2 min (kilkudziesięciu agentów).
+Iteracja 1 (dynamika rodu) jest zrobiona i przetestowana przez autora. Następna jest **Iteracja 2 — społeczeństwo** (`progress.md`): zrobione F1–F4, G1–G5, H1–H3 i H7a; reszta wstrzymana po playteście. **Następna jest Iteracja 2b — wieś, która żyje** (`docs/design/living-village.md`, `progress.md`): najpierw zaproponuj autorowi decyzje szkieletowe i punkty (autor chce, żeby Claude je rozpisał), nic nie implementuj przed zatwierdzeniem. Testy trwają ok. 2 min (kilkudziesięciu agentów).
 
 ## Jak pracujemy
 
