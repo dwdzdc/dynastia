@@ -1,0 +1,9 @@
+docs/design/family-dynamics.md
+  ai_agent 106-109,119
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "5870442ba4000c3480101d9ec92d242960e73a9a",
+  "prompts": {}
+}
