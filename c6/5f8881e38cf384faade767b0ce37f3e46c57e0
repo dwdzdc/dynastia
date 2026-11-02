@@ -1,0 +1,9 @@
+progress.md
+  ai_agent 102,104-106,111-112,115
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "c65f8881e38cf384faade767b0ce37f3e46c57e0",
+  "prompts": {}
+}
