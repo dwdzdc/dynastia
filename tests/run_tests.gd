@@ -65,6 +65,7 @@ func _run_all() -> void:
 	_test_child_follows_adult()
 	_test_ai_lineage_lives_independently()
 	_test_households_separate()
+	_test_rent_eviction_homeless()
 	_test_world_deterministic()
 	_test_world_30_days_autonomous()
 	_test_economy_chain_produces_income()
@@ -779,6 +780,40 @@ func _test_households_separate() -> void:
 	check("player's people are members of the player household", kids == f.living().size())
 
 
+func _test_rent_eviction_homeless() -> void:
+	var w = _new_world()
+	var f = w.family
+	var home = w.home()
+	var l = f.new_lineage("Kos")
+	var ids: Array = f.spawn_family(_ai_specs(), l, w.building("n1"))
+	var landlord = f.persons[ids[0]]
+	home.owner_kind = "person"
+	home.owner_id = landlord.id
+	var purse0: float = landlord.purse
+	var cash0: float = w.household.cash
+	w._settle_rent(w.household)
+	check("daily rent goes to the owner's purse", is_equal_approx(landlord.purse - purse0, home.rent_per_day) and is_equal_approx(cash0 - w.household.cash, home.rent_per_day))
+	# Bankructwo: brak pieniędzy, dług rośnie, po kilku dobach eksmisja.
+	w.household.cash = 0.0
+	for b in w.buildings.values():
+		if b.type in ["home", "decor_house"] and b != home:
+			b.type = "decor_town"   # brak wolnych domów
+	for i in 30:
+		w._settle_rent(w.household)
+	check("unpaid rent turns into debt and eviction", w.household.home_id == "" and w.household.debt > 0.0)
+	check("eviction is not game over", not f.game_over)
+	var a = w.agent_by_id(f.root().agent_id)
+	check("evicted family is homeless (no home building)", w.home_of(a) == null)
+	w.clock.set_time(w.clock.day_index(), 0.95)
+	w.jobs.replan(a)
+	var last: Dictionary = a.steps[a.steps.size() - 1]
+	check("homeless sleeps outdoors with a reason", String(last.get("act", "")) == "sleep" and String(last["why"]).contains("gołym niebem"))
+	w.household.cash = 100.0
+	w.buildings["n2"].type = "decor_house"
+	w._settle_rent(w.household)
+	check("with money the family rents a free house again", w.household.home_id != "" and a.home_id == w.household.home_id)
+
+
 func _state_sig(w) -> String:
 	var parts: Array = ["%.3f" % w.household.cash, str(w.building("sawmill").stock)]
 	for a in w.agents:
@@ -829,7 +864,7 @@ func _test_economy_chain_produces_income() -> void:
 	var w = _new_world()
 	_run_days_auto(w, 5.0)
 	check("woodcutter -> sawmill -> market sells planks", int(w.stats.get("sold_plank", 0)) > 0)
-	check("household paid first rent without debt", w.household.debt == 0.0)
+	check("household pays daily rent without debt", w.household.debt == 0.0)
 
 
 func _test_no_income_goes_into_debt() -> void:

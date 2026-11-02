@@ -74,6 +74,10 @@ func replan(a: SimAgent) -> void:
 	a.alert = false
 	a.hungry_no_food = false
 	var kind := desired_kind(a)
+	if _home(a) == null:
+		a.plan_kind = kind
+		_plan_homeless(a, kind)
+		return
 	if w.is_independent(a):
 		a.plan_kind = kind
 		_plan_independent(a, kind)
@@ -167,6 +171,59 @@ func _go_inside(a: SimAgent, b: SimBuilding, act: String, secs: float, why: Stri
 
 
 # --- Plany ---
+
+# Bez domu (S7): śpi, je i spędza wieczory w miejscu noclegu pod gołym niebem;
+# jedzenie kupuje gotowe na targu, a pracuje jak zwykle.
+func _homeless_spot(a: SimAgent) -> Vector2:
+	var s: Array = w.balance["economy"]["homeless_spot"]
+	return Vector2(float(s[0]), float(s[1])) + Vector2(float(a.id % 5) - 2.0, float(a.id % 3)) * 0.8
+
+
+func _plan_homeless(a: SimAgent, kind: String) -> void:
+	var spot := _homeless_spot(a)
+	match kind:
+		"sick":
+			_walk(a, spot, "chory — wlecze się na swoje legowisko")
+			_act(a, "rest", 3.0, "chory — leży pod gołym niebem")
+		"sleep":
+			_walk(a, spot, "idzie spać pod gołym niebem")
+			_act(a, "sleep", 4.0, "śpi pod gołym niebem (bez domu)")
+		"eat":
+			_plan_eat_away(a)
+		"dinner":
+			_walk(a, spot, "wraca na kolację tam, gdzie śpią")
+			_act(a, "dine", float(_cfg["wait_seconds"]) * 2.0, "kolacja pod gołym niebem")
+		"work":
+			_plan_work(a)
+		"child":
+			var t := follow_target(a) if block_at(w.clock.time_of_day()) == "work" else null
+			if t != null:
+				_plan_follow(a, t)
+			else:
+				_walk(a, spot + Vector2(1.0, 1.0), "bawi się przy legowisku")
+				_act(a, "play", 3.0, "bawi się przy legowisku (bez domu)")
+		_:
+			_walk(a, spot, "wraca na legowisko")
+			_act(a, "rest", 3.0, "siedzi bezczynnie — bez domu")
+
+
+# Posiłek kupiony gotowy na targu (bez spiżarni), a bez pieniędzy — las.
+func _plan_eat_away(a: SimAgent) -> void:
+	var price := float(w.balance["economy"]["meal_away_price"])
+	var p := w.person_of(a)
+	if p.purse >= price or _hh(a).cash >= price:
+		var market: SimBuilding = w.building("market")
+		_walk(a, market.door(), "idzie coś zjeść na targu")
+		_do(a, "meal_away", price)
+		_act(a, "eat", 1.5, "je na targu", market.id)
+	elif a.can_work():
+		_plan_forage(a)
+		_do(a, "eat_carried")
+	else:
+		a.hungry_no_food = true
+		_walk(a, _homeless_spot(a), "GŁODNY — bez grosza")
+		_wait(a, "GŁODNY — bez grosza i bez domu", "wait", true)
+
 
 # Minimalny autopilot osoby spoza rodu (C4): mieszka u siebie, chodzi na dniówkę,
 # zarobek trzyma w sakiewce, a jedzenie kupuje i zjada na targu.
@@ -325,7 +382,7 @@ func _plan_work(a: SimAgent) -> void:
 			_plan_producer(a, w.building("workshop"), "craft")
 		"carrier":
 			if not _plan_carrier(a):
-				_walk(a, _home(a).door() + Vector2(1.5, 1.0), "nosiciel — nic do noszenia")
+				_walk(a, (_home(a).door() if _home(a) != null else _homeless_spot(a)) + Vector2(1.5, 1.0), "nosiciel — nic do noszenia")
 				_wait(a, "nosiciel — nic do noszenia")
 		"laborer":
 			_plan_laborer(a)
@@ -334,7 +391,10 @@ func _plan_work(a: SimAgent) -> void:
 		"thief":
 			_plan_thief(a)
 		_:
-			_go_inside(a, _home(a), "rest", 3.0, _rest_reason(a))
+			if _home(a) == null:
+				_plan_homeless(a, "chore")
+			else:
+				_go_inside(a, _home(a), "rest", 3.0, _rest_reason(a))
 
 
 func _plan_woodcutter(a: SimAgent) -> void:
@@ -449,7 +509,7 @@ func _plan_laborer(a: SimAgent) -> void:
 
 # Obowiązki domowe (każdy dorosły po pracy i bez przydziału).
 func _plan_chore(a: SimAgent) -> bool:
-	if not a.can_work():
+	if not a.can_work() or _home(a) == null:
 		return false
 	if a.carrying != "":
 		_plan_deliver_carried(a)
@@ -468,6 +528,8 @@ func _plan_chore(a: SimAgent) -> bool:
 
 
 func _food_trip(a: SimAgent, urgent: bool) -> bool:
+	if _home(a) == null:
+		return false
 	var hh = _hh(a)
 	var home: SimBuilding = _home(a)
 	var want: int = hh.target_food - home.amount("food")
@@ -491,6 +553,8 @@ func _food_trip(a: SimAgent, urgent: bool) -> bool:
 
 
 func _firewood_trip(a: SimAgent) -> bool:
+	if _home(a) == null:
+		return false
 	var home: SimBuilding = _home(a)
 	var mill: SimBuilding = w.building("sawmill")
 	if home.amount("log") >= _hh(a).target_firewood or home.space("log") <= 0:
@@ -558,6 +622,10 @@ func _pickup_and_deliver(a: SimAgent, from: SimBuilding, good: String, to: SimBu
 
 # Dokąd odnieść to, co agent ma w rękach (np. po przerwaniu planu).
 func _plan_deliver_carried(a: SimAgent) -> void:
+	if _home(a) == null and a.carrying in ["food", "log"]:
+		a.clear_carry()
+		_wait(a, "nie ma dokąd tego zanieść — bez domu")
+		return
 	var dest := ""
 	match a.carrying:
 		"food":
@@ -664,9 +732,14 @@ func _fx_eat(a: SimAgent) -> bool:
 
 func _fx_meal_away(a: SimAgent, price: float) -> bool:
 	var p := w.person_of(a)
-	if p == null or p.purse < price:
+	if p == null:
 		return false
-	p.purse -= price
+	if p.purse >= price:
+		p.purse -= price
+	elif _hh(a).cash >= price:
+		_hh(a).pay(price)
+	else:
+		return false
 	a.needs["food"] = minf(100.0, a.needs["food"] + float(w.balance["needs"]["food"]["meal"]))
 	return true
 

@@ -52,7 +52,7 @@ func _init(seed: int, p_balance: Dictionary, p_map: Dictionary, p_people: Dictio
 	clock.set_time(0, float(balance["schedule"]["wake"]) + START_AFTER_WAKE)
 	rng = SimRng.new(seed)
 	events = SimEvents.new()
-	household = new_household("home", float(balance["economy"]["start_cash"]), float(balance["economy"]["rent"]))
+	household = new_household("home", float(balance["economy"]["start_cash"]))
 	jobs = SimJobs.new(self)
 	_regrow_total = float(balance["trees"]["regrow_days"]) * clock.day_seconds
 
@@ -60,8 +60,10 @@ func _init(seed: int, p_balance: Dictionary, p_map: Dictionary, p_people: Dictio
 	for b in map["buildings"]:
 		var t := String(b["type"])
 		var cap: Dictionary = storage.get("home" if t in HOUSE_TYPES else t, {})
-		buildings[b["id"]] = SimBuilding.new(String(b["id"]), String(b["name"]), t,
+		var nb := SimBuilding.new(String(b["id"]), String(b["name"]), t,
 			Vector2(float(b["x"]), float(b["y"])), cap)
+		nb.rent_per_day = float(balance["economy"]["rent_per_day"].get(t, 0.0))
+		buildings[b["id"]] = nb
 	var eco: Dictionary = balance["economy"]
 	home().add("food", int(eco["start_food"]))
 	home().add("log", int(eco["start_firewood"]))
@@ -74,8 +76,8 @@ func _init(seed: int, p_balance: Dictionary, p_map: Dictionary, p_people: Dictio
 	family.setup_start()
 	for p in family.living():
 		p.set_meta("stage", family.stage_of(p))
-	note("Ród %s zaczyna w chacie pod lasem. Czynsz %d zł co %d dni — pilnuj kasy." % [
-		family.dynasty, int(household.rent), household.rent_period], "info", home().door())
+	note("Ród %s zaczyna w wynajętej chacie pod lasem. Czynsz %d zł dziennie — pilnuj kasy." % [
+		family.dynasty, int(home().rent_per_day)], "info", home().door())
 
 
 func _generate_trees() -> void:
@@ -105,12 +107,13 @@ func home() -> SimBuilding:
 	return buildings["home"]
 
 
+# Dom agenta albo null, gdy jest bezdomny (S7).
 func home_of(a: SimAgent) -> SimBuilding:
-	return buildings[a.home_id]
+	return buildings.get(a.home_id)
 
 
-func new_household(home_id: String, cash: float, rent: float = 0.0) -> SimHousehold:
-	var h := SimHousehold.new(_next_household, home_id, balance["economy"], cash, rent)
+func new_household(home_id: String, cash: float) -> SimHousehold:
+	var h := SimHousehold.new(_next_household, home_id, balance["economy"], cash)
 	_next_household += 1
 	households[h.id] = h
 	return h
@@ -640,7 +643,14 @@ func _new_day() -> void:
 	# Opał: każdy zamieszkany dom zużywa drewno, zwłaszcza zimą.
 	var need := float(balance["economy"]["firewood_per_day"].get(season, 0.0))
 	for h: SimHousehold in households.values():
-		if h.members.is_empty() or not buildings.has(h.home_id):
+		if h.members.is_empty():
+			continue
+		if not buildings.has(h.home_id):
+			# Bez domu: każda noc w chłodnej porze to zimno.
+			for pid in h.members:
+				var ha := agent_by_id(family.persons[pid].agent_id)
+				if ha != null:
+					ha.cold = need > 0.0
 			continue
 		h.burn_acc += need
 		var burn := int(floor(h.burn_acc))
@@ -655,21 +665,12 @@ func _new_day() -> void:
 		if cold and h == household:
 			note("Zimno w chacie — zabrakło opału! Śpiący tracą zdrowie.", "warn", home().door())
 
-	# Czynsz i dług (komunikaty tylko dla gospodarstwa gracza).
+	# Czynsz dzienny, eksmisja, nowy dom (S7). Komunikaty tylko dla gospodarstwa gracza.
 	for h: SimHousehold in households.values():
-		if h != household:
-			h.new_day(day)
-	var r := household.new_day(day)
-	if not r.is_empty():
-		if bool(r["paid"]):
-			note("Zapłacono czynsz: %d zł." % int(r["amount"]), "info", null)
-		else:
-			note("Brak na czynsz! Dług rośnie o %d zł (razem %d zł)." % [int(r["missing"]), int(household.debt)], "critical", null)
-			if bool(r["over_limit"]):
-				_debt_jail()
-			else:
-				ask_ok("Czynsz niezapłacony", "Zabrakło %d zł na czynsz. Dług: %d zł (+%d%% co %d dni).\nPrzy długu powyżej %d zł straż zabierze kogoś do aresztu." % [
-					int(r["missing"]), int(household.debt), int(household.debt_interest * 100), household.rent_period, int(household.debt_limit)])
+		h.new_day()
+		_settle_rent(h)
+	if household.debt > household.debt_limit:
+		_debt_jail()
 
 	# Choroby.
 	var h: Dictionary = balance["health"]
@@ -692,6 +693,82 @@ func _new_day() -> void:
 	family.new_day()
 	bonds.prune()
 	stats["max_generation"] = _max_living_generation()
+
+
+# Najemca płaci właścicielowi za dobę. Za duży dług przez kilka dób z rzędu → eksmisja.
+# Bezdomni z pieniędzmi na kilka dób czynszu wynajmują wolny dom.
+func _settle_rent(h: SimHousehold) -> void:
+	if h.members.is_empty():
+		return
+	var eco: Dictionary = balance["economy"]
+	var b: SimBuilding = buildings.get(h.home_id)
+	if b == null:
+		var free := free_house()
+		if free != null and h.cash >= free.rent_per_day * float(eco["rehouse_rent_days"]):
+			move_household(h, free)
+			if h == household:
+				note("Rodzina wynajmuje dom: %s (%d zł dziennie)." % [free.name, int(free.rent_per_day)], "good", free.door())
+		return
+	if b.rent_per_day <= 0.0 or owns(h, b):
+		return
+	var missing := b.rent_per_day - h.pay_due(b.rent_per_day)
+	pay_owner(b, b.rent_per_day - missing)
+	if missing > 0.0 and h == household:
+		note("Brak na czynsz! Dług %d zł." % int(h.debt), "warn", null)
+	if h.debt >= float(eco["evict_debt"]):
+		h.evict_days += 1
+	else:
+		h.evict_days = 0
+	if h.evict_days >= int(eco["evict_days"]):
+		evict(h)
+
+
+# Czy gospodarstwo jest właścicielem domu (przez osobę z gospodarstwa albo ród).
+func owns(h: SimHousehold, b: SimBuilding) -> bool:
+	match b.owner_kind:
+		"person":
+			return b.owner_id in h.members
+		"lineage":
+			for pid in h.members:
+				if family.persons[pid].lineage_id == b.owner_id:
+					return true
+	return false
+
+
+# Czynsz trafia do konkretnej osoby (sakiewka) albo do gospodarstwa roota rodu-właściciela.
+func pay_owner(b: SimBuilding, amount: float) -> void:
+	if amount <= 0.0:
+		return
+	match b.owner_kind:
+		"person":
+			var p: SimPerson = family.persons.get(b.owner_id)
+			if p != null:
+				p.purse += amount
+		"lineage":
+			var l: SimLineage = family.lineages.get(b.owner_id)
+			var r: SimPerson = family.persons.get(l.root_id) if l != null else null
+			if r != null and households.has(r.household_id):
+				households[r.household_id].earn(amount)
+
+
+func move_household(h: SimHousehold, b: SimBuilding) -> void:
+	h.home_id = b.id if b != null else ""
+	h.evict_days = 0
+	for pid in h.members:
+		var a := agent_by_id(family.persons[pid].agent_id)
+		if a != null:
+			a.home_id = h.home_id
+			jobs.replan(a)
+
+
+# Eksmisja: gospodarstwo zostaje bez dachu nad głową. To stan gry, nie koniec.
+func evict(h: SimHousehold) -> void:
+	var b: SimBuilding = buildings.get(h.home_id)
+	move_household(h, null)
+	if h == household and b != null:
+		note("EKSMISJA: właściciel wyrzucił rodzinę z domu (%s). Śpicie pod gołym niebem." % b.name, "critical", b.door())
+		chronicle.add(clock.now(), "eviction", "Eksmisja z domu (%s) za długi." % b.name, h.members, family.player_lineage_id)
+		ask_ok("Eksmisja", "Dług za dom urósł do %d zł. Właściciel wyrzucił was z: %s.\nŚpicie pod gołym niebem, dopóki nie stać was na nowy dom." % [int(h.debt), b.name])
 
 
 func _debt_jail() -> void:
@@ -717,6 +794,7 @@ func _debt_jail() -> void:
 	a.hidden = true
 	a.jail_days = float(balance["economy"]["debt_jail_days"])
 	var forgiven := household.debt * float(balance["economy"]["debt_jail_forgive"])
+	household.evict_days = 0
 	household.debt -= forgiven
 	note("Straż zabrała %s do aresztu za długi rodu (%d dni). Połowa długu umorzona." % [p.name, int(a.jail_days)], "critical", building("jail").door())
 	ask_ok("Areszt za długi", "Dług przekroczył %d zł. Straż zabrała %s do aresztu na %d dni.\nPołowa długu umorzona, reszta (%d zł) zostaje." % [

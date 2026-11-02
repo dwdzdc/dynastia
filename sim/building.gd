@@ -1,5 +1,6 @@
 # SimBuilding — budynek osady: pozycja, typ, zapasy towarów i ich pojemność.
-# Część warstwy logistyki (ADR-0001): nic nie wie o rodzinach ani więziach.
+# Część warstwy logistyki (ADR-0001): nic nie wie o rodzinach ani więziach; właściciel
+# to tylko id, a rozliczenia robi SimWorld.
 class_name SimBuilding
 extends RefCounted
 
@@ -11,6 +12,10 @@ var position: Vector2
 var stock: Dictionary = {}       # good -> int
 var capacity: Dictionary = {}    # good -> int (brak klucza = brak miejsca na ten towar)
 var chair_qualities: Array = []  # jakość każdego krzesła w zapasie (FIFO)
+# Aktywo (S7): właściciel to osoba („person”), ród („lineage”) albo nikt spoza okolicy („none”).
+var owner_kind: String = "none"
+var owner_id: int = -1
+var rent_per_day: float = 0.0
 
 
 func _init(p_id: String, p_name: String, p_type: String, p_pos: Vector2, p_cap: Dictionary) -> void:

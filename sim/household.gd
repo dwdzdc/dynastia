@@ -11,11 +11,9 @@ var members: Array = []              # id osób
 
 var cash: float
 var debt: float = 0.0
-var rent: float
-var rent_period: int
-var next_rent_day: int
-var debt_interest: float
+var debt_interest: float             # na dobę
 var debt_limit: float
+var evict_days: int = 0              # ile dób z rzędu dług za dom przekracza próg eksmisji
 
 var target_food: int
 var target_firewood: int
@@ -35,14 +33,11 @@ var _rep_price_mult: float
 var _rep_decay: float
 
 
-func _init(p_id: int, p_home: String, eco: Dictionary, start_cash: float, p_rent: float) -> void:
+func _init(p_id: int, p_home: String, eco: Dictionary, start_cash: float) -> void:
 	id = p_id
 	home_id = p_home
 	cash = start_cash
-	rent = p_rent
-	rent_period = int(eco["rent_period_days"])
-	next_rent_day = rent_period
-	debt_interest = float(eco["debt_interest"])
+	debt_interest = float(eco["debt_interest_per_day"])
 	debt_limit = float(eco["debt_limit"])
 	target_food = int(eco["default_target_food"])
 	target_firewood = int(eco["default_target_firewood"])
@@ -122,8 +117,8 @@ func earn(amount: float) -> void:
 	_earn(amount)
 
 
-# Wywoływane raz na dobę. Zwraca opis zdarzenia czynszu ("" gdy brak).
-func new_day(day: int) -> Dictionary:
+# Wywoływane raz na dobę: bilans, nasycenie targu, reputacja, odsetki.
+func new_day() -> void:
 	last_day_net = earned_today - spent_today
 	earned_today = 0.0
 	spent_today = 0.0
@@ -131,20 +126,13 @@ func new_day(day: int) -> Dictionary:
 	# Reputacja wraca powoli ku zeru (dobra słabnie, zła się zapomina).
 	reputation = maxf(0.0, reputation - _rep_decay) if reputation > 0.0 else minf(0.0, reputation + _rep_decay)
 	if debt > 0.0:
-		debt *= 1.0 + debt_interest / float(rent_period)
-	if day < next_rent_day or rent <= 0.0:
-		return {}
-	next_rent_day += rent_period
-	if cash >= rent:
-		cash -= rent
-		spent_today += rent
-		return { "paid": true, "amount": rent }
-	var missing := rent - maxf(cash, 0.0)
-	spent_today += maxf(cash, 0.0)
-	cash = 0.0
-	debt += missing
-	return { "paid": false, "amount": rent, "missing": missing, "over_limit": debt > debt_limit }
+		debt *= 1.0 + debt_interest
 
 
-func days_to_rent(day: int) -> int:
-	return next_rent_day - day
+# Opłata dzienna (czynsz): płaci z kasy, brak idzie w dług. Zwraca zapłaconą część.
+func pay_due(amount: float) -> float:
+	var paid := minf(maxf(cash, 0.0), amount)
+	cash -= paid
+	spent_today += paid
+	debt += amount - paid
+	return paid

@@ -171,14 +171,18 @@ func _update_top() -> void:
 	for i in _top_speed.size():
 		_top_speed[i].button_pressed = c.speed == i
 	var hh := world.household
-	var home := world.home()
-	var days := hh.days_to_rent(c.day_index())
-	var cash_col := "#e8d27a" if hh.cash >= hh.rent else "#ff8a70"
+	var home: SimBuilding = world.buildings.get(hh.home_id)
+	var rent: float = home.rent_per_day if home != null and not world.owns(hh, home) else 0.0
+	var cash_col := "#e8d27a" if hh.cash >= rent else "#ff8a70"
 	var t := "[color=%s]Monety: %d zł[/color]" % [cash_col, int(hh.cash)]
 	if hh.debt > 0.0:
 		t += "   [color=#ff6a55]Dług: %d zł[/color]" % int(ceil(hh.debt))
-	var rent_col := "#ff8a70" if days <= 1 and hh.cash < hh.rent else ("#ffd070" if days <= 1 else "#d8ccb0")
-	t += "   [color=%s]Czynsz %d zł za %d %s[/color]" % [rent_col, int(hh.rent), days, "dzień" if days == 1 else "dni"]
+	if home == null:
+		t += "   [color=#ff6a55]BEZ DOMU[/color]"
+		_top_res.text = t
+		return
+	if rent > 0.0:
+		t += "   [color=%s]Czynsz %d zł/dzień[/color]" % ["#ff8a70" if hh.cash < rent else "#d8ccb0", int(rent)]
 	var food_col := "#ff8a70" if home.amount("food") < 6 else "#d8ccb0"
 	t += "   [color=%s]Jedzenie: %d[/color]" % [food_col, home.amount("food")]
 	var need := float(world.balance["economy"]["firewood_per_day"].get(c.current_season(), 0.0))
@@ -592,15 +596,20 @@ func _build_building_info(b: SimBuilding) -> void:
 		return
 	_info_box.add_child(_label(b.name, 26, Color(1.0, 0.85, 0.45)))
 	var hh := world.household
+	if b.type in SimWorld.HOUSE_TYPES:
+		_dyn(func(): return _owner_text(b), 16, DIM)
 	match b.type:
-		"home":
+		"home", "decor_house":
 			_dyn(func(): return "Spiżarnia: %d / %d posiłków\nOpał: %d / %d kłód (zużycie: %s/dzień)" % [
 				b.amount("food"), int(b.capacity["food"]), b.amount("log"), int(b.capacity["log"]),
 				str(world.balance["economy"]["firewood_per_day"].get(world.clock.current_season(), 0))], 18)
-			_dyn(func(): return "Czynsz: %d zł co %d dni (następny za %d). Brak = dług, dług > %d zł = areszt." % [
-				int(hh.rent), hh.rent_period, hh.days_to_rent(world.clock.day_index()), int(hh.debt_limit)], 16, DIM)
+			_dyn(func(): return "Czynsz: %d zł dziennie. Dług ponad %d zł przez %d dni = eksmisja; ponad %d zł = areszt." % [
+				int(b.rent_per_day), int(world.balance["economy"]["evict_debt"]), int(world.balance["economy"]["evict_days"]), int(hh.debt_limit)], 16, DIM)
 			_info_box.add_child(HSeparator.new())
-			_info_box.add_child(_label("Ile trzymać w zapasie (nosiciele i domownicy dokupią / doniosą):", 16, DIM))
+			var keep := _label("Ile trzymać w zapasie (nosiciele i domownicy dokupią / doniosą):", 16, DIM)
+			keep.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			keep.custom_minimum_size.x = 400
+			_info_box.add_child(keep)
 			_stepper("Jedzenie", func(): return hh.target_food, func(d): hh.target_food = clampi(hh.target_food + d, 0, int(b.capacity["food"])))
 			_stepper("Opał", func(): return hh.target_firewood, func(d): hh.target_firewood = clampi(hh.target_firewood + d, 0, int(b.capacity["log"])))
 		"sawmill":
@@ -635,6 +644,23 @@ func _build_building_info(b: SimBuilding) -> void:
 				return "W areszcie: " + (", ".join(names) if not names.is_empty() else "nikt z rodu"), 17)
 		_:
 			_info_box.add_child(_label("Chata sąsiadów. Stąd przychodzą kandydaci do ożenku.", 17, DIM))
+
+
+func _owner_text(b: SimBuilding) -> String:
+	var who := "właściciel spoza okolicy"
+	match b.owner_kind:
+		"person":
+			var p: SimPerson = world.family.persons.get(b.owner_id)
+			who = "właściciel: " + (p.full_name() if p != null else "?")
+		"lineage":
+			var l: SimLineage = world.family.lineages.get(b.owner_id)
+			who = "własność rodu " + (l.name if l != null else "?")
+	var tenants: Array = []
+	for h: SimHousehold in world.households.values():
+		if h.home_id == b.id:
+			for pid in h.members:
+				tenants.append(world.family.persons[pid].name)
+	return "%s · mieszkają: %s" % [who, ", ".join(tenants) if not tenants.is_empty() else "nikt"]
 
 
 func _stepper(title: String, get_fn: Callable, change_fn: Callable) -> void:

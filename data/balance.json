@@ -206,10 +206,15 @@
     "start_cash": 40,
     "start_food": 16,
     "start_firewood": 4,
-    "rent": 40,
-    "rent_period_days": 5,
-    "debt_interest": 0.1,
+    "rent_per_day": {
+      "home": 8.0,
+      "decor_house": 6.0
+    },
+    "debt_interest_per_day": 0.02,
     "debt_limit": 120,
+    "evict_debt": 50.0,
+    "evict_days": 2,
+    "rehouse_rent_days": 4,
     "debt_jail_days": 4,
     "prices": {
       "food": 1.0,
@@ -232,7 +237,11 @@
     "default_target_food": 20,
     "default_target_firewood": 6,
     "debt_jail_forgive": 0.5,
-    "meal_away_price": 1.5
+    "meal_away_price": 1.5,
+    "homeless_spot": [
+      60.0,
+      46.0
+    ]
   },
   "risk": {
     "chop_accident": 0.003,
