@@ -410,6 +410,21 @@ func _act(a: SimAgent, s: Dictionary, dt: float) -> void:
 		a.steps.pop_front()
 
 
+# Wypadek zostaje w pamięci ofiary (trwale) i świadków obok (B3) jako więź z czynnością.
+func remember_accident(a: SimAgent, act: String, sev: String) -> void:
+	var scale := float(memories["accident_scale"][sev])
+	var target := SimBonds.act(act)
+	if a.person_id >= 0 and sev != "fatal":
+		bonds.remember(a.person_id, target, "accident", [], scale, a.inside)
+	var radius := float(memories["together"]["radius"])
+	for o: SimAgent in agents:
+		if o == a or o.status != "active" or o.person_id < 0 or o.inside != a.inside:
+			continue
+		if a.inside == "" and o.position.distance_to(a.position) > radius:
+			continue
+		bonds.remember(o.person_id, target, "accident_seen", [a.person_id], scale, a.inside)
+
+
 func roll_accident(a: SimAgent, act: String) -> void:
 	var r: Dictionary = balance["risk"]
 	var key := act + "_accident"
@@ -425,10 +440,12 @@ func roll_accident(a: SimAgent, act: String) -> void:
 	var nm := person.name if person else "Ktoś"
 	var what: String = { "chop": "przy wyrębie", "saw": "przy pile", "craft": "w stolarni" }[act]
 	var roll := rng.next_float()
-	if roll < float(r["fatal_share"]):
+	var sev := "fatal" if roll < float(r["fatal_share"]) else (
+		"severe" if roll < float(r["fatal_share"]) + float(r["severe_share"]) else "minor")
+	remember_accident(a, act, sev)
+	if sev == "fatal":
 		kill(a, "%s w wypadku %s" % ["zginął" if person == null or person.sex == "m" else "zginęła", what])
 		return
-	var sev := "severe" if roll < float(r["fatal_share"]) + float(r["severe_share"]) else "minor"
 	var cfg: Dictionary = r[sev]
 	a.health -= float(cfg["damage"])
 	a.injured_days = float(cfg["days"])

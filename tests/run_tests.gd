@@ -53,6 +53,7 @@ func _run_all() -> void:
 	_test_start_bonds()
 	_test_together_builds_bonds()
 	_test_dinner_gathers_family()
+	_test_activity_bonds_child_and_accident()
 	_test_world_deterministic()
 	_test_world_30_days_autonomous()
 	_test_economy_chain_produces_income()
@@ -365,8 +366,8 @@ func _test_memories_character_mods() -> void:
 		if w.family.stage_of(p) == "child":
 			kid = p
 	kid.character = []
-	var kid_m: Dictionary = b.remember(kid.id, SimBonds.act("saw"), "work_liked")
-	var adult_m: Dictionary = b.remember(maria.id, SimBonds.act("saw"), "work_liked")
+	var kid_m: Dictionary = b.remember(kid.id, SimBonds.act("saw"), "did_work")
+	var adult_m: Dictionary = b.remember(maria.id, SimBonds.act("saw"), "did_work")
 	check("children feel memories more strongly", float(kid_m["weight"]) > float(adult_m["weight"]))
 
 
@@ -460,6 +461,36 @@ func _test_dinner_gathers_family() -> void:
 		if m["kind"] == "meal_together":
 			had = true
 	check("those at dinner have a shared-meal memory", had)
+
+
+func _test_activity_bonds_child_and_accident() -> void:
+	var w = _new_world()   # z więziami startowymi: Kuba lubi ojca
+	var f = w.family
+	var jan = f.root()
+	var kuba = null
+	for p in f.living():
+		if p.name == "Kuba":
+			kuba = p
+	var aj = w.agent_by_id(jan.agent_id)
+	var ak = w.agent_by_id(kuba.agent_id)
+	for a in w.agents:
+		a.activity = "idle"
+	aj.activity = "saw"
+	aj.inside = "sawmill"
+	ak.activity = "watch"
+	ak.inside = "sawmill"
+	for i in 200:
+		w.together.sample(1.0)
+	w.together.end_day()
+	var saw := SimBonds.act("saw")
+	var kinds := []
+	for m in w.bonds.memories(kuba.id, saw):
+		kinds.append(m["kind"])
+	check("child at the sawmill with father likes the sawmill", w.bonds.value(kuba.id, saw) > 0.0 and "work_with_liked" in kinds)
+	check("father's own work builds a bond with the work", w.bonds.value(jan.id, saw) > 0.0)
+	w.remember_accident(aj, "saw", "severe")
+	check("after witnessing an accident the child dislikes the sawmill", w.bonds.value(kuba.id, saw) < 0.0)
+	check("victim remembers the accident permanently", w.bonds.value(jan.id, saw) < 0.0)
 
 
 func _state_sig(w) -> String:

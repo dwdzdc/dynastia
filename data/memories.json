@@ -9,9 +9,10 @@
     "worked_together": {"weight": 2.0, "half_life_days": 8.0, "permanent": false, "text": "pracowali razem: {place}"},
     "meal_together": {"weight": 1.5, "half_life_days": 6.0, "permanent": false, "text": "kolacja razem"},
     "evening_together": {"weight": 1.5, "half_life_days": 6.0, "permanent": false, "text": "wieczór razem"},
-    "work_liked": {"weight": 1.0, "half_life_days": 10.0, "permanent": false, "text": "praca: {place}"},
-    "work_with_liked": {"weight": 3.0, "half_life_days": 15.0, "permanent": false, "text": "praca przy {with}: {place}"},
-    "accident": {"weight": -40.0, "half_life_days": 0.0, "permanent": true, "text": "wypadek: {place}"},
+    "did_work": {"weight": 1.5, "half_life_days": 10.0, "permanent": false, "text": "praca: {act}"},
+    "work_with_liked": {"weight": 3.0, "half_life_days": 15.0, "permanent": false, "text": "{act} razem z {with}"},
+    "accident": {"weight": -40.0, "half_life_days": 0.0, "permanent": true, "text": "wypadek: {act}"},
+    "accident_seen": {"weight": -20.0, "half_life_days": 40.0, "permanent": false, "text": "widział(a) wypadek {with}: {act}"},
     "ordered_against_will": {"weight": -4.0, "half_life_days": 12.0, "permanent": false, "text": "{with} kazał(a) wbrew woli"},
     "quarrel": {"weight": -6.0, "half_life_days": 10.0, "permanent": false, "text": "kłótnia z {with}"}
   },
@@ -27,18 +28,20 @@
     "radius": 3.0,
     "min_seconds": 20.0,
     "full_seconds": 150.0,
+    "activity": {"min_seconds": 20.0, "full_seconds": 200.0, "liked_threshold": 20.0},
     "contexts": {
-      "work": {"acts": ["chop", "saw", "craft", "labor", "forage"], "kind": "worked_together"},
+      "work": {"acts": ["chop", "saw", "craft", "labor", "forage", "watch"], "kind": "worked_together"},
       "meal": {"acts": ["eat", "dine"], "kind": "meal_together", "min_seconds": 10.0, "full_seconds": 25.0},
       "evening": {"acts": ["rest", "play"], "kind": "evening_together"}
     }
   },
+  "accident_scale": {"minor": 0.5, "severe": 1.0, "fatal": 1.0},
   "stage_weight_mult": {"child": 1.6, "teen": 1.25, "adult": 1.0, "elder": 1.0},
   "character_mods": {
     "pamietliwy": {"half_life_mult": {"negative": 2.5}},
     "porywczy": {"weight_mult": {"quarrel": 1.8}},
     "lojalny": {"half_life_mult": {"positive": 1.5}},
-    "ciekawski": {"weight_mult": {"work_liked": 1.5}},
+    "ciekawski": {"weight_mult": {"did_work": 1.5, "work_with_liked": 1.3}},
     "ambitny": {"weight_mult": {"ordered_against_will": 1.5}}
   },
   "prune_below": 0.05
