@@ -36,15 +36,48 @@ func _unfilled_jobs() -> int:
 
 func _free_house() -> SimBuilding:
 	for b: SimBuilding in w.buildings.values():
-		if w.is_free_house(b) and b.type != "manor":
+		if w.is_free_house(b):
 			return b
 	return null
 
 
 func new_day() -> void:
 	_grow_towns()
+	_escheat()
 	_departures()
 	_arrivals()
+
+
+# Ród wymarł albo wyjechał (S31): pieniądze w skrzyni przechodzą na urząd, a jego
+# budynki stają się niczyje (do wynajęcia, kupna, zajęcia przez przybyszów) —
+# nic nie zamarza w pustym domu.
+func _escheat() -> void:
+	for h: SimHousehold in w.households.values():
+		if h == w.household:
+			continue
+		var anyone := false
+		for pid in h.members:
+			var a := w.agent_by_id(w.family.persons[pid].agent_id)
+			if w.family.persons[pid].alive() and a != null and a.status != "away":
+				anyone = true
+		if anyone or (h.cash <= 0.0 and h.home_id == ""):
+			continue
+		var auth := w.authority()
+		if h.cash > 0.0 and auth != null and auth != h:
+			auth.earn(h.cash)
+			h.cash = 0.0
+		var lid := -1
+		for pid in h.members:
+			lid = w.family.persons[pid].lineage_id
+		if lid >= 0 and w.family.living_members(lid).filter(func(p): return w.agent_by_id(p.agent_id).status != "away").is_empty():
+			for b: SimBuilding in w.buildings.values():
+				if b.owner_kind == "lineage" and b.owner_id == lid:
+					b.owner_kind = "none"
+					b.owner_id = -1
+					if w.enterprises.has(b.id):
+						w.enterprises.erase(b.id)
+			w.chronicle.add(w.clock.now(), "extinct", "Ród %s zniknął z okolicy; jego majątek przechodzi na urząd." % w.family.lineages[lid].name, [], lid)
+		w.move_household(h, null)
 
 
 # Miasto rośnie przy nadwyżce jedzenia, maleje przy głodzie (X4).
@@ -61,9 +94,12 @@ func _grow_towns() -> void:
 # mieszkać, rodzina z miasta zakłada tu nowy ród.
 func _arrivals() -> void:
 	var house := _free_house()
-	if house == null and _unfilled_jobs() <= 0:
+	var adults := village_adults()
+	# Nikt nie przychodzi do przepełnionej wsi; bez wolnego domu tylko wtedy, gdy
+	# naprawdę brakuje ludzi do pracy, a wieś jest mała.
+	if adults >= int(_cfg["max_adults"]):
 		return
-	if village_adults() >= int(_cfg["target_adults"]) and _unfilled_jobs() <= 0:
+	if house == null and (_unfilled_jobs() <= 0 or adults >= int(_cfg["target_adults"])):
 		return
 	if not w.rng.chance(float(_cfg["arrive_chance"])):
 		return
