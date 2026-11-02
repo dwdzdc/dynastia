@@ -222,6 +222,8 @@ Pętla gry: ród Wilków (6 osób, 3 pokolenia) w chacie pod lasem. Co 5 dni czy
 - [x] X7 Monety z procesu (S34): mennica/kopalnia w mieście, podatek → test źródeł.
 - [ ] X8 Sonda 200 dób: ludność w paśmie, rody powstają i upadają, AI buduje, miasta się zmieniają.
   - Wynik 1 (seed 1, solo, 02.11.2026): świat przeżył 200 dób — 17 → 78 ludzi, 118 narodzin, 162 śmierci, 84 śluby; rody awansują i spadają (12 zmian), przybywają nowe; miasta rosną i maleją. **Ale wieś zbiedniała** (pieniądze wsi 828 → 50 zł, wszyscy biedota, budowano tylko szałasy): wieś nic nie eksportowała, bo AI nie zakładało tartaku, uznając stojący tartak gracza za działający. Poprawka: liczy się tylko warsztat, który ostatnio coś wyprodukował. Do ponownej sondy.
+  - Wynik 2 (po poprawkach: aktywne warsztaty, 6 pól i plon 9, zapas dworu): 17 → 82 ludzi, 152 narodziny, 163 śmierci, 100 ślubów — ludność trzyma się sama. Wieś dalej biednieje (828 → 10 zł): pieniądze płyną do Górzyna (kasa 3086 → 6711 zł, mennica + sprzedaż drewna, narzędzi, ubrań), a wieś nie ma czego mu sprzedać; nadal żaden ród AI nie założył tartaku (nikt nie zbiera 120 zł kapitału). Zamarznięcia (22) — szałasy i bieda bez opału.
+  - **Otwarte (do decyzji z autorem):** jak pieniądze z miast mają wracać do wsi — (a) miasta kupują to, co wieś ma (jedzenie z pól, kłody, praca sezonowa w mieście), (b) kapitał na start warsztatu z kredytu u kupca/miasta zamiast oszczędności, (c) mennica wydaje monety na zakupy u producentów, nie tylko do kasy miasta.
 
 ## Iteracja 2 — społeczeństwo (wstrzymana w połowie)
 
