@@ -24,6 +24,7 @@ var talk: SimTalk
 var crime: SimCrime
 var trips: SimTrips
 var standing: SimStanding
+var migration: SimMigration
 var ai: SimAI
 var trade: SimTrade
 var traders: SimTraders
@@ -107,6 +108,7 @@ func _init(seed: int, p_balance: Dictionary, p_map: Dictionary, p_people: Dictio
 	contracts = SimContracts.new(self, balance["contracts"])
 	trips = SimTrips.new(self, p_traders["trips"])
 	standing = SimStanding.new(self, DataLoader.load_json("res://data/standing.json"))
+	migration = SimMigration.new(self, balance["migration"])
 	ai.new_day()   # rody AI od razu rozdzielają role (kramarz, nadzorca, praca)
 	for p in family.living():
 		p.set_meta("stage", family.stage_of(p))
@@ -1335,6 +1337,7 @@ func _new_day() -> void:
 	together.end_day()
 	traders.new_day()
 	standing.new_day()
+	migration.new_day()
 	ai.new_day()
 	family.new_day()
 	bonds.prune()

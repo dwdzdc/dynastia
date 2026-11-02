@@ -215,8 +215,8 @@ Pętla gry: ród Wilków (6 osób, 3 pokolenia) w chacie pod lasem. Co 5 dni czy
 
 - [ ] X1 Sonda „świat bez gracza” (S30): ród gracza jako jeden robotnik, świat trwa po game over → pomiar przyczyn wymierania.
 - [x] X2 Śluby z rozsądku i swatanie (S32) → test: wolny dorosły bez romansu żeni się po czasie.
-- [ ] X3 Osadnicy i odpływ (S31) → test: praca i wolny dom przyciągają nowy ród; bieda wypycha do miasta.
-- [ ] X4 Miasta rosną i maleją (S31) → test.
+- [x] X3 Osadnicy i odpływ (S31) → test: praca i wolny dom przyciągają nowy ród; bieda wypycha do miasta.
+- [x] X4 Miasta rosną i maleją (S31) → test.
 - [ ] X5 Wyjście z bezdomności (S32): szałas, wynajem, budowa → test.
 - [ ] X6 AI buduje dom i warsztat, gdy się opłaca (S33) → test.
 - [ ] X7 Monety z procesu (S34): mennica/kopalnia w mieście, podatek → test źródeł.

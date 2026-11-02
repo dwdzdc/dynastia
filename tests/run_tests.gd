@@ -99,6 +99,7 @@ func _run_all() -> void:
 	_test_standing()
 	_test_ai_falls()
 	_test_matchmaking()
+	_test_migration()
 	_test_theft_process()
 	_test_world_deterministic()
 	_test_world_30_days_autonomous()
@@ -1801,6 +1802,35 @@ func _test_matchmaking() -> void:
 			c.set_meta("engaged", true)
 	f._matchmaking()
 	check("a long-single adult is married by matchmaking, no romance needed", single.spouse_id >= 0)
+
+
+# X3–X4 (S31): wolny dom i brak ludzi ściągają rodzinę z miasta (nowy ród, pieniądze
+# i ludzie z miasta); ród bez dachu i grosza odchodzi do miasta; miasto rośnie, gdy ma co jeść.
+func _test_migration() -> void:
+	var w = _new_world()
+	var m0: float = w.money_total()
+	var town = w.traders.towns["rzeczyca"]
+	var pop0: int = town.population
+	var house = w.migration._free_house()
+	check("there is a free house to settle", house != null)
+	var l = w.migration.settle(town, house)
+	var mem: Array = w.family.living_members(l.id)
+	check("a new lineage arrives from the town and takes the house", not mem.is_empty() and w.household_at(house.id) != null
+		and town.population < pop0)
+	check("settling moves money, does not create it", absf(w.money_total() - m0) < 0.01)
+	var h = w.household_at(house.id)
+	w.move_household(h, null)
+	h.cash = 0.0
+	for pid in h.members:
+		w.family.persons[pid].purse = 0.0
+	w.balance["migration"]["leave_chance"] = 1.0
+	for d in 4:
+		w.migration._departures()
+	check("a homeless, penniless lineage leaves for the town", w.agent_by_id(w.family.persons[mem[0].id].agent_id).status == "away")
+	var p1: int = town.population
+	town.add("food", 9999)
+	w.migration._grow_towns()
+	check("a town with food to spare grows", town.population > p1)
 
 
 func _test_theft_process() -> void:

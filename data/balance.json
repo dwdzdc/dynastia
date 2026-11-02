@@ -341,6 +341,7 @@
   "construction": {"builders": 2, "build_seconds": 30.0, "carry_planks": 4},
   "housing": {"price": {"home": 220.0, "decor_house": 150.0, "decor_town": 320.0}, "rent_upfront_days": 2},
   "social": {"tavern_price": 1.0, "tavern_chance": 0.3, "tavern_seconds": 70.0, "festival_every": 5, "festival_day": 4, "festival_spread": 5.0},
+  "migration": {"target_adults": 16, "arrive_chance": 0.35, "family_size": [1, 4], "start_cash": 40.0, "trait_chance": 0.4, "ages": {"adult": [17.0, 30.0], "child": [1.0, 10.0]}, "poor_below": 3.0, "leave_after_days": 3, "leave_chance": 0.5, "town_min": 50, "town_growth": 0.01, "town_decline": 0.02},
   "matchmaking": {"single_days": 5.0, "chance_per_day": 0.2},
   "romance": {"eye_chance": 0.08, "eye_per_liking": 0.004, "seek_love": 6.0, "gift_love": 14.0, "gift_cost": 2.0, "propose_love": 22.0, "standing_building": 60.0, "standing_opinion": 3.0, "mesalliance_gap": 250.0, "consent_love_scale": 40.0, "consent_min": 0.05, "consent_max": 0.95},
   "marriage": {
