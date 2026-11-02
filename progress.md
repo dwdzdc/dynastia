@@ -120,7 +120,7 @@ Pętla gry: ród Wilków (6 osób, 3 pokolenia) w chacie pod lasem. Co 5 dni czy
 
 ### Faza L — widoczna praca
 
-- [ ] L1 Pola (`SimField`): działki na mapie z właścicielem, cykl pór roku → test: plon tylko w sezonie; pola zmieniają wygląd.
+- [x] L1 Pola (`SimField`): działki na mapie z właścicielem, cykl pór roku → test: plon tylko w sezonie; pola zmieniają wygląd.
 - [ ] L2 Robota polowa krokowa (orka, siew, żniwa na konkretnej działce), plon noszony do spichrza → gracz widzi ludzi na polu i tragarzy ze zbiorem.
 - [ ] L3 Umowy (S15): oferty pracy, wybór AI według stawki, płatnik wręcza wypłatę; koniec `_labor` „w środku dworu” → test: płaca przechodzi z ręki do ręki, za mało płacisz — nikt nie przychodzi, niezapłacony pamięta.
 - [ ] L4 Gracz wystawia oferty (ile osób, stawka) do własnego tartaku/pola → test + zrzut.

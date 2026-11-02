@@ -19,6 +19,14 @@ const LEAVES := [Color(0.2, 0.4, 0.16), Color(0.24, 0.45, 0.18), Color(0.17, 0.3
 const TRUNK := Color(0.4, 0.27, 0.15)
 const LOG := Color(0.52, 0.35, 0.19)
 const PLANK := Color(0.86, 0.68, 0.42)
+const SOIL := Color(0.42, 0.3, 0.18)         # zaorane pole
+const FALLOW := Color(0.45, 0.47, 0.27)      # ugór
+const STUBBLE := Color(0.72, 0.64, 0.4)      # ściernisko
+const CROP_YOUNG := Color(0.38, 0.6, 0.22)
+const CROP_RIPE := Color(0.88, 0.74, 0.3)
+const FIELD_ROW_GAP := 1.0                   # odstęp rzędów zboża
+const CROP_MAX_H := 0.9                      # wysokość dojrzałego zboża
+const SHEAF := Color(0.85, 0.7, 0.32)
 
 var world: SimWorld
 var agent_views: Dictionary = {}   # agent id -> AgentView
@@ -28,6 +36,7 @@ var _windows: Array = []           # okna chaty (świecą nocą)
 var _ground: MeshInstance3D
 var _floor: MeshInstance3D
 var _tufts: Array = []
+var _fields: Dictionary = {}       # field id -> { base, rows, heap, last }
 const SEASON_GRASS := {
 	"spring": Color(0.33, 0.45, 0.22), "summer": Color(0.4, 0.46, 0.21),
 	"autumn": Color(0.47, 0.41, 0.22), "winter": Color(0.84, 0.86, 0.9),
@@ -62,6 +71,51 @@ func build(w: SimWorld) -> void:
 		_building(w.buildings[id])
 	for t in w.trees:
 		_tree(t)
+	for fl: SimField in w.fields:
+		_field(fl)
+
+
+# Pole (L1): płyta gleby i rzędy zboża, które rosną i żółkną.
+func _field(f: SimField) -> void:
+	var n := Node3D.new()
+	n.position = Vector3(f.rect.get_center().x, 0, f.rect.get_center().y)
+	add_child(n)
+	var base := _add(n, Gfx3D.box(Vector3(f.rect.size.x, 0.06, f.rect.size.y), FALLOW), Vector3(0, 0.03, 0))
+	var rows: Array = []
+	var count := int(f.rect.size.y / FIELD_ROW_GAP)
+	for i in count:
+		var z := -f.rect.size.y * 0.5 + FIELD_ROW_GAP * (i + 0.5)
+		var r := _add(n, Gfx3D.box(Vector3(f.rect.size.x - 0.6, 1.0, 0.45), CROP_YOUNG), Vector3(0, 0.0, z))
+		rows.append(r)
+	var heap := _add(n, Gfx3D.cylinder(0.6, 1.0, SHEAF, 0.35, 8), Vector3(f.rect.size.x * 0.5 - 1.0, 0.5, f.rect.size.y * 0.5 - 1.0))
+	_fields[f.id] = { "base": base, "rows": rows, "heap": heap, "last": "" }
+
+
+func _refresh_field(f: SimField) -> void:
+	var d: Dictionary = _fields[f.id]
+	var key := "%s|%.2f|%d" % [f.stage, f.growth, f.heap]
+	if key == d["last"]:
+		return
+	d["last"] = key
+	var soil: Color = FALLOW
+	match f.stage:
+		"plowed", "sown":
+			soil = SOIL
+		"ripe":
+			soil = SOIL
+		"stubble":
+			soil = STUBBLE
+	Gfx3D.set_color(d["base"], soil)
+	var grown := f.stage in ["sown", "ripe"] and f.growth > 0.0
+	var h := maxf(0.05, CROP_MAX_H * f.growth)
+	var col := CROP_YOUNG.lerp(CROP_RIPE, clampf((f.growth - 0.6) / 0.4, 0.0, 1.0)) if f.stage == "sown" else CROP_RIPE
+	for r: MeshInstance3D in d["rows"]:
+		r.visible = grown
+		r.scale = Vector3(1, h, 1)
+		r.position.y = h * 0.5
+		Gfx3D.set_color(r, col)
+	var hp: MeshInstance3D = d["heap"]
+	hp.visible = f.heap > 0
 
 
 func _road(a: Vector2, b: Vector2) -> void:
@@ -103,6 +157,9 @@ func _scatter_decor() -> void:
 func _near_building(p: Vector2, r: float) -> bool:
 	for id in world.buildings:
 		if world.buildings[id].position.distance_to(p) < r:
+			return true
+	for fl: SimField in world.fields:
+		if fl.rect.grow(2.0).has_point(p):
 			return true
 	var f: Dictionary = world.map["forest"]
 	return Rect2(float(f["x"]) - 3, float(f["y"]) - 3, float(f["w"]) + 6, float(f["h"]) + 6).has_point(p)
@@ -285,6 +342,8 @@ func set_season(season: String, blend: float) -> void:
 
 
 func refresh(delta: float, selected_id: int, night: float) -> void:
+	for f: SimField in world.fields:
+		_refresh_field(f)
 	var regrow: float = world.regrow_total()
 	for t: SimTree in world.trees:
 		var g: float = t.growth(regrow)

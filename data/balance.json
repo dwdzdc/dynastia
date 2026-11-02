@@ -418,6 +418,16 @@
     "reputation_min": -20.0,
     "valve": false
   },
+  "fields": {
+    "plow_seasons": ["spring"],
+    "sow_seasons": ["spring"],
+    "grow_seasons": ["spring", "summer", "autumn"],
+    "rot_season": "winter",
+    "grow_days": 7,
+    "ripe_loss_per_day": 0.04,
+    "work_seconds": { "plow": 500.0, "sow": 250.0, "harvest": 600.0 },
+    "yield": 90
+  },
   "estate": {
     "building": "manor",
     "food_per_labor_day": {

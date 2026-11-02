@@ -27,6 +27,7 @@ var chronicle: SimChronicle
 
 var buildings: Dictionary = {}   # id -> SimBuilding
 var trees: Array = []            # SimTree
+var fields: Array = []           # SimField (L1)
 var agents: Array = []           # SimAgent (także zmarli — status "dead")
 var chore_claims: Dictionary = {}  # "food:<gosp.>"/"firewood:<gosp.>" -> agent id
 var stats: Dictionary = {}
@@ -72,6 +73,8 @@ func _init(seed: int, p_balance: Dictionary, p_map: Dictionary, p_people: Dictio
 	home().add("food", int(eco["start_food"]))
 	home().add("log", int(eco["start_firewood"]))
 	_generate_trees()
+	for fs: Dictionary in map.get("fields", []):
+		fields.append(SimField.new(fs, balance["fields"]))
 
 	family = SimFamily.new(self, people)
 	bonds = SimBonds.new(self, memories)
@@ -767,6 +770,9 @@ func _new_day() -> void:
 			a.sick_days = rng.next_float(float(sd[0]), float(sd[1]))
 			var pr := person_of(a)
 			note("%s zachorował%s." % [pr.name, "" if pr.sex == "m" else "a"], "warn", a.position)
+	for f: SimField in fields:
+		if f.new_day(season) == "rotted":
+			note("Niezebrane zboże zgniło na polu (%s)." % building(f.owner_building).name, "warn", f.center())
 	together.end_day()
 	_estate_sells()
 	market.new_day()

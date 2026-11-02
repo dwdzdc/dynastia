@@ -72,6 +72,7 @@ func _run_all() -> void:
 	_test_bonds_across_lineages()
 	_test_marriage_with_existing_people()
 	_test_merchant_is_a_person()
+	_test_field_cycle()
 	_test_money_in_chest()
 	_test_buy_through_purse()
 	_test_buyers_pay_from_own_money()
@@ -996,6 +997,38 @@ func _money(w) -> float:
 	for p in w.family.persons.values():
 		s += p.purse
 	return s
+
+
+# L1: pole rośnie tylko zasiane i tylko w porach wzrostu; plon tylko z dojrzałego;
+# niezebrane marnieje, a zima je zabiera.
+func _test_field_cycle() -> void:
+	var w = _new_world()
+	var cfg: Dictionary = w.balance["fields"]
+	check("fields from map data belong to the manor", w.fields.size() > 0 and w.fields[0].owner_building == "manor")
+	var f := SimField.new({ "id": "t", "owner": "manor", "x": 0, "y": 0, "w": 4, "h": 4 }, cfg)
+	for i in 10:
+		f.new_day("spring")
+	check("unsown field does not grow", f.stage == "fallow" and is_zero_approx(f.growth))
+	check("no sowing before plowing", f.task("spring") == "plow")
+	check("no plowing in winter", f.task("winter") == "" and f.work("winter", 99999.0) == "")
+	f.work("spring", float(cfg["work_seconds"]["plow"]))
+	f.work("spring", float(cfg["work_seconds"]["sow"]))
+	check("plowed and sown by work", f.stage == "sown")
+	check("harvest only from a ripe field", f.task("summer") == "" and f.heap == 0)
+	for i in int(cfg["grow_days"]):
+		f.new_day("summer")
+	check("sown field ripens over grow_days", f.stage == "ripe")
+	f.work("summer", float(cfg["work_seconds"]["harvest"]))
+	check("harvest leaves the crop on the field", f.stage == "stubble" and f.heap == int(cfg["yield"]))
+	var g := SimField.new({ "id": "u", "owner": "manor", "x": 0, "y": 0, "w": 4, "h": 4 }, cfg)
+	g.stage = "ripe"
+	g.new_day("autumn")
+	g.new_day("autumn")
+	g.work("autumn", float(cfg["work_seconds"]["harvest"]))
+	check("neglected ripe field yields less", g.heap < int(cfg["yield"]))
+	var r := SimField.new({ "id": "v", "owner": "manor", "x": 0, "y": 0, "w": 4, "h": 4 }, cfg)
+	r.stage = "ripe"
+	check("winter takes an unharvested crop", r.new_day("winter") == "rotted" and r.stage == "fallow")
 
 
 # K1 (S14): kasa gospodarstwa leży w skrzyni w domu; przeprowadzka zabiera skrzynię,

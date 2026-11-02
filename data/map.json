@@ -95,7 +95,7 @@
       "y": 30
     }
   ],
-  "roads": [
+  "fields": [{"id": "f1", "owner": "manor", "x": 50, "y": 3, "w": 9, "h": 6}, {"id": "f2", "owner": "manor", "x": 61, "y": 3, "w": 9, "h": 6}, {"id": "f3", "owner": "manor", "x": 50, "y": 11, "w": 9, "h": 6}, {"id": "f4", "owner": "manor", "x": 61, "y": 11, "w": 9, "h": 6}], "roads": [
     [
       "home",
       "sawmill"
