@@ -61,3 +61,6 @@ Najprościej: RimWorld, tylko zamiast dzikiej planety masz społeczeństwo. Pres
   - koszt przełączenia roota.
 - **Proces w świecie, nie funkcja** (playtest iteracji 2): każdy skutek ma wynikać z tego, co fizycznie wydarzyło się między konkretnymi ludźmi w konkretnym miejscu. Szczegóły i ustalenia: `docs/design/living-village.md`.
 - **Cele długoterminowe** (zagrożenia, zaginięcia, ścieżki kariery, tradycja i płeć w preferencjach, budowanie, ziemia, pracownicy, mapa proceduralna, wybór startu): `docs/design/goals.md`.
+- **Budowa to osobne menu** (02.11.2026): katalog z danych — na razie dom, potem tartak, stragan, młyn i cała reszta, także droga. Gracz wybiera z menu i wskazuje miejsce na mapie.
+- **Wyższe warstwy chcą się pokazać:** towary luksusowe, służba, widoczne bogactwo. To ich popyt.
+- **Szczeble pozycji to jedna z dróg, nie jedyna.** Ścieżki z `intro` §7 zostają równorzędne: wżenienie się wyżej (cwaniactwo), wynalazca, który naprawdę wynajduje rzeczy (nauka, zmiana epoki), złodziej i półświatek (przestępczość), rzemiosło, przedsięwzięcia, szare życie. Każda ma własną „walutę” sukcesu (majątek, reputacja, wiedza, respekt, dostęp); model nie może zakładać jednej osi.
