@@ -132,7 +132,7 @@ Cel: rodzina przestaje być oderwana od świata. Inne rody żyją z tych samych 
 
 ### Faza H — gospodarka
 
-- [ ] H1 Kupiec jako osoba (S9): własna kasa i zapas, kupuje tylko, gdy ma pieniądze i zbyt, cena z zapasu i kasy; zastępuje `household.sell` → test: kupiec bez pieniędzy nie kupi, cena spada z zapasem.
+- [x] H1 Kupiec jako osoba (S9): własna kasa i zapas, kupuje tylko, gdy ma pieniądze i zbyt, cena z zapasu i kasy; zastępuje `household.sell` → test: kupiec bez pieniędzy nie kupi, cena spada z zapasem.
 - [ ] H2 Kupujący: gospodarstwa kupują jedzenie i opał u kupca za własne pieniądze → test: biedna okolica nie kupi desek, pieniądze krążą (suma w świecie stała bez importu/eksportu).
 - [ ] H3 Kupcy wędrowni: rozkład w danych, wóz z krawędzi mapy, oferta kupna/sprzedaży z ilością, ceną i terminem, towar donoszony fizycznie, odjazd z towarem → test: dostarczona oferta płaci, przegapiona przepada.
 - [ ] H4 Pole (osobny moduł): siew wiosną, wzrost, żniwa latem, zboże do spichrza; zima bez plonów → test: plon tylko w sezonie, zaniedbane pole daje mniej.

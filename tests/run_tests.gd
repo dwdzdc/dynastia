@@ -71,6 +71,7 @@ func _run_all() -> void:
 	_test_ai_households_live()
 	_test_bonds_across_lineages()
 	_test_marriage_with_existing_people()
+	_test_merchant_is_a_person()
 	_test_world_deterministic()
 	_test_world_30_days_autonomous()
 	_test_economy_chain_produces_income()
@@ -954,6 +955,27 @@ func _test_marriage_with_existing_people() -> void:
 	check("no fitting candidates, no wedding", f.marriage_candidates(gran).is_empty())
 
 
+func _test_merchant_is_a_person() -> void:
+	var w = _new_world()
+	var mk = w.market
+	check("merchant is a person from the merchant lineage", mk.merchant() != null and mk.merchant().surname == "Bednarz" and mk.till() != w.household)
+	var p0: float = mk.buy_price("plank")
+	mk.building.add("plank", 40)
+	check("price drops as the merchant's stock grows", mk.buy_price("plank") < p0)
+	var till = mk.till()
+	var seller = w.household
+	var cash0: float = seller.cash
+	var till0: float = till.cash
+	var r: Dictionary = mk.buy_from(seller, "plank", 2, [])
+	check("merchant pays from his own till", int(r["qty"]) == 2 and is_equal_approx(seller.cash - cash0, till0 - till.cash))
+	till.cash = 0.0
+	r = mk.buy_from(seller, "plank", 2, [])
+	check("merchant without money buys nothing", int(r["qty"]) == 0)
+	till.cash = 1000.0
+	mk.building.add("plank", 200)
+	check("merchant with a full store wants no more", mk.wants("plank") == 0 and int(mk.buy_from(seller, "plank", 1, [])["qty"]) == 0)
+
+
 func _state_sig(w) -> String:
 	var parts: Array = ["%.3f" % w.household.cash, str(w.building("sawmill").stock)]
 	for a in w.agents:
@@ -1044,12 +1066,17 @@ func _test_marriage_and_birth() -> void:
 	w.family.set_seeking(piotr.id, true)
 	_run_days_auto(w, 25.0)
 	check("seeking adult eventually marries", not piotr.unions.is_empty())
-	var n0: int = w.family.player_lineage().members.size()
 	for p in w.family.living():
 		if w.family.can_marry(p):
 			w.family.set_seeking(p.id, true)
-	_run_days_auto(w, 30.0)
-	check("married couples have children", w.family.player_lineage().members.size() > n0)
+	_run_days_auto(w, 15.0)
+	# Dziecko pary, która pobrała się w trakcie gry (matka nie jest z rodziny startowej).
+	var start_ids: Array = [1, 2, 3, 4, 5, 6]
+	var born := false
+	for e in w.chronicle.of_kind("birth"):
+		if int(e["lineage"]) == w.family.player_lineage_id and not int(e["who"][1]) in start_ids:
+			born = true
+	check("married couples have children", born)
 	var in_lineage := true
 	var departed := []
 	for e in w.chronicle.of_kind("departure"):

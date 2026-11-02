@@ -263,7 +263,9 @@ func _plan_eat(a: SimAgent) -> void:
 		return
 	a.hungry_no_food = true
 	var why := "GŁODNY — pusta spiżarnia"
-	if not _hh(a).can_afford(_hh(a).food_price()):
+	if w.market.building.amount("food") <= 0:
+		why += ", a na targu nie ma jedzenia"
+	elif not _hh(a).can_afford(w.market.sell_price("food")):
 		why += " i brak pieniędzy"
 	elif w.chore_claims.has(_claim(a, "food")):
 		why += " (ktoś już idzie po jedzenie)"
@@ -519,7 +521,7 @@ func _plan_chore(a: SimAgent) -> bool:
 		return true
 	# Bieda: spiżarnia pustoszeje, a nie ma za co kupić — las jest za darmo.
 	var hh = _hh(a)
-	if _home(a).amount("food") < hh.target_food / 2 and hh.cash < hh.food_price() * 4.0 \
+	if _home(a).amount("food") < hh.target_food / 2 and hh.cash < w.market.sell_price("food") * 4.0 \
 			and w.clock.current_season() != "winter":
 		_plan_forage(a)
 		return true
@@ -537,8 +539,8 @@ func _food_trip(a: SimAgent, urgent: bool) -> bool:
 	if want <= 0 or w.chore_claims.has(_claim(a, "food")):
 		return false
 	var cap := int(w.balance["carry"]["food"])
-	var afford := int(floor(hh.cash / hh.food_price()))
-	var qty := mini(mini(want, cap), mini(afford, home.space("food")))
+	var afford := int(floor(hh.cash / w.market.sell_price("food")))
+	var qty := mini(mini(want, cap), mini(mini(afford, home.space("food")), w.market.building.amount("food")))
 	if qty <= 0:
 		return false
 	w.chore_claims[_claim(a, "food")] = a.id
@@ -563,7 +565,7 @@ func _firewood_trip(a: SimAgent) -> bool:
 	var hh = _hh(a)
 	if mill.amount("log") <= 0:
 		# Bez własnego drewna opał trzeba kupić na targu.
-		if not hh.can_afford(hh.firewood_price() * 2.0):
+		if not hh.can_afford(w.market.sell_price("log") * 2.0) or w.market.building.amount("log") <= 0:
 			return false
 		w.chore_claims[_claim(a, "firewood")] = a.id
 		a.claims.append("chore:" + _claim(a, "firewood"))
@@ -599,14 +601,18 @@ func _plan_carrier(a: SimAgent) -> bool:
 	var mill: SimBuilding = w.building("sawmill")
 	var shop: SimBuilding = w.building("workshop")
 	var market: SimBuilding = w.building("market")
-	if shop.amount("chair") > 0:
+	if shop.amount("chair") > 0 and w.market.wants("chair") > 0:
 		_pickup_and_deliver(a, shop, "chair", market, "niesie krzesła na targ")
 		return true
 	if _carpenter_present() and shop.space("plank") > 0 and mill.amount("plank") > 0:
 		_pickup_and_deliver(a, mill, "plank", shop, "niesie deski do stolarni", shop.space("plank"))
 		return true
-	if _hh(a).sell_planks and mill.amount("plank") > 0:
+	if _hh(a).sell_planks and mill.amount("plank") > 0 and w.market.wants("plank") > 0:
 		_pickup_and_deliver(a, mill, "plank", market, "niesie deski na targ")
+		return true
+	if mill.amount("plank") > 0 and _hh(a).sell_planks:
+		_walk(a, market.door() + Vector2(1.5, 1.0), "idzie spytać kupca o deski")
+		_wait(a, "kupiec nie chce więcej desek — nie ma pieniędzy albo zbytu", "wait", true)
 		return true
 	return false
 
@@ -757,10 +763,21 @@ func _fx_deposit(a: SimAgent, bid: String) -> bool:
 		return true
 	var b: SimBuilding = w.building(bid)
 	if b.type == "market":
-		var got: float = _hh(a).sell(a.carrying, a.carrying_qty, a.carrying_qualities)
-		w.events.float_text(b.door(), "+%d zł" % int(round(got)), "money")
-		w.stats["sold_" + a.carrying] = int(w.stats.get("sold_" + a.carrying, 0)) + a.carrying_qty
-		a.clear_carry()
+		# Sprzedaż kupcowi (H1): bierze tyle, na ile ma pieniądze i zbyt.
+		var r: Dictionary = w.market.buy_from(_hh(a), a.carrying, a.carrying_qty, a.carrying_qualities)
+		var n := int(r["qty"])
+		if n > 0:
+			w.events.float_text(b.door(), "+%d zł" % int(round(float(r["paid"]))), "money")
+			w.stats["sold_" + a.carrying] = int(w.stats.get("sold_" + a.carrying, 0)) + n
+			a.carrying_qty -= n
+			a.carrying_qualities = a.carrying_qualities.slice(n)
+		if a.carrying_qty <= 0:
+			a.clear_carry()
+			return true
+		# Reszty kupiec nie weźmie: osoba czeka z towarem i mówi dlaczego.
+		a.steps.push_front({ "t": "act", "act": "wait", "left": float(_cfg["wait_seconds"]) * 3.0,
+			"why": "kupiec nie bierze więcej (%s) — brak pieniędzy albo zbytu" % w.good_label(a.carrying),
+			"inside": "", "alert": true, "work": false })
 		return true
 	var n := mini(a.carrying_qty, b.space(a.carrying))
 	if n <= 0:
@@ -791,25 +808,21 @@ func _fx_pickup(a: SimAgent, arg: Dictionary) -> bool:
 
 
 func _fx_buy_food(a: SimAgent, qty: int) -> bool:
-	var hh = _hh(a)
-	var n := mini(qty, int(floor(hh.cash / hh.food_price())))
-	if n <= 0:
-		return false
-	hh.pay(n * hh.food_price())
-	w.events.float_text(w.building("market").door(), "-%d zł" % int(round(n * hh.food_price())), "cost")
-	a.carrying = "food"
-	a.carrying_qty = n
-	return true
+	return _buy(a, "food", qty)
 
 
 func _fx_buy_firewood(a: SimAgent, qty: int) -> bool:
-	var hh = _hh(a)
-	var n := mini(qty, int(floor(hh.cash / hh.firewood_price())))
+	return _buy(a, "log", qty)
+
+
+# Zakup u kupca za pieniądze gospodarstwa (H2): tylko to, co ma w zapasie.
+func _buy(a: SimAgent, good: String, qty: int) -> bool:
+	var cash0 := _hh(a).cash
+	var n := w.market.sell_to(_hh(a), good, qty)
 	if n <= 0:
 		return false
-	hh.pay(n * hh.firewood_price())
-	w.events.float_text(w.building("market").door(), "-%d zł" % int(round(n * hh.firewood_price())), "cost")
-	a.carrying = "log"
+	w.events.float_text(w.market.building.door(), "-%d zł" % int(round(cash0 - _hh(a).cash)), "cost")
+	a.carrying = good
 	a.carrying_qty = n
 	return true
 

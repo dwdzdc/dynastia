@@ -21,6 +21,7 @@ var family: SimFamily
 var bonds: SimBonds
 var together: SimTogether
 var ai: SimAI
+var market: SimMarket
 var chronicle: SimChronicle
 
 var buildings: Dictionary = {}   # id -> SimBuilding
@@ -77,6 +78,7 @@ func _init(seed: int, p_balance: Dictionary, p_map: Dictionary, p_people: Dictio
 	ai = SimAI.new(self)
 	family.setup_start()
 	_spawn_society()
+	market = SimMarket.new(self, balance["market"])
 	for p in family.living():
 		p.set_meta("stage", family.stage_of(p))
 	note("Ród %s zaczyna w wynajętej chacie pod lasem. Czynsz %d zł dziennie — pilnuj kasy." % [
@@ -717,6 +719,7 @@ func _new_day() -> void:
 			var pr := person_of(a)
 			note("%s zachorował%s." % [pr.name, "" if pr.sex == "m" else "a"], "warn", a.position)
 	together.end_day()
+	market.new_day()
 	ai.new_day()
 	family.new_day()
 	bonds.prune()

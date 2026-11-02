@@ -630,9 +630,15 @@ func _build_building_info(b: SimBuilding) -> void:
 				return "Deski: %d / %d\nKrzesła: %d / %d (jakość: %s)" % [b.amount("plank"), int(b.capacity["plank"]), b.amount("chair"), int(b.capacity["chair"]), qtxt], 18)
 			_dyn(func(): return "Stolarze: %d. 2 deski = 1 krzesło. Lepszy stolarz = droższe krzesła i reputacja." % _count_job("carpenter"), 16, DIM)
 		"market":
-			_dyn(func(): return "Ceny dziś:\n  deski: %.1f zł/szt\n  krzesło: %d–%d zł (wg jakości)\n  jedzenie: %.1f zł/posiłek\n  opał (kupno): %.1f zł/kłoda" % [
-				hh.plank_price(), int(hh.chair_price(0.2)), int(hh.chair_price(0.8)), hh.food_price(), hh.firewood_price()], 18)
-			_dyn(func(): return "Reputacja stolarska rodu: %.1f\nIm więcej sprzedasz jednego dnia, tym niższa cena (mały rynek)." % hh.reputation, 16, DIM)
+			var mk := world.market
+			_dyn(func():
+				var m := mk.merchant()
+				var t := mk.till()
+				return "Kupiec: %s · kasa kupca: %d zł" % [m.full_name() if m != null else "nikt", int(t.cash) if t != null else 0], 17)
+			_dyn(func(): return "Kupiec płaci:\n  deski: %.1f zł/szt (weźmie jeszcze %d)\n  krzesło: %d–%d zł wg jakości (weźmie %d)\nKupiec sprzedaje:\n  jedzenie: %.1f zł (ma %d)\n  opał: %.1f zł/kłoda (ma %d)" % [
+				mk.buy_price("plank"), mk.wants("plank"), int(mk.buy_price("chair", 0.2, hh.reputation)), int(mk.buy_price("chair", 0.8, hh.reputation)), mk.wants("chair"),
+				mk.sell_price("food"), mk.building.amount("food"), mk.sell_price("log"), mk.building.amount("log")], 17)
+			_dyn(func(): return "Reputacja stolarska rodu: %.1f\nIm więcej towaru ma kupiec, tym mniej płaci; bez pieniędzy nie kupi nic." % hh.reputation, 16, DIM)
 			var sell := _button("", func(): hh.sell_planks = not hh.sell_planks, 17)
 			_info_box.add_child(sell)
 			_info_updaters.append(func(): sell.text = "Sprzedawaj deski: " + ("TAK" if hh.sell_planks else "NIE (tylko do stolarni)"))
@@ -917,5 +923,5 @@ func _stock_text(b: SimBuilding) -> String:
 		"workshop":
 			return "deski %d · krzesła %d" % [b.amount("plank"), b.amount("chair")]
 		"market":
-			return "deski %.1f zł · jedzenie %.1f zł" % [world.household.plank_price(), world.household.food_price()]
+			return "skup desek %.1f zł · jedzenie %.1f zł" % [world.market.buy_price("plank"), world.market.sell_price("food")]
 	return ""

@@ -48,7 +48,7 @@
       {"key": "w", "name": "Teresa", "sex": "f", "age_days": 20.0, "spouse": "h", "attached": true, "surname": "Duda", "traits": [], "character": ["lojalny"], "job": "laborer"},
       {"key": "b", "name": "Józef", "sex": "m", "age_days": 2.0, "mother": "w", "father": "h", "traits": [], "character": [], "job": "none"}
     ]},
-    {"name": "Bednarz", "surname": "Bednarz", "home": "t1", "cash": 200.0, "owns": ["t1", "t2", "t3", "market"], "role": "merchant", "members": [
+    {"name": "Bednarz", "surname": "Bednarz", "home": "t1", "cash": 400.0, "owns": ["t1", "t2", "t3", "market"], "role": "merchant", "members": [
       {"key": "m", "name": "Mikołaj", "sex": "m", "age_days": 41.0, "root": true, "traits": [], "character": ["ambitny"], "job": "none"},
       {"key": "w", "name": "Regina", "sex": "f", "age_days": 38.0, "spouse": "m", "attached": true, "surname": "Mazur", "traits": [], "character": ["pamietliwy"], "job": "none"},
       {"key": "s", "name": "Tomasz", "sex": "m", "age_days": 15.0, "mother": "w", "father": "m", "traits": ["zreczny"], "character": ["ciekawski"], "job": "none"}

@@ -213,17 +213,6 @@
     "evict_days": 2,
     "rehouse_rent_days": 4,
     "debt_jail_days": 4,
-    "prices": {
-      "food": 1.0,
-      "plank": 3.0,
-      "chair_base": 9.0,
-      "chair_quality_mult": 14.0,
-      "firewood": 2.5
-    },
-    "saturation_per_unit": 0.03,
-    "saturation_min": 0.45,
-    "reputation_per_chair": 0.6,
-    "reputation_price_mult": 0.012,
     "reputation_decay_day": 0.15,
     "firewood_per_day": {
       "spring": 0.5,
@@ -370,5 +359,55 @@
     "max_age_gap_days": 14.0,
     "wedding_cost": 15.0,
     "know_well": 15.0
+  },
+  "market": {
+    "storage": {
+      "food": 80,
+      "log": 40,
+      "plank": 80,
+      "chair": 24
+    },
+    "start_stock": {
+      "food": 40,
+      "log": 16
+    },
+    "goods": {
+      "food": {
+        "base": 1.0,
+        "target": 40,
+        "import_price": 0.8,
+        "export_price": 0.5
+      },
+      "log": {
+        "base": 2.5,
+        "target": 20,
+        "import_price": 0.8,
+        "export_price": 0.5
+      },
+      "plank": {
+        "base": 3.0,
+        "target": 30,
+        "import_price": 1.2,
+        "export_price": 0.9
+      },
+      "chair": {
+        "base": 9.0,
+        "quality_mult": 14.0,
+        "target": 3,
+        "import_price": 0.0,
+        "export_price": 0.95
+      }
+    },
+    "elasticity": 0.6,
+    "min_mult": 0.5,
+    "max_mult": 2.0,
+    "buy_ratio": 0.85,
+    "max_stock_ratio": 2.0,
+    "import_below": 0.5,
+    "export_above": 1.0,
+    "reputation_price_mult": 0.012,
+    "reputation_per_chair": 0.6,
+    "reputation_neutral_quality": 0.35,
+    "reputation_min": -20.0
   }
 }
