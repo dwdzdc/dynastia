@@ -69,7 +69,10 @@ Kto odpada, przede wszystkim **wychodzi spod kontroli gracza**. Może wejść do
 ## Odejście z powodu charakteru i powroty
 
 - Odejść można też nie przez zaniedbanie, a przez to, kim się jest: syn ambitny albo ciekawy świata wyjeżdża za granicę spełniać marzenia.
-- Może kiedyś zechcieć wrócić, bogatszy w doświadczenia (umiejętności, pieniądze, znajomości, wspomnienia).
+- **Wyjazd daleko** (za granicę, na studia do odległego miasta) nie jest od razu odejściem. Osoba ma status **nieobecny** (`away`): jest poza mapą, poza kontrolą i nie jest symulowana szczegółowo. Dalej jest w rodzie.
+- Ten status to wyjątek od zasady „unikamy abstrakcji”. Nie ma sensu symulować życia na drugim końcu świata.
+- **Więź nieobecnego też słabnie** bez kontaktu (odwiedziny, listy). Po latach bez kontaktu przestaje to być ta sama więź, a nieobecny w końcu odpada i staje się własnym rodem.
+- **Powrót**: jeśli wciąż jest w rodzie, wraca do domu bez rytuału. Jeśli już odpadł, wraca przez rytuał pojednania (decyzja gracza w oknie). W obu przypadkach wraca bogatszy w doświadczenia: umiejętności, pieniądze, znajomości, wspomnienia.
 
 ## Decyzje gracza przy rytuałach
 
@@ -82,6 +85,19 @@ Kto odpada, przede wszystkim **wychodzi spod kontroli gracza**. Może wejść do
 - Ojciec, który w wieku 5–10 lat pokazywał synowi robienie desek, zostawia mu dobre skojarzenie z tartakiem. Ojciec, który bił go w tartaku, zostawia nienawiść do drewna.
 - Model: wspomnienia przypinają się nie tylko do osób, ale też do **czynności i miejsc**. „Lubię tartak” to więź z czynnością, budowana tymi samymi zdarzeniami co więź z ludźmi.
 
+## Co gracz widzi o osobie
+
+- Nie tylko zachowanie. Panel osoby ma osobne części:
+  - **wspomnienia**: rozwijana, szczegółowa lista (tekst, bez liczb);
+  - **preferencje**: co lubi i czego nie znosi, wynikające z charakteru, losowych cech i wspomnień (z informacją skąd);
+  - **cechy (traity)**;
+  - **charakter**.
+- Wartości liczbowe (więzi, siła przynależności) pozostają ukryte.
+
+## Dzieci
+
+- Domyślnie dziecko chodzi za dorosłymi według własnej sympatii. Gracz może to nadpisać, np. wysłać dziecko z ojcem do tartaku. Tak kształtuje preferencje następnego pokolenia, kosztem czasu dorosłego.
+
 ## Niechęć zamiast twardej odmowy
 
 - Postać przydzielona do pracy, której nie chce, albo ze słabą więzią z rodem, nie mówi „nie”. **Wymiguje się**: robi krócej, zostawia deskę niedokrojoną w połowie i idzie na dziewczyny, przychodzi później, wychodzi wcześniej.
@@ -91,6 +107,7 @@ Kto odpada, przede wszystkim **wychodzi spod kontroli gracza**. Może wejść do
 ## Kronika i drzewo
 
 - **Kronika rodu** jest dostępna do podglądu: oś czasu ważnych zdarzeń (narodziny, śluby, śmierci, odejścia, powroty, wielkie kłótnie, sukcesy i upadki).
+- Wiedza o tym, kto jest kim, należy na razie do **rodu**, a nie do pojedynczej osoby (może się to kiedyś zmienić).
 - **Drzewo genealogiczne** po kliknięciu w osobę pokazuje jej miejsce w drzewie złożonym ze **znanych osób**. Nie widać całego świata: żona wnuka brata ma siostrę z trójką dzieci, ale gracz o niej nie wie, więc jej nie ma.
 
 ## Pieniądze
@@ -105,7 +122,7 @@ Kto odpada, przede wszystkim **wychodzi spod kontroli gracza**. Może wejść do
 
 ## Rody AI
 
-- Oderwana część rodu staje się **rodem AI** z własnym rootem. Rody AI mają tę samą strukturę i te same mechaniki co ród gracza (więzi, przynależność, rytuały, odejścia), tylko decyzje podejmuje AI.
+- Oderwana część rodu staje się **rodem AI** z własnym rootem. Ród może być **jednoosobowy**: syn na studiach w kawalerce, bez kontaktu z rodziną, jest sam sobie rootem. Rody AI mają tę samą strukturę i te same mechaniki co ród gracza (więzi, przynależność, rytuały, odejścia), tylko decyzje podejmuje AI.
 
 ## Na później (świadomie poza pierwszą iteracją)
 
