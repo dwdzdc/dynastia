@@ -107,3 +107,45 @@ Zakup jedzenia i donoszenie opału, gdy zapas w chacie spada poniżej celu; robi
 
 **scenario** (scenariusz):
 Zestaw danych startowych: mapa, rodzina, reguły (czynsz, odległość od targu). MVP ma jeden („drwale pod wsią"); kolejne, np. „sami na odludziu", mają być nowymi plikami danych.
+
+## Wieś, która żyje (iteracja 2b)
+
+**Chest** (skrzynia):
+Pieniądze gospodarstwa leżące w domu (`SimBuilding.chests`). `Household.cash` to tylko podgląd skrzyni; bez domu gospodarstwo nosi pieniądze w tobołku.
+
+**Purse** (sakwa):
+Pieniądze przy osobie. Część (`held`) należy do gospodarstwa i wraca do skrzyni w domu; kieszonkowe zostaje „na okazję”.
+_Avoid_: kasa (nieostre: skrzynia czy sakwa).
+
+**Contract** (umowa):
+Praca u kogoś: pracodawca, pracownik, miejsce, zawód, stawka na dobę. Płaca narasta z pracy, a wręcza ją płatnik z gospodarstwa pracodawcy pod miejscem pracy.
+
+**Offer** (oferta, wakat):
+Ogłoszenie pracodawcy: ile osób, do czego, gdzie, za ile. Ludzie biorą najlepszą, która przebija ich minimalną stawkę.
+
+**Overseer** (nadzorca):
+Członek gospodarstwa pracodawcy pilnujący najętych; przy nim się nie migają.
+
+**Field / strip** (pole / zagon):
+Działka właściciela podzielona na zagony; każdy przechodzi orkę, siew, pielenie, dojrzewanie i żniwa. Robotnik bierze jeden wolny zagon na raz.
+
+**Stall** (stragan):
+Lada w konkretnym miejscu z właścicielem i towarem. Handluje tylko z kramarzem za ladą; na noc zwijany.
+
+**Stallkeeper** (kramarz):
+Osoba za ladą straganu: sprzedaje, skupuje (jeśli stragan skupuje) i targuje się w granicach cen właściciela.
+
+**Price limits** (granice cen):
+Minimalna cena sprzedaży i maksymalna cena kupna gospodarstwa. Gracz ustawia swoje, AI liczy z potrzeb; transakcja zachodzi tylko, gdy granice obu stron się spotykają.
+
+**Talk** (rozmowa):
+Widoczna czynność dwóch wolnych osób obok siebie; jedyne (poza wspólną pracą) źródło więzi spoza domu.
+
+**Love** (uczucie):
+Osobny kanał w magazynie więzi (`love:<id>`). Rośnie z rozmów, zalotów i prezentów; wzajemne powyżej progu prowadzi do rozmowy rodzin.
+
+**Standing** (pozycja rodu):
+Liczona, nie przechowywana: pieniądze w skrzyniach, budynki rodu i opinia innych. Duża różnica to mezalians, który wymaga zgody wyżej stojącego rodu.
+
+**Site** (plac budowy):
+Miejsce zleconej budowy; postęp pracy ograniczają doniesione deski. Gotowy budynek należy do rodu zleceniodawcy.

@@ -199,18 +199,18 @@ Cel: rodzina przestaje być oderwana od świata. Inne rody żyją z tych samych 
 - [x] H1 Kupiec jako osoba (S9): własna kasa i zapas, kupuje tylko, gdy ma pieniądze i zbyt, cena z zapasu i kasy; zastępuje `household.sell` → test: kupiec bez pieniędzy nie kupi, cena spada z zapasem.
 - [x] H2 Kupujący: gospodarstwa kupują jedzenie i opał u kupca za własne pieniądze → test: biedna okolica nie kupi desek, pieniądze krążą (suma w świecie stała bez importu/eksportu).
 - [x] H3 Kupcy wędrowni: rozkład w danych, wóz z krawędzi mapy, oferta kupna/sprzedaży z ilością, ceną i terminem, towar donoszony fizycznie, odjazd z towarem → test: dostarczona oferta płaci, przegapiona przepada.
-- [ ] H4 Pole (osobny moduł): siew wiosną, wzrost, żniwa latem, zboże do spichrza; zima bez plonów → test: plon tylko w sezonie, zaniedbane pole daje mniej.
+- [x] H4 Pole (osobny moduł) — zrobione jako L1/L2 (zagony),: siew wiosną, wzrost, żniwa latem, zboże do spichrza; zima bez plonów → test: plon tylko w sezonie, zaniedbane pole daje mniej.
 - [ ] H5 Młyn i piekarnia z receptur: zboże → mąka → chleb, chleb jest jedzeniem → test: łańcuch daje chleb bez nowego kodu produkcji.
 - [ ] H6 Kamieniołom z receptury: kamień jako budulec → test: kamień trafia do składu.
 - [x] H7a Dwór jako pracodawca (zrobione wcześniej, bo bez tego gospodarka nie miała obiegu): dniówka płacona z kasy dworu, praca na folwarku daje plon (jedzenie, sezonowo) do spiżarni dworu, dwór sprzedaje nadwyżki kupcowi; bez pieniędzy nie zatrudnia (AI idzie do lasu).
-- [ ] H7 Praca u kogoś: miejsce pracy ma właściciela, zatrudnia ludzi z innych gospodarstw, dniówka na dobę od pracodawcy do sakiewki pracownika; dwór to pracodawca, nie automat → test: płaca przechodzi od pracodawcy, pracodawca bez pieniędzy nie zatrudnia.
+- [x] H7 Praca u kogoś — zrobione jako L3/L4 (umowy, oferty),: miejsce pracy ma właściciela, zatrudnia ludzi z innych gospodarstw, dniówka na dobę od pracodawcy do sakiewki pracownika; dwór to pracodawca, nie automat → test: płaca przechodzi od pracodawcy, pracodawca bez pieniędzy nie zatrudnia.
 
 ### Faza I — budowa i mieszkanie
 
-- [ ] I1 Plac budowy (S10): typ budynku z danych (dom: deski, kamień, praca), materiały donoszone, budowlańcy pracują, gotowy budynek należy do zleceniodawcy → test: dom powstaje po dostarczeniu materiałów i pracy.
+- [x] I1 Plac budowy (S10) — zrobione jako O2,: typ budynku z danych (dom: deski, kamień, praca), materiały donoszone, budowlańcy pracują, gotowy budynek należy do zleceniodawcy → test: dom powstaje po dostarczeniu materiałów i pracy.
 - [ ] I2 Kto buduje: ród AI, gdy ciasno i ma pieniądze; gracz zleca dom w wybranym miejscu (UI) → test + zrzut ekranu.
 - [ ] I3 Tłok i prywatność: za dużo osób na dom → kłótnie (wspomnienia) między współlokatorami; osobny dom → mniej wspólnego czasu sam z siebie → test: ciasny dom daje kłótnie, przestronny nie.
-- [ ] I4 Wyprowadzka w obrębie rodu: dorosły (np. po ślubie) zakłada nowe gospodarstwo rodu w wolnym domu → test: ród ma dwa gospodarstwa, przynależność bez zmian.
+- [x] I4 Wyprowadzka w obrębie rodu — zrobione jako O1 (wyprowadzka na swoje),: dorosły (np. po ślubie) zakłada nowe gospodarstwo rodu w wolnym domu → test: ród ma dwa gospodarstwa, przynależność bez zmian.
 
 ### Faza J — interfejs i balans
 
