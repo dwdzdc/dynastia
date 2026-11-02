@@ -51,6 +51,8 @@ func desired_kind(a: SimAgent) -> String:
 	var block := block_at(w.clock.time_of_day())
 	if block == "sleep" or a.needs["sleep"] < float(w.balance["needs"]["sleep"]["low"]):
 		return "sleep"
+	if block in ["dinner", "free"] and not a.is_child and aloof_today(a):
+		return "aloof"
 	if block == "dinner" and not w.is_independent(a):
 		return "dinner"
 	if a.is_child:
@@ -90,6 +92,8 @@ func replan(a: SimAgent) -> void:
 			_plan_child(a)
 		"dinner":
 			_plan_dinner(a)
+		"aloof":
+			_plan_aloof(a)
 		"work":
 			_plan_work(a)
 		"chore":
@@ -208,6 +212,38 @@ func _plan_dinner(a: SimAgent) -> void:
 	if home.amount("food") <= 0:
 		why = "siedzi z rodziną przy pustym stole"
 	_act(a, "dine", maxf(left, float(_cfg["wait_seconds"])), why, home.id)
+
+
+# Sygnały dryfu (D2): kto słabo należy do rodu, w niektóre dni omija kolację i wieczór
+# spędza poza domem. Im słabsza siła, tym częściej. Losowanie z hasha (osoba, doba),
+# żeby decyzja była stała przez całą dobę i nie ruszała głównego strumienia RNG.
+func aloof_today(a: SimAgent) -> bool:
+	if w.is_independent(a):
+		return false
+	var p := w.person_of(a)
+	if p == null or p.id == w.family.root_id:
+		return false
+	var cfg: Dictionary = w.balance["belonging"]
+	var below := float(cfg["aloof_below"])
+	var s := float(w.family.strength.get(p.id, 1.0))
+	if s >= below:
+		return false
+	var intensity := clampf((below - s) / (below - float(cfg["leave_below"])), 0.0, 1.0)
+	var roll := SimRng.new(SimRng.hash3(int(w.balance["world_seed"]), p.id * 100000 + w.clock.day_index(), "aloof")).next_float()
+	return roll < intensity
+
+
+func _plan_aloof(a: SimAgent) -> void:
+	var cfg: Dictionary = w.balance["belonging"]
+	var place: SimBuilding = w.building(String(cfg["aloof_place"]))
+	var r := float(cfg["aloof_spread"])
+	var spot: Vector2 = place.door() + Vector2(w.rng.next_float(-r, r), w.rng.next_float(0.5, r))
+	var dinner := block_at(w.clock.time_of_day()) == "dinner"
+	var why := "nie przyszedł na kolację — siedzi sam" if dinner else "wieczór spędza poza domem"
+	if a.needs["food"] < float(w.balance["needs"]["food"]["dinner_eat_below"]) and dinner:
+		why = "je osobno, z dala od reszty"
+	_walk(a, spot, "idzie gdzieś sam")
+	_act(a, "rest", float(_cfg["wait_seconds"]) * 2.0, why)
 
 
 func _plan_child(a: SimAgent) -> void:

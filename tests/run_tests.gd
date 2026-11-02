@@ -59,6 +59,7 @@ func _run_all() -> void:
 	_test_switch_root()
 	_test_departure_and_ai_life()
 	_test_purse_share_by_strength()
+	_test_drift_signals()
 	_test_world_deterministic()
 	_test_world_30_days_autonomous()
 	_test_economy_chain_produces_income()
@@ -442,7 +443,7 @@ func _test_together_builds_bonds() -> void:
 
 
 func _test_dinner_gathers_family() -> void:
-	var w = _bond_world()
+	var w = _new_world()
 	var s: Dictionary = w.balance["schedule"]
 	# Jedna pełna doba, potem zatrzymanie w środku kolacji następnej.
 	_run_days_auto(w, 1.0)
@@ -642,6 +643,31 @@ func _test_purse_share_by_strength() -> void:
 	var far_gives: float = w.household.cash - c0
 	check("close member hands over everything", is_equal_approx(close_gives, 10.0) and is_zero_approx(piotr.purse))
 	check("drifting member hands over less and keeps the rest", far_gives < close_gives and is_equal_approx(zofia.purse, 10.0 - far_gives))
+
+
+func _test_drift_signals() -> void:
+	var w = _new_world()
+	var f = w.family
+	var zofia = _named(f, "Zofia")
+	var piotr = _named(f, "Piotr")
+	var az = w.agent_by_id(zofia.agent_id)
+	var ap = w.agent_by_id(piotr.agent_id)
+	var leave := float(w.balance["belonging"]["leave_below"])
+	var aloof_days := 0
+	var close_aloof := 0
+	for d in 20:
+		w.clock.set_time(d, 0.5)
+		f.strength[zofia.id] = leave + 0.01
+		f.strength[piotr.id] = 1.0
+		if w.jobs.aloof_today(az):
+			aloof_days += 1
+		if w.jobs.aloof_today(ap):
+			close_aloof += 1
+	check("weak member often avoids family evenings (%d/20)" % aloof_days, aloof_days >= 12)
+	check("close member never does", close_aloof == 0)
+	w.jobs._plan_aloof(az)
+	var why := String(az.steps[az.steps.size() - 1]["why"])
+	check("aloof reason is descriptive, no numbers", why != "" and not why.contains("0.") and not why.contains("%"))
 
 
 func _state_sig(w) -> String:

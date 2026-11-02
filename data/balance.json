@@ -329,7 +329,10 @@
       "elder"
     ],
     "leave_home": "n1",
-    "leave_job": "laborer"
+    "leave_job": "laborer",
+    "aloof_below": 0.45,
+    "aloof_place": "market",
+    "aloof_spread": 4.0
   },
   "purse": {
     "share_at_zero": 0.2,
