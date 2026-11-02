@@ -182,7 +182,7 @@ Pętla gry: ród Wilków (6 osób, 3 pokolenia) w chacie pod lasem. Co 5 dni czy
 
 - [x] T0 Menu budowy (S29): katalog z danych, menu jak w Cultures, tryb wskazywania miejsca; dom i stragan w menu; droga jako budowa liniowa → test + zrzut.
 - [x] R1 Niezmiennik pieniędzy świata (S22) → test: suma stała przez 60 dób.
-- [ ] R2 Potrzeby gospodarstw z danych (S23) → lista braków → test: bogaty chce więcej niż biedny.
+- [x] R2 Potrzeby gospodarstw z danych (S23) → lista braków → test: bogaty chce więcej niż biedny.
 - [ ] R3 Zużycie: dom niszczeje i jest remontowany deskami, narzędzia się zużywają → test: wieś bez gracza kupuje deski; gracz widzi łatanie chat.
 - [ ] R4 Ceny AI z zapasu i potrzeb (S26) → test: brak → drożej, nadmiar → taniej.
 - [ ] T1 Przedsięwzięcie jako byt (S24), tartak gracza przepięty → test: łańcuch jak dziś.

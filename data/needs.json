@@ -1,0 +1,14 @@
+{
+  "labels": { "tools": "narzędzia", "cloth": "ubranie", "luxury": "towary luksusowe" },
+  "tiers": [
+    { "id": "survival", "label": "przetrwanie", "min_wealth": 0.0 },
+    { "id": "comfort", "label": "wygoda", "min_wealth": 12.0 },
+    { "id": "prestige", "label": "prestiż (na pokaz)", "min_wealth": 60.0 }
+  ],
+  "needs": {
+    "tools": { "tier": "comfort", "per": "adult", "qty": 1, "wear_days": 25.0 },
+    "cloth": { "tier": "comfort", "per": "person", "qty": 1, "wear_days": 18.0 },
+    "chair": { "tier": "prestige", "per": "person", "qty": 1, "wear_days": 80.0 },
+    "luxury": { "tier": "prestige", "per": "household", "qty": 2, "wear_days": 6.0 }
+  }
+}

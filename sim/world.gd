@@ -33,6 +33,7 @@ var trees: Array = []            # SimTree
 var fields: Array = []           # SimField (L1)
 var sites: Dictionary = {}       # plac budowy (O2): id -> { b, kind, lineage, household, work, total, from, to }
 var buildables: Dictionary       # katalog budowy (S29): data/buildables.json
+var needs: SimNeeds              # potrzeby gospodarstw (S23): data/needs.json
 var roads_built: Array = []      # drogi zbudowane w grze: [od, do] (Vector2)
 var _next_site := 1
 var agents: Array = []           # SimAgent (także zmarli — status "dead")
@@ -96,6 +97,7 @@ func _init(seed: int, p_balance: Dictionary, p_map: Dictionary, p_people: Dictio
 	family.setup_start()
 	_spawn_society()
 	trade = SimTrade.new(self, balance["trade"])
+	needs = SimNeeds.new(self, DataLoader.load_json("res://data/needs.json"))
 	_spawn_stalls()
 	traders = SimTraders.new(self, p_traders)
 	contracts = SimContracts.new(self, balance["contracts"])
@@ -327,7 +329,7 @@ func good_label(g: String) -> String:
 			return "krzesła"
 		"food":
 			return "jedzenie"
-	return g
+	return needs.label(g) if needs != null else g
 
 
 func spawn_agent(p: SimPerson, at: Vector2) -> SimAgent:

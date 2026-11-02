@@ -692,6 +692,14 @@ func _build_building_info(b: SimBuilding) -> void:
 	var hh := world.household
 	if b.type in SimWorld.HOUSE_TYPES:
 		_dyn(func(): return _owner_text(b), 16, DIM)
+		_dyn(func():
+			# Potrzeby domu (S23): warstwa i czego brakuje.
+			var hh2 := world.household_at(b.id)
+			if hh2 == null:
+				return ""
+			var miss: Dictionary = world.needs.wants(hh2)
+			var txt := ", ".join(miss.keys().map(func(g): return "%s %d" % [world.good_label(g), int(miss[g])]))
+			return "Żyją na poziomie: %s%s" % [world.needs.tier_label(hh2), ("; brakuje: " + txt) if txt != "" else ""], 16, DIM)
 		_build_house_actions(b)
 	if b.type in ["sawmill", "workshop", "manor"]:
 		_build_offers(b)

@@ -87,6 +87,7 @@ func _run_all() -> void:
 	_test_construction()
 	_test_build_catalog()
 	_test_money_invariant()
+	_test_needs_tiers()
 	_test_theft_process()
 	_test_world_deterministic()
 	_test_world_30_days_autonomous()
@@ -1500,6 +1501,18 @@ func _test_money_invariant() -> void:
 		_run_days_auto(w, 1.0)
 		worst = maxf(worst, absf(w.money_total() - m0))
 	check("money of the world is constant (closed economy)", worst < 0.01)
+
+
+# R2 (S23): potrzeby w warstwach — bogaty ród chce więcej rzeczy niż biedny.
+func _test_needs_tiers() -> void:
+	var w = _new_world()
+	var rich = w.estate_owner()
+	var poor = w.household_at("n2")
+	check("rich household lives at a higher tier than a poor one", w.needs.tier_index(rich) > w.needs.tier_index(poor))
+	check("rich wants prestige goods (chairs, luxury)", w.needs.wants(rich).has("chair") and w.needs.wants(rich).has("luxury"))
+	check("poor household has no prestige wants", not w.needs.wants(poor).has("luxury"))
+	poor.cash = 500.0
+	check("money lifts a household to wanting more", w.needs.wants(poor).has("luxury"))
 
 
 func _test_theft_process() -> void:
