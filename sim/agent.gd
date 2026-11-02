@@ -46,6 +46,7 @@ var controlled: bool = false
 var hungry_no_food: bool = false
 var cold: bool = false
 var dinner_day: int = -1            # doba ostatniej kolacji przy wspólnym stole
+var follow_id: int = -1             # dziecko: za kim chodzi z nakazu gracza (id osoby); -1 = z sympatii
 
 # Modyfikatory od warstwy tożsamości
 var is_child: bool = false
@@ -110,5 +111,5 @@ func interruptible(drop_work := false) -> bool:
 		var act := String(s["act"])
 		if drop_work and act in WORK_ACTS:
 			return true
-		return act in ["wait", "rest", "sleep", "labor", "play", "idle", "dine"]
+		return act in ["wait", "rest", "sleep", "labor", "play", "idle", "dine", "watch"]
 	return false

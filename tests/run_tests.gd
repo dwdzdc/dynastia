@@ -62,6 +62,7 @@ func _run_all() -> void:
 	_test_drift_signals()
 	_test_preferences_from_memories()
 	_test_reluctance_and_orders()
+	_test_child_follows_adult()
 	_test_world_deterministic()
 	_test_world_30_days_autonomous()
 	_test_economy_chain_produces_income()
@@ -706,6 +707,26 @@ func _test_reluctance_and_orders() -> void:
 	var s := { "t": "act", "act": "chop", "left": 10.0, "why": "rąbie drzewo" }
 	w._check_will(ap, s, "chop")
 	check("reluctant work has a descriptive reason", String(s["why"]).contains("niechętnie") or String(s["why"]).contains("rzuci"))
+
+
+func _test_child_follows_adult() -> void:
+	var w = _new_world()
+	var f = w.family
+	var jan = f.root()
+	var kuba = _named(f, "Kuba")
+	var aj = w.agent_by_id(jan.agent_id)
+	var ak = w.agent_by_id(kuba.agent_id)
+	var maria = f.persons[jan.spouse_id]
+	w.set_job(aj.id, "sawyer")
+	# Własna sympatia: Kuba bardziej lubi matkę, ale gracz każe mu iść z ojcem.
+	w.bonds.remember(kuba.id, SimBonds.person(maria.id), "married", [maria.id], 2.0)
+	w.set_follow(ak.id, jan.id)
+	var s: Dictionary = w.balance["schedule"]
+	var mid := (float(s["work_start"]) + float(s["work_end"])) * 0.5
+	_run_days_auto(w, mid - w.clock.time_of_day())
+	var near: bool = (ak.inside != "" and ak.inside == aj.inside) or ak.position.distance_to(aj.position) < 4.0
+	check("child with override goes with father (%s / %s)" % [ak.idle_reason, aj.idle_reason], ak.activity in ["watch", "walk"] and near)
+	check("child follows the father, not the more liked mother", ak.idle_reason.contains(jan.name))
 
 
 func _state_sig(w) -> String:

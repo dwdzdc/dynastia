@@ -273,6 +273,15 @@ func release_manual(agent_id: int) -> void:
 	jobs.replan(a)
 
 
+# Komenda gracza: dziecko ma chodzić za tą osobą (D5); -1 = wraca do własnej sympatii.
+func set_follow(agent_id: int, person_id: int) -> void:
+	var a := agent_by_id(agent_id)
+	if a == null or not a.is_child or is_independent(a):
+		return
+	a.follow_id = person_id
+	jobs.replan(a)
+
+
 # Komenda gracza: przełącz roota (kotwicę rodu) na innego członka rodu (C2).
 func switch_root(person_id: int) -> bool:
 	return family.set_root(person_id)

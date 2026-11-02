@@ -126,7 +126,8 @@
     "sleep": {
       "decay_day": 70.0,
       "recover_day": 260.0,
-      "low": 12.0
+      "low": 12.0,
+      "rested": 60.0
     }
   },
   "health": {
@@ -358,5 +359,10 @@
       "laborer": "labor",
       "forager": "forage"
     }
+  },
+  "children": {
+    "follow_min_bond": 20.0,
+    "watch_seconds": 6.0,
+    "watch_offset": 1.2
   }
 }

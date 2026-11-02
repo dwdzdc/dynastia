@@ -49,7 +49,11 @@ func desired_kind(a: SimAgent) -> String:
 	if a.needs["food"] < food_low:
 		return "eat"
 	var block := block_at(w.clock.time_of_day())
-	if block == "sleep" or a.needs["sleep"] < float(w.balance["needs"]["sleep"]["low"]):
+	var sl: Dictionary = w.balance["needs"]["sleep"]
+	if block == "sleep" or a.needs["sleep"] < float(sl["low"]):
+		return "sleep"
+	# Kto zasnął ze zmęczenia, śpi, aż się wyśpi (inaczej budzi się i zasypia co chwilę).
+	if a.plan_kind == "sleep" and a.needs["sleep"] < float(sl["rested"]):
 		return "sleep"
 	if block in ["dinner", "free"] and not a.is_child and aloof_today(a):
 		return "aloof"
@@ -246,7 +250,48 @@ func _plan_aloof(a: SimAgent) -> void:
 	_act(a, "rest", float(_cfg["wait_seconds"]) * 2.0, why)
 
 
+# Za kim dziecko chodzi w godzinach pracy (D5): nakaz gracza, a bez niego najbardziej
+# lubiany dorosły z rodu, który właśnie pracuje.
+func follow_target(a: SimAgent) -> SimAgent:
+	var p := w.person_of(a)
+	if p == null:
+		return null
+	if a.follow_id >= 0:
+		var fp: SimPerson = w.family.persons.get(a.follow_id)
+		var fa: SimAgent = w.agent_by_id(fp.agent_id) if fp != null and fp.alive() else null
+		return fa if fa != null and fa.status == "active" else null
+	var best: SimAgent = null
+	var best_v := float(w.balance["children"]["follow_min_bond"])
+	for o: SimPerson in w.family.living():
+		var oa: SimAgent = w.agent_by_id(o.agent_id)
+		if oa == null or oa.status != "active" or oa.is_child or oa.plan_kind != "work":
+			continue
+		var v := w.bonds.value(p.id, SimBonds.person(o.id))
+		if v > best_v:
+			best_v = v
+			best = oa
+	return best
+
+
+func _plan_follow(a: SimAgent, t: SimAgent) -> void:
+	var cfg: Dictionary = w.balance["children"]
+	var tp := w.person_of(t)
+	var off := float(cfg["watch_offset"])
+	if t.inside != "":
+		var b: SimBuilding = w.building(t.inside)
+		_walk(a, b.door() + Vector2(off, off * 0.5), "idzie za: %s" % tp.name)
+		_act(a, "watch", float(cfg["watch_seconds"]), "patrzy, jak %s pracuje" % tp.name, b.id)
+		return
+	_walk(a, t.position + Vector2(off, off * 0.5), "idzie za: %s" % tp.name)
+	_act(a, "watch", float(cfg["watch_seconds"]), "patrzy, jak %s pracuje" % tp.name)
+
+
 func _plan_child(a: SimAgent) -> void:
+	if block_at(w.clock.time_of_day()) == "work":
+		var t := follow_target(a)
+		if t != null:
+			_plan_follow(a, t)
+			return
 	var home: SimBuilding = w.home()
 	var k := w.rng.next_float(0.0, TAU)
 	var r := w.rng.next_float(1.5, 4.5)
