@@ -13,7 +13,9 @@ var memories: Dictionary
 var clock: SimClock
 var rng: SimRng
 var events: SimEvents
-var household: SimHousehold
+var households: Dictionary = {}  # id -> SimHousehold
+var household: SimHousehold      # gospodarstwo rodu gracza (skrót dla UI i czynszu)
+var _next_household := 1
 var jobs: SimJobs
 var family: SimFamily
 var bonds: SimBonds
@@ -23,9 +25,10 @@ var chronicle: SimChronicle
 var buildings: Dictionary = {}   # id -> SimBuilding
 var trees: Array = []            # SimTree
 var agents: Array = []           # SimAgent (także zmarli — status "dead")
-var chore_claims: Dictionary = {}  # "food"/"firewood" -> agent id
+var chore_claims: Dictionary = {}  # "food:<gosp.>"/"firewood:<gosp.>" -> agent id
 var stats: Dictionary = {}
 
+const HOUSE_TYPES := ["home", "decor_house"]  # budynki, w których można mieszkać
 const START_AFTER_WAKE := 0.02           # gra startuje chwilę po pobudce (część doby)
 const TREE_PLACE_TRIES := 4000            # limit prób rozmieszczenia drzew
 const CHOP_SPOT := Vector2(0.9, 0.4)      # gdzie staje drwal względem pnia
@@ -49,14 +52,14 @@ func _init(seed: int, p_balance: Dictionary, p_map: Dictionary, p_people: Dictio
 	clock.set_time(0, float(balance["schedule"]["wake"]) + START_AFTER_WAKE)
 	rng = SimRng.new(seed)
 	events = SimEvents.new()
-	household = SimHousehold.new(balance["economy"])
+	household = new_household("home", float(balance["economy"]["start_cash"]), float(balance["economy"]["rent"]))
 	jobs = SimJobs.new(self)
 	_regrow_total = float(balance["trees"]["regrow_days"]) * clock.day_seconds
 
 	var storage: Dictionary = balance["storage"]
 	for b in map["buildings"]:
 		var t := String(b["type"])
-		var cap: Dictionary = storage.get(t, {})
+		var cap: Dictionary = storage.get("home" if t in HOUSE_TYPES else t, {})
 		buildings[b["id"]] = SimBuilding.new(String(b["id"]), String(b["name"]), t,
 			Vector2(float(b["x"]), float(b["y"])), cap)
 	var eco: Dictionary = balance["economy"]
@@ -106,6 +109,46 @@ func home_of(a: SimAgent) -> SimBuilding:
 	return buildings[a.home_id]
 
 
+func new_household(home_id: String, cash: float, rent: float = 0.0) -> SimHousehold:
+	var h := SimHousehold.new(_next_household, home_id, balance["economy"], cash, rent)
+	_next_household += 1
+	households[h.id] = h
+	return h
+
+
+# Osoba zamieszkuje w gospodarstwie: ciało dostaje jego dom.
+func join_household(p: SimPerson, h: SimHousehold) -> void:
+	var old: SimHousehold = households.get(p.household_id)
+	if old != null:
+		old.members.erase(p.id)
+	if not p.id in h.members:
+		h.members.append(p.id)
+	p.household_id = h.id
+	var a := agent_by_id(p.agent_id)
+	if a != null:
+		a.home_id = h.home_id
+
+
+func household_of(a: SimAgent) -> SimHousehold:
+	var p := person_of(a)
+	if p != null and households.has(p.household_id):
+		return households[p.household_id]
+	return household
+
+
+# Wolny dom: budynek mieszkalny, w którym nikt nie mieszka.
+func free_house() -> SimBuilding:
+	var taken := {}
+	for h: SimHousehold in households.values():
+		if not h.members.is_empty():
+			taken[h.home_id] = true
+	for id in buildings:
+		var b: SimBuilding = buildings[id]
+		if b.type in HOUSE_TYPES and not taken.has(b.id):
+			return b
+	return null
+
+
 # Ciało osoby spoza rodu gracza: żyje na autopilocie, gracz nim nie steruje (C4).
 func is_independent(a: SimAgent) -> bool:
 	var p := person_of(a)
@@ -124,7 +167,7 @@ func earn_for(a: SimAgent, amount: float) -> void:
 		var pc: Dictionary = balance["purse"]
 		var s := clampf(float(family.strength.get(p.id, 1.0)), 0.0, 1.0)
 		share = lerpf(float(pc["share_at_zero"]), float(pc["share_at_full"]), s)
-	household.earn(amount * share)
+	household_of(a).earn(amount * share)
 	p.purse += amount * (1.0 - share)
 
 
@@ -594,21 +637,28 @@ func kill(a: SimAgent, cause: String) -> void:
 func _new_day() -> void:
 	var day := clock.day_index()
 	var season := clock.current_season()
-	# Opał: chata zużywa drewno, zwłaszcza zimą.
+	# Opał: każdy zamieszkany dom zużywa drewno, zwłaszcza zimą.
 	var need := float(balance["economy"]["firewood_per_day"].get(season, 0.0))
-	var burn_acc: float = float(stats.get("burn_acc", 0.0)) + need
-	var burn := int(floor(burn_acc))
-	stats["burn_acc"] = burn_acc - burn
-	var cold := false
-	if burn > 0:
-		var got := home().take("log", burn)
-		cold = got < burn
-	for a in agents:
-		a.cold = cold
-	if cold:
-		note("Zimno w chacie — zabrakło opału! Śpiący tracą zdrowie.", "warn", home().door())
+	for h: SimHousehold in households.values():
+		if h.members.is_empty() or not buildings.has(h.home_id):
+			continue
+		h.burn_acc += need
+		var burn := int(floor(h.burn_acc))
+		h.burn_acc -= burn
+		var cold := false
+		if burn > 0:
+			cold = buildings[h.home_id].take("log", burn) < burn
+		for pid in h.members:
+			var pa := agent_by_id(family.persons[pid].agent_id)
+			if pa != null:
+				pa.cold = cold
+		if cold and h == household:
+			note("Zimno w chacie — zabrakło opału! Śpiący tracą zdrowie.", "warn", home().door())
 
-	# Czynsz i dług.
+	# Czynsz i dług (komunikaty tylko dla gospodarstwa gracza).
+	for h: SimHousehold in households.values():
+		if h != household:
+			h.new_day(day)
 	var r := household.new_day(day)
 	if not r.is_empty():
 		if bool(r["paid"]):

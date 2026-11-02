@@ -64,6 +64,7 @@ func _run_all() -> void:
 	_test_reluctance_and_orders()
 	_test_child_follows_adult()
 	_test_ai_lineage_lives_independently()
+	_test_households_separate()
 	_test_world_deterministic()
 	_test_world_30_days_autonomous()
 	_test_economy_chain_produces_income()
@@ -612,7 +613,7 @@ func _test_departure_and_ai_life() -> void:
 	check("cared-for member stays", zofia.lineage_id == f.player_lineage_id and jan.lineage_id == f.player_lineage_id)
 	check("departed is no longer in the family list", not piotr in f.living())
 	var ap = w.agent_by_id(piotr.agent_id)
-	check("departed moves out to the neighbours", ap.home_id == String(w.balance["belonging"]["leave_home"]))
+	check("departed sets up own household elsewhere", ap.home_id != "home" and w.household_of(ap) != w.household and piotr.id in w.household_of(ap).members)
 	check("departure is in the chronicle", w.chronicle.of_kind("departure").size() == 1 and piotr.id in w.chronicle.of_kind("departure")[0]["who"])
 	w.set_job(ap.id, "sawyer")
 	check("player can no longer command the departed", ap.job == String(w.balance["belonging"]["leave_job"]))
@@ -752,6 +753,30 @@ func _test_ai_lineage_lives_independently() -> void:
 	check("player game goes on", not f.game_over and f.root().name == "Jan")
 	_run_days_auto(w, 2.0)
 	check("AI lineage lives on", f.persons[ids[2]].alive() and f.persons[ids[2]].lineage_id == l.id)
+
+
+func _test_households_separate() -> void:
+	var w = _new_world()
+	var f = w.family
+	var l = f.new_lineage("Kos")
+	var ids: Array = f.spawn_family(_ai_specs(), l, w.building("n1"))
+	var hb = w.new_household("n1", 30.0)
+	for id in ids:
+		w.join_household(f.persons[id], hb)
+	check("each family has its own household and home", w.household_of(w.agent_by_id(f.root().agent_id)) == w.household
+		and w.household_of(w.agent_by_id(f.persons[ids[0]].agent_id)) == hb and w.agent_by_id(f.persons[ids[2]].agent_id).home_id == "n1")
+	var buyer = w.agent_by_id(f.persons[ids[2]].agent_id)
+	var cash_a: float = w.household.cash
+	var food_b: int = w.building("n1").amount("food")
+	w.jobs._fx_buy_food(buyer, 3)
+	buyer.position = w.building("n1").door()
+	w.jobs._fx_deposit(buyer, "n1")
+	check("purchase paid from own household, stored in own home", hb.cash < 30.0 and is_equal_approx(w.household.cash, cash_a) and w.building("n1").amount("food") == food_b + 3)
+	var kids := 0
+	for p in f.living():
+		if p.household_id == w.household.id:
+			kids += 1
+	check("player's people are members of the player household", kids == f.living().size())
 
 
 func _state_sig(w) -> String:

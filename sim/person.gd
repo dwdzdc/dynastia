@@ -19,6 +19,7 @@ var blood: bool = false         # krew rodu (linia, którą czyta sukcesja i gam
 var attached: bool = false      # wżeniony małżonek
 var lineage_id: int = -1        # ród, do którego należy (S1); -1 = żaden
 var purse: float = 0.0          # własne pieniądze (S5)
+var household_id: int = -1      # gospodarstwo, w którym mieszka (S6)
 var weak_days: int = 0          # ile dób z rzędu siła przynależności jest poniżej progu
 var traits: Array = []          # cechy ciała i talentu (silny, chorowity…), z wpływem na ciało
 var character: Array = []       # charakter (lojalny, porywczy…), wpływa na więzi i wolę

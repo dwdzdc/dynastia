@@ -1,8 +1,13 @@
-# SimHousehold — gospodarstwo domowe: gotówka, dług, czynsz, cele zapasów, reputacja
-# i targ (ceny z nasyceniem dziennym). Spiżarnia i opał leżą w zapasie budynku domu.
+# SimHousehold — gospodarstwo domowe (S6): kto mieszka razem i ma wspólną kasę.
+# Gotówka, dług, czynsz, cele zapasów, reputacja i (do H1) targ z nasyceniem dziennym.
+# Spiżarnia i opał leżą w zapasie budynku domu (`home_id`). Ród ma 0..n gospodarstw.
 class_name SimHousehold
 extends RefCounted
 
+
+var id: int
+var home_id: String
+var members: Array = []              # id osób
 
 var cash: float
 var debt: float = 0.0
@@ -19,6 +24,7 @@ var reputation: float = 0.0          # sfera: stolarstwo
 var earned_today: float = 0.0
 var spent_today: float = 0.0
 var last_day_net: float = 0.0
+var burn_acc: float = 0.0            # ułamek kłody opału do spalenia
 
 var _prices: Dictionary
 var _sold_today: Dictionary = {}     # good -> szt. (nasycenie rynku)
@@ -29,9 +35,11 @@ var _rep_price_mult: float
 var _rep_decay: float
 
 
-func _init(eco: Dictionary) -> void:
-	cash = float(eco["start_cash"])
-	rent = float(eco["rent"])
+func _init(p_id: int, p_home: String, eco: Dictionary, start_cash: float, p_rent: float) -> void:
+	id = p_id
+	home_id = p_home
+	cash = start_cash
+	rent = p_rent
 	rent_period = int(eco["rent_period_days"])
 	next_rent_day = rent_period
 	debt_interest = float(eco["debt_interest"])
@@ -124,7 +132,7 @@ func new_day(day: int) -> Dictionary:
 	reputation = maxf(0.0, reputation - _rep_decay) if reputation > 0.0 else minf(0.0, reputation + _rep_decay)
 	if debt > 0.0:
 		debt *= 1.0 + debt_interest / float(rent_period)
-	if day < next_rent_day:
+	if day < next_rent_day or rent <= 0.0:
 		return {}
 	next_rent_day += rent_period
 	if cash >= rent:

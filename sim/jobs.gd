@@ -81,17 +81,17 @@ func replan(a: SimAgent) -> void:
 	# Przed wyjściem z domu zjedz, jeśli już trochę burczy w brzuchu — inaczej agent
 	# zawraca w pół drogi.
 	var low := float(w.balance["needs"]["food"]["low"])
-	if kind in ["work", "chore", "child"] and a.needs["food"] < low * 1.6 and w.home().amount("food") > 0:
+	if kind in ["work", "chore", "child"] and a.needs["food"] < low * 1.6 and _home(a).amount("food") > 0:
 		kind = "eat"
 	a.plan_kind = kind
 	match kind:
 		"sick":
-			_go_inside(a, w.home(), "rest", 3.0,
+			_go_inside(a, _home(a), "rest", 3.0,
 				"ranny — leży w chacie" if a.injured_days > 0.0 else "chory — leży w chacie")
 		"eat":
 			_plan_eat(a)
 		"sleep":
-			_go_inside(a, w.home(), "sleep", 4.0, "śpi")
+			_go_inside(a, _home(a), "sleep", 4.0, "śpi")
 		"child":
 			_plan_child(a)
 		"dinner":
@@ -102,7 +102,7 @@ func replan(a: SimAgent) -> void:
 			_plan_work(a)
 		"chore":
 			if not _plan_chore(a):
-				_go_inside(a, w.home(), "rest", 3.0, _rest_reason(a))
+				_go_inside(a, _home(a), "rest", 3.0, _rest_reason(a))
 
 
 func release(a: SimAgent) -> void:
@@ -113,8 +113,9 @@ func release(a: SimAgent) -> void:
 			if t != null and t.reserved_by == a.id:
 				t.reserved_by = -1
 		elif parts[0] == "chore":
-			if w.chore_claims.get(parts[1], -1) == a.id:
-				w.chore_claims.erase(parts[1])
+			var key := String(c).substr(6)
+			if w.chore_claims.get(key, -1) == a.id:
+				w.chore_claims.erase(key)
 	a.claims.clear()
 
 
@@ -126,6 +127,20 @@ func _rest_reason(a: SimAgent) -> String:
 	if block_at(w.clock.time_of_day()) == "work":
 		return "wolne — bez przydziału pracy"
 	return "odpoczywa wieczorem"
+
+
+# Dom i gospodarstwo agenta (F2): każdy planuje dla swojego, nie dla „chaty gracza”.
+func _home(a: SimAgent) -> SimBuilding:
+	return w.home_of(a)
+
+
+func _hh(a: SimAgent) -> SimHousehold:
+	return w.household_of(a)
+
+
+# Rezerwacja obowiązku domowego jest per gospodarstwo („food:3”).
+func _claim(a: SimAgent, kind: String) -> String:
+	return "%s:%d" % [kind, _hh(a).id]
 
 
 # --- Kroki ---
@@ -182,7 +197,7 @@ func _plan_independent(a: SimAgent, kind: String) -> void:
 			_go_inside(a, home, "rest", 3.0, "odpoczywa u siebie")
 
 func _plan_eat(a: SimAgent) -> void:
-	var home: SimBuilding = w.home()
+	var home: SimBuilding = _home(a)
 	if home.amount("food") > 0:
 		_walk(a, home.door(), "głodny — idzie coś zjeść")
 		_do(a, "eat")
@@ -192,14 +207,14 @@ func _plan_eat(a: SimAgent) -> void:
 	# idzie do lasu szukać jagód i grzybów.
 	if a.can_work() and _food_trip(a, true):
 		return
-	if a.can_work() and not w.chore_claims.has("food"):
+	if a.can_work() and not w.chore_claims.has(_claim(a, "food")):
 		_plan_forage(a)
 		return
 	a.hungry_no_food = true
 	var why := "GŁODNY — pusta spiżarnia"
-	if not w.household.can_afford(w.household.food_price()):
+	if not _hh(a).can_afford(_hh(a).food_price()):
 		why += " i brak pieniędzy"
-	elif w.chore_claims.has("food"):
+	elif w.chore_claims.has(_claim(a, "food")):
 		why += " (ktoś już idzie po jedzenie)"
 	_walk(a, home.door(), why)
 	_act(a, "wait", float(_cfg["wait_seconds"]), why, home.id, true)
@@ -208,7 +223,7 @@ func _plan_eat(a: SimAgent) -> void:
 # Kolacja: ród schodzi się do chaty i siedzi razem przy stole do końca bloku (B2).
 # Je tylko ten, kto jest choć trochę głodny; przy pustej spiżarni siedzą przy pustym stole.
 func _plan_dinner(a: SimAgent) -> void:
-	var home: SimBuilding = w.home()
+	var home: SimBuilding = _home(a)
 	var left := (float(w.balance["schedule"]["dinner_end"]) - w.clock.time_of_day()) * w.clock.day_seconds
 	_walk(a, home.door(), "wraca do chaty na kolację")
 	_do(a, "dinner")
@@ -292,7 +307,7 @@ func _plan_child(a: SimAgent) -> void:
 		if t != null:
 			_plan_follow(a, t)
 			return
-	var home: SimBuilding = w.home()
+	var home: SimBuilding = _home(a)
 	var k := w.rng.next_float(0.0, TAU)
 	var r := w.rng.next_float(1.5, 4.5)
 	var spot: Vector2 = home.door() + Vector2(cos(k), sin(k) * 0.6 + 0.8) * r
@@ -310,7 +325,7 @@ func _plan_work(a: SimAgent) -> void:
 			_plan_producer(a, w.building("workshop"), "craft")
 		"carrier":
 			if not _plan_carrier(a):
-				_walk(a, w.home().door() + Vector2(1.5, 1.0), "nosiciel — nic do noszenia")
+				_walk(a, _home(a).door() + Vector2(1.5, 1.0), "nosiciel — nic do noszenia")
 				_wait(a, "nosiciel — nic do noszenia")
 		"laborer":
 			_plan_laborer(a)
@@ -319,7 +334,7 @@ func _plan_work(a: SimAgent) -> void:
 		"thief":
 			_plan_thief(a)
 		_:
-			_go_inside(a, w.home(), "rest", 3.0, _rest_reason(a))
+			_go_inside(a, _home(a), "rest", 3.0, _rest_reason(a))
 
 
 func _plan_woodcutter(a: SimAgent) -> void:
@@ -444,8 +459,8 @@ func _plan_chore(a: SimAgent) -> bool:
 	if _firewood_trip(a):
 		return true
 	# Bieda: spiżarnia pustoszeje, a nie ma za co kupić — las jest za darmo.
-	var hh = w.household
-	if w.home().amount("food") < hh.target_food / 2 and hh.cash < hh.food_price() * 4.0 \
+	var hh = _hh(a)
+	if _home(a).amount("food") < hh.target_food / 2 and hh.cash < hh.food_price() * 4.0 \
 			and w.clock.current_season() != "winter":
 		_plan_forage(a)
 		return true
@@ -453,20 +468,20 @@ func _plan_chore(a: SimAgent) -> bool:
 
 
 func _food_trip(a: SimAgent, urgent: bool) -> bool:
-	var hh = w.household
-	var home: SimBuilding = w.home()
+	var hh = _hh(a)
+	var home: SimBuilding = _home(a)
 	var want: int = hh.target_food - home.amount("food")
 	if urgent:
 		want = maxi(want, 1)
-	if want <= 0 or w.chore_claims.has("food"):
+	if want <= 0 or w.chore_claims.has(_claim(a, "food")):
 		return false
 	var cap := int(w.balance["carry"]["food"])
 	var afford := int(floor(hh.cash / hh.food_price()))
 	var qty := mini(mini(want, cap), mini(afford, home.space("food")))
 	if qty <= 0:
 		return false
-	w.chore_claims["food"] = a.id
-	a.claims.append("chore:food")
+	w.chore_claims[_claim(a, "food")] = a.id
+	a.claims.append("chore:" + _claim(a, "food"))
 	var market: SimBuilding = w.building("market")
 	_walk(a, market.door(), "idzie na targ kupić jedzenie")
 	_do(a, "buy_food", qty)
@@ -476,26 +491,26 @@ func _food_trip(a: SimAgent, urgent: bool) -> bool:
 
 
 func _firewood_trip(a: SimAgent) -> bool:
-	var home: SimBuilding = w.home()
+	var home: SimBuilding = _home(a)
 	var mill: SimBuilding = w.building("sawmill")
-	if home.amount("log") >= w.household.target_firewood or home.space("log") <= 0:
+	if home.amount("log") >= _hh(a).target_firewood or home.space("log") <= 0:
 		return false
-	if w.chore_claims.has("firewood"):
+	if w.chore_claims.has(_claim(a, "firewood")):
 		return false
-	var hh = w.household
+	var hh = _hh(a)
 	if mill.amount("log") <= 0:
 		# Bez własnego drewna opał trzeba kupić na targu.
 		if not hh.can_afford(hh.firewood_price() * 2.0):
 			return false
-		w.chore_claims["firewood"] = a.id
-		a.claims.append("chore:firewood")
+		w.chore_claims[_claim(a, "firewood")] = a.id
+		a.claims.append("chore:" + _claim(a, "firewood"))
 		_walk(a, w.building("market").door(), "idzie kupić opał na targu")
 		_do(a, "buy_firewood", 2)
 		_walk(a, home.door(), "niesie opał do chaty")
 		_do(a, "deposit", home.id)
 		return true
-	w.chore_claims["firewood"] = a.id
-	a.claims.append("chore:firewood")
+	w.chore_claims[_claim(a, "firewood")] = a.id
+	a.claims.append("chore:" + _claim(a, "firewood"))
 	_walk(a, mill.door() + Vector2(-1.5, 0.0), "idzie po opał do tartaku")
 	_do(a, "pickup", { "b": "sawmill", "good": "log", "qty": mini(2, mill.amount("log")) })
 	_walk(a, home.door(), "niesie opał do chaty")
@@ -527,7 +542,7 @@ func _plan_carrier(a: SimAgent) -> bool:
 	if _carpenter_present() and shop.space("plank") > 0 and mill.amount("plank") > 0:
 		_pickup_and_deliver(a, mill, "plank", shop, "niesie deski do stolarni", shop.space("plank"))
 		return true
-	if w.household.sell_planks and mill.amount("plank") > 0:
+	if _hh(a).sell_planks and mill.amount("plank") > 0:
 		_pickup_and_deliver(a, mill, "plank", market, "niesie deski na targ")
 		return true
 	return false
@@ -546,9 +561,9 @@ func _plan_deliver_carried(a: SimAgent) -> void:
 	var dest := ""
 	match a.carrying:
 		"food":
-			dest = "home"
+			dest = _home(a).id
 		"log":
-			dest = "sawmill" if w.home().space("log") <= 0 else "home"
+			dest = "sawmill" if _home(a).space("log") <= 0 else _home(a).id
 			if a.job == "woodcutter":
 				dest = "sawmill"
 		"plank":
@@ -640,7 +655,7 @@ func apply(a: SimAgent, step: Dictionary) -> bool:
 
 
 func _fx_eat(a: SimAgent) -> bool:
-	var home: SimBuilding = w.home()
+	var home: SimBuilding = _home(a)
 	if home.take("food", 1) <= 0:
 		return false
 	a.needs["food"] = minf(100.0, a.needs["food"] + float(w.balance["needs"]["food"]["meal"]))
@@ -669,7 +684,7 @@ func _fx_deposit(a: SimAgent, bid: String) -> bool:
 		return true
 	var b: SimBuilding = w.building(bid)
 	if b.type == "market":
-		var got: float = w.household.sell(a.carrying, a.carrying_qty, a.carrying_qualities)
+		var got: float = _hh(a).sell(a.carrying, a.carrying_qty, a.carrying_qualities)
 		w.events.float_text(b.door(), "+%d zł" % int(round(got)), "money")
 		w.stats["sold_" + a.carrying] = int(w.stats.get("sold_" + a.carrying, 0)) + a.carrying_qty
 		a.clear_carry()
@@ -703,7 +718,7 @@ func _fx_pickup(a: SimAgent, arg: Dictionary) -> bool:
 
 
 func _fx_buy_food(a: SimAgent, qty: int) -> bool:
-	var hh = w.household
+	var hh = _hh(a)
 	var n := mini(qty, int(floor(hh.cash / hh.food_price())))
 	if n <= 0:
 		return false
@@ -715,7 +730,7 @@ func _fx_buy_food(a: SimAgent, qty: int) -> bool:
 
 
 func _fx_buy_firewood(a: SimAgent, qty: int) -> bool:
-	var hh = w.household
+	var hh = _hh(a)
 	var n := mini(qty, int(floor(hh.cash / hh.firewood_price())))
 	if n <= 0:
 		return false

@@ -51,7 +51,8 @@ func _init(world: SimWorld, people: Dictionary) -> void:
 
 
 func setup_start() -> void:
-	spawn_family(_people["start_family"], player_lineage(), w.home())
+	for id in spawn_family(_people["start_family"], player_lineage(), w.home()):
+		w.join_household(persons[id], w.household)
 
 
 # Ród ze specyfikacji w danych (osoby, pokrewieństwo, małżeństwa) w danym domu.
@@ -391,7 +392,10 @@ func depart(p: SimPerson) -> void:
 	p.weak_days = 0
 	p.seeking_spouse = false
 	var a: SimAgent = w.agent_by_id(p.agent_id)
-	a.home_id = String(cfg["leave_home"])
+	# Własne gospodarstwo: wolny dom, a gdy go nie ma, kąt u sąsiadów.
+	var house: SimBuilding = w.free_house()
+	var hh := w.new_household(house.id if house != null else String(cfg["leave_home"]), 0.0)
+	w.join_household(p, hh)
 	a.job = String(cfg["leave_job"])
 	w.jobs.replan(a)
 	var pamieta := "niewiele wspólnego z bliskimi" if why.is_empty() else "; ".join(why)
@@ -502,8 +506,9 @@ func _give_birth(mother: SimPerson) -> void:
 			w.ask_ok("Poród", "Dziecko %s i %s nie przeżyło porodu." % [mother.name, father.name if father else "?"])
 	else:
 		var a: SimAgent = w.spawn_agent(child, where)
-		if ma != null:
-			a.home_id = ma.home_id
+		var mh: SimHousehold = w.households.get(mother.household_id)
+		if mh != null:
+			w.join_household(child, mh)
 		a.needs["food"] = float(_fam["newborn_food"])
 		apply_modifiers(child)
 		child.set_meta("stage", "child")
@@ -628,7 +633,7 @@ func resolve_marriage(data: Dictionary, accepted: bool) -> void:
 		w.note("%s odrzuca zaloty. Szuka dalej." % p.name, "info", null)
 		return
 	var cand: Dictionary = data["cand"]
-	w.household.pay_or_debt(float(cand["cost"]))
+	w.households.get(p.household_id, w.household).pay_or_debt(float(cand["cost"]))
 	var s := SimPerson.new()
 	s.id = _new_id()
 	s.name = String(cand["name"])
@@ -651,6 +656,9 @@ func resolve_marriage(data: Dictionary, accepted: bool) -> void:
 	generation_of[s.id] = int(generation_of.get(p.id, 0))
 	var from: SimBuilding = w.building("n1")
 	var a: SimAgent = w.spawn_agent(s, from.door())
+	var ph: SimHousehold = w.households.get(p.household_id)
+	if ph != null:
+		w.join_household(s, ph)
 	for k in cand["skills"]:
 		a.skills[k] = float(cand["skills"][k])
 	apply_modifiers(s)

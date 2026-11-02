@@ -118,7 +118,7 @@ Cel: rodzina przestaje być oderwana od świata. Inne rody żyją z tych samych 
 ### Faza F — fundamenty świata (refaktor pod wiele rodów)
 
 - [x] F1 `SimFamily` jako rejestr wszystkich ludzi i rodów: logika doby (wiek, poczęcia, sukcesja) per ród; okna decyzji i koniec gry tylko dla rodu gracza, ród AI wybiera następcę sam → test: dwa rody żyją niezależnie, śmierć roota AI nie pyta gracza.
-- [ ] F2 Gospodarstwa (S6): `SimHousehold` per dom (członkowie, kasa, spiżarnia w domu), `SimJobs` używa domu i kasy gospodarstwa agenta zamiast globalnych → test: dwa gospodarstwa mają osobne kasy i zapasy; odszedły zakłada własne.
+- [x] F2 Gospodarstwa (S6): `SimHousehold` per dom (członkowie, kasa, spiżarnia w domu), `SimJobs` używa domu i kasy gospodarstwa agenta zamiast globalnych → test: dwa gospodarstwa mają osobne kasy i zapasy; odszedły zakłada własne.
 - [ ] F3 Budynek jako aktywo (S7): `owner`, `tenant`, czynsz i płace na dobę do konkretnej osoby/gospodarstwa; dług → eksmisja po N dobach → bezdomność (śpi pod gołym niebem, opisowy powód) → test: czynsz płynie do właściciela, eksmisja i bezdomność bez końca gry.
 - [ ] F4 Receptury w danych (S13): `data/recipes.json`, piłowanie i stolarka przeniesione z kodu → test: łańcuch działa jak wcześniej (sonda: podobny dochód), nowa receptura bez zmian w kodzie.
 
