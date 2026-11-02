@@ -1,7 +1,9 @@
 # Dynastia — progress
 
 Źródło wizji: plik `intro` (filary, model danych, zakres MVP). Ten plik to stan prac i kolejność dalszych kroków — sugestia, nie dogmat.
-Decyzje: `docs/adr/`, terminy: `GLOSSARY.md`.
+Decyzje: `docs/adr/`, terminy: `GLOSSARY.md`, model rodu: `docs/design/family-dynamics.md` (ma pierwszeństwo przed `intro` §5).
+
+> Kierunek (02.11.2026): obecne MVP za bardzo przypomina grę o osadzie. Następny etap to dynamika rodu (więzi, przynależność, uwaga jako czas w świecie) według `docs/design/family-dynamics.md`, potem społeczeństwo (targ, praca i lokum jako relacje z konkretnymi ludźmi z innych rodów, a nie abstrakcyjne systemy).
 
 ## Jak uruchomić
 
