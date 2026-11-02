@@ -8,6 +8,7 @@ extends RefCounted
 var balance: Dictionary
 var map: Dictionary
 var people: Dictionary
+var memories: Dictionary
 
 var clock: SimClock
 var rng: SimRng
@@ -15,6 +16,7 @@ var events: SimEvents
 var household: SimHousehold
 var jobs: SimJobs
 var family: SimFamily
+var bonds: SimBonds
 
 var buildings: Dictionary = {}   # id -> SimBuilding
 var trees: Array = []            # SimTree
@@ -36,10 +38,11 @@ var _last_day := 0
 var _regrow_total: float
 
 
-func _init(seed: int, p_balance: Dictionary, p_map: Dictionary, p_people: Dictionary) -> void:
+func _init(seed: int, p_balance: Dictionary, p_map: Dictionary, p_people: Dictionary, p_memories: Dictionary) -> void:
 	balance = p_balance
 	map = p_map
 	people = p_people
+	memories = p_memories
 	clock = SimClock.new(balance)
 	clock.set_time(0, float(balance["schedule"]["wake"]) + START_AFTER_WAKE)
 	rng = SimRng.new(seed)
@@ -60,6 +63,7 @@ func _init(seed: int, p_balance: Dictionary, p_map: Dictionary, p_people: Dictio
 	_generate_trees()
 
 	family = SimFamily.new(self, people)
+	bonds = SimBonds.new(self, memories)
 	family.setup_start()
 	for p in family.living():
 		p.set_meta("stage", family.stage_of(p))
@@ -539,6 +543,7 @@ func _new_day() -> void:
 			var pr := person_of(a)
 			note("%s zachorował%s." % [pr.name, "" if pr.sex == "m" else "a"], "warn", a.position)
 	family.new_day()
+	bonds.prune()
 	stats["max_generation"] = _max_living_generation()
 
 

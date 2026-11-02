@@ -8,7 +8,7 @@ func _initialize() -> void:
 	var days := int(args[0]) if args.size() > 0 else 20
 	var balance := DataLoader.load_json("res://data/balance.json")
 	var seed := int(args[1]) if args.size() > 1 else int(balance["world_seed"])
-	var w := SimWorld.new(seed, balance, DataLoader.load_json("res://data/map.json"), DataLoader.load_json("res://data/people.json"))
+	var w := SimWorld.new(seed, balance, DataLoader.load_json("res://data/map.json"), DataLoader.load_json("res://data/people.json"), DataLoader.load_json("res://data/memories.json"))
 	var strategy := String(args[2]) if args.size() > 2 else "default"
 	var plans := {
 		"craft": { "Zofia": "woodcutter", "Agnieszka": "carpenter" },

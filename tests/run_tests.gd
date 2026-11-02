@@ -48,6 +48,8 @@ func _run_all() -> void:
 	_test_pregnancy_lasts_data_days()
 	_test_traits_and_character_split()
 	_test_lineage_start()
+	_test_bonds_asymmetric_and_fading()
+	_test_memories_character_mods()
 	_test_world_deterministic()
 	_test_world_30_days_autonomous()
 	_test_economy_chain_produces_income()
@@ -193,7 +195,7 @@ func _map() -> Dictionary:
 
 
 func _new_world(seed := 12345) -> RefCounted:
-	return WORLD_SCRIPT.new(seed, _balance(), _map(), _people())
+	return WORLD_SCRIPT.new(seed, _balance(), _map(), _people(), LOADER_SCRIPT.load_json("res://data/memories.json"))
 
 
 func _run_days(world, days: float) -> void:
@@ -306,6 +308,63 @@ func _test_lineage_start() -> void:
 	check("lineage root is Jan", l.root_id == f.root().id and f.root().name == "Jan")
 	f.set_root(f.living()[3].id)
 	check("root lives in lineage", l.root_id == f.living()[3].id)
+
+
+# Świat bez wspomnień startowych, z dorosłymi Janem i Marią (charakter ustawiany w teście).
+func _bond_world():
+	var w = _new_world()
+	w.bonds.bonds.clear()
+	return w
+
+
+func _test_bonds_asymmetric_and_fading() -> void:
+	var w = _bond_world()
+	var b = w.bonds
+	var jan = w.family.root()
+	var maria = w.family.persons[jan.spouse_id]
+	jan.character = []
+	maria.character = []
+	var day0: int = w.clock.day_index()
+	b.remember(jan.id, SimBonds.person(maria.id), "quarrel", [maria.id])
+	b.remember(maria.id, SimBonds.person(jan.id), "worked_together", [jan.id])
+	check("bond is directed (asymmetric)", b.value(jan.id, SimBonds.person(maria.id)) < 0.0 and b.value(maria.id, SimBonds.person(jan.id)) > 0.0)
+	var fresh: float = b.value(maria.id, SimBonds.person(jan.id))
+	b.remember(jan.id, SimBonds.act("chop"), "accident")
+	w.clock.set_time(day0 + 10, 0.5)
+	var later: float = b.value(maria.id, SimBonds.person(jan.id))
+	check("ordinary memories fade toward zero", later > 0.0 and later < fresh * 0.5)
+	check("permanent memories never fade", is_equal_approx(b.value(jan.id, SimBonds.act("chop")), float(w.memories["kinds"]["accident"]["weight"])))
+	w.clock.set_time(day0 + 200, 0.5)
+	b.prune()
+	check("faded memories are pruned, permanent kept", b.memories(maria.id, SimBonds.person(jan.id)).is_empty() and b.memories(jan.id, SimBonds.act("chop")).size() == 1)
+	check("bond targets listed by prefix", b.targets_of(jan.id, "act:") == ["act:chop"])
+
+
+func _test_memories_character_mods() -> void:
+	var w = _bond_world()
+	var b = w.bonds
+	var jan = w.family.root()
+	var maria = w.family.persons[jan.spouse_id]
+	var day0: int = w.clock.day_index()
+	jan.character = ["pamietliwy"]
+	maria.character = []
+	b.remember(jan.id, SimBonds.person(maria.id), "quarrel", [maria.id])
+	b.remember(maria.id, SimBonds.person(jan.id), "quarrel", [jan.id])
+	w.clock.set_time(day0 + 15, 0.5)
+	check("pamiętliwy remembers grudges longer", b.value(jan.id, SimBonds.person(maria.id)) < b.value(maria.id, SimBonds.person(jan.id)))
+	jan.character = ["porywczy"]
+	var hot: Dictionary = b.remember(jan.id, SimBonds.person(maria.id), "quarrel", [maria.id])
+	var calm: Dictionary = b.remember(maria.id, SimBonds.person(jan.id), "quarrel", [jan.id])
+	check("porywczy feels a quarrel harder", float(hot["weight"]) < float(calm["weight"]))
+	w.clock.set_time(day0, 0.5)
+	var kid = null
+	for p in w.family.living():
+		if w.family.stage_of(p) == "child":
+			kid = p
+	kid.character = []
+	var kid_m: Dictionary = b.remember(kid.id, SimBonds.act("saw"), "work_liked")
+	var adult_m: Dictionary = b.remember(maria.id, SimBonds.act("saw"), "work_liked")
+	check("children feel memories more strongly", float(kid_m["weight"]) > float(adult_m["weight"]))
 
 
 func _state_sig(w) -> String:
