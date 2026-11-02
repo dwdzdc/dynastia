@@ -1,0 +1,34 @@
+sim/contracts.gd
+  s_bb6b65b605000f::t_2cac74162de7c7 135-160
+data/balance.json
+  s_bb6b65b605000f::t_2cac74162de7c7 427-430
+sim/ai.gd
+  s_bb6b65b605000f::t_2cac74162de7c7 31-32,35-36
+tests/run_tests.gd
+  s_bb6b65b605000f::t_81b424d747ce33 1304
+  s_bb6b65b605000f::t_2f22248ca640be 84,1294-1303,1305-1310
+progress.md
+  ai_agent 129
+ui/hud.gd
+  s_bb6b65b605000f::t_2f22248ca640be 17,25,31
+sim/jobs.gd
+  s_bb6b65b605000f::t_2cac74162de7c7 17,27-28,418-419,719-735,808-811,813,821,830-831
+game/agent_view.gd
+  s_bb6b65b605000f::t_2f22248ca640be 226-230
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "95624de9ff4e85e0a4b7d57425d65c18fa84023c",
+  "prompts": {},
+  "sessions": {
+    "s_bb6b65b605000f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "8bc32a82-6b1e-41ef-8272-8f242d268239",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Dawid Dziedzic <24682682+dwdzdc@users.noreply.github.com>"
+    }
+  }
+}
