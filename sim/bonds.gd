@@ -7,7 +7,7 @@ extends RefCounted
 
 
 var w: SimWorld
-var bonds: Dictionary = {}      # "od>cel" -> Array wspomnień { kind, day, weight, permanent, with }
+var bonds: Dictionary = {}      # "od>cel" -> Array wspomnień { kind, day, weight, permanent, with, at }
 
 var _kinds: Dictionary
 var _mods: Dictionary
@@ -41,7 +41,8 @@ func _key(from: int, target: String) -> String:
 
 # Wspomnienie przeżywa osoba `from`. Siła zależy od rodzaju (dane), etapu życia
 # przeżywającego (dzieci mocniej) i jego charakteru.
-func remember(from: int, target: String, kind: String, with: Array = [], scale: float = 1.0) -> Dictionary:
+# `at` to miejsce (id budynku), jeśli wspomnienie jest z nim związane.
+func remember(from: int, target: String, kind: String, with: Array = [], scale: float = 1.0, at: String = "") -> Dictionary:
 	var k: Dictionary = _kinds[kind]
 	var p: SimPerson = w.family.persons.get(from)
 	var weight := float(k["weight"]) * scale
@@ -54,6 +55,7 @@ func remember(from: int, target: String, kind: String, with: Array = [], scale: 
 		"weight": weight,
 		"permanent": bool(k["permanent"]),
 		"with": with.duplicate(),
+		"at": at,
 	}
 	var key := _key(from, target)
 	if not bonds.has(key):

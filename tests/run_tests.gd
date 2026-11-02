@@ -51,6 +51,7 @@ func _run_all() -> void:
 	_test_bonds_asymmetric_and_fading()
 	_test_memories_character_mods()
 	_test_start_bonds()
+	_test_together_builds_bonds()
 	_test_world_deterministic()
 	_test_world_30_days_autonomous()
 	_test_economy_chain_produces_income()
@@ -394,6 +395,43 @@ func _test_start_bonds() -> void:
 	var maria = f.persons[jan.spouse_id]
 	var gran = f.persons[jan.mother_id]
 	check("in-law has no bond from the past", w.bonds.memories(maria.id, SimBonds.person(gran.id)).is_empty())
+
+
+func _test_together_builds_bonds() -> void:
+	var w = _bond_world()
+	var f = w.family
+	var jan = f.root()
+	var piotr = null
+	var maria = f.persons[jan.spouse_id]
+	for p in f.living():
+		if p.name == "Piotr":
+			piotr = p
+	var aj = w.agent_by_id(jan.agent_id)
+	var ap = w.agent_by_id(piotr.agent_id)
+	var am = w.agent_by_id(maria.agent_id)
+	for a in w.agents:
+		a.activity = "idle"
+	aj.activity = "saw"
+	aj.inside = "sawmill"
+	ap.activity = "saw"
+	ap.inside = "sawmill"
+	am.activity = "craft"
+	am.inside = "workshop"
+	for i in 200:
+		w.together.sample(1.0)
+	w.together.end_day()
+	var m: Array = w.bonds.memories(piotr.id, SimBonds.person(jan.id))
+	check("two at the sawmill gain a bond", w.bonds.value(jan.id, SimBonds.person(piotr.id)) > 0.0 and m.size() == 1)
+	check("shared-work memory remembers the place", not m.is_empty() and m[0]["kind"] == "worked_together" and m[0]["at"] == "sawmill")
+	check("separated people gain nothing", w.bonds.memories(maria.id, SimBonds.person(jan.id)).is_empty())
+	am.inside = ""
+	am.position = Vector2(500, 500)
+	aj.inside = ""
+	aj.activity = "chop"
+	for i in 200:
+		w.together.sample(1.0)
+	w.together.end_day()
+	check("far apart outdoors is not together", w.bonds.memories(maria.id, SimBonds.person(jan.id)).is_empty())
 
 
 func _state_sig(w) -> String:

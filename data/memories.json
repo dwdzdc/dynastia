@@ -23,6 +23,16 @@
   },
   "on_birth": {"parent_to_child": ["child_born"]},
   "on_wedding": {"spouses": ["wedding", "married"]},
+  "together": {
+    "radius": 3.0,
+    "min_seconds": 20.0,
+    "full_seconds": 150.0,
+    "contexts": {
+      "work": {"acts": ["chop", "saw", "craft", "labor", "forage"], "kind": "worked_together"},
+      "meal": {"acts": ["eat", "dine"], "kind": "meal_together"},
+      "evening": {"acts": ["rest", "play"], "kind": "evening_together"}
+    }
+  },
   "stage_weight_mult": {"child": 1.6, "teen": 1.25, "adult": 1.0, "elder": 1.0},
   "character_mods": {
     "pamietliwy": {"half_life_mult": {"negative": 2.5}},

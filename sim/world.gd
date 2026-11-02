@@ -17,6 +17,7 @@ var household: SimHousehold
 var jobs: SimJobs
 var family: SimFamily
 var bonds: SimBonds
+var together: SimTogether
 
 var buildings: Dictionary = {}   # id -> SimBuilding
 var trees: Array = []            # SimTree
@@ -64,6 +65,7 @@ func _init(seed: int, p_balance: Dictionary, p_map: Dictionary, p_people: Dictio
 
 	family = SimFamily.new(self, people)
 	bonds = SimBonds.new(self, memories)
+	together = SimTogether.new(self, memories["together"])
 	family.setup_start()
 	for p in family.living():
 		p.set_meta("stage", family.stage_of(p))
@@ -288,6 +290,7 @@ func _step(dt: float) -> void:
 				a.idle_reason = "w areszcie (jeszcze %.1f dnia)" % maxf(a.jail_days, 0.0)
 				if a.jail_days <= 0.0:
 					release_from_jail(a)
+	together.sample(dt)
 
 
 func _body(a: SimAgent, days: float) -> void:
@@ -542,6 +545,7 @@ func _new_day() -> void:
 			a.sick_days = rng.next_float(float(sd[0]), float(sd[1]))
 			var pr := person_of(a)
 			note("%s zachorował%s." % [pr.name, "" if pr.sex == "m" else "a"], "warn", a.position)
+	together.end_day()
 	family.new_day()
 	bonds.prune()
 	stats["max_generation"] = _max_living_generation()
