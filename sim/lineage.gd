@@ -9,6 +9,7 @@ var id: int
 var name: String
 var surname: String       # nazwisko, które dostają dzieci rodu
 var root_id: int = -1
+var role: String = ""     # rola w okolicy z danych (np. „merchant”); pusta = zwykły ród
 var members: Array = []   # id osób, w kolejności dołączenia
 
 

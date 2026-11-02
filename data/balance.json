@@ -204,7 +204,8 @@
     "start_firewood": 4,
     "rent_per_day": {
       "home": 8.0,
-      "decor_house": 6.0
+      "decor_house": 6.0,
+      "decor_town": 10.0
     },
     "debt_interest_per_day": 0.02,
     "debt_limit": 120,

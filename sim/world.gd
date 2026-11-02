@@ -28,7 +28,7 @@ var agents: Array = []           # SimAgent (także zmarli — status "dead")
 var chore_claims: Dictionary = {}  # "food:<gosp.>"/"firewood:<gosp.>" -> agent id
 var stats: Dictionary = {}
 
-const HOUSE_TYPES := ["home", "decor_house"]  # budynki, w których można mieszkać
+const HOUSE_TYPES := ["home", "decor_house", "decor_town", "manor"]  # budynki, w których można mieszkać
 const START_AFTER_WAKE := 0.02           # gra startuje chwilę po pobudce (część doby)
 const TREE_PLACE_TRIES := 4000            # limit prób rozmieszczenia drzew
 const CHOP_SPOT := Vector2(0.9, 0.4)      # gdzie staje drwal względem pnia
@@ -74,10 +74,34 @@ func _init(seed: int, p_balance: Dictionary, p_map: Dictionary, p_people: Dictio
 	chronicle = SimChronicle.new()
 	together = SimTogether.new(self, memories["together"])
 	family.setup_start()
+	_spawn_society()
 	for p in family.living():
 		p.set_meta("stage", family.stage_of(p))
 	note("Ród %s zaczyna w wynajętej chacie pod lasem. Czynsz %d zł dziennie — pilnuj kasy." % [
 		family.dynasty, int(home().rent_per_day)], "info", home().door())
+
+
+# Rody AI z danych (G1): każdy z domem, gospodarstwem, kasą i majątkiem.
+func _spawn_society() -> void:
+	for spec: Dictionary in people.get("ai_lineages", []):
+		var l := family.new_lineage(String(spec["name"]), String(spec["surname"]))
+		l.role = String(spec.get("role", ""))
+		var home_b: SimBuilding = buildings[String(spec["home"])]
+		var h := new_household(home_b.id, float(spec["cash"]))
+		for id in family.spawn_family(spec["members"], l, home_b):
+			join_household(family.persons[id], h)
+		for bid in spec.get("owns", []):
+			var b: SimBuilding = buildings[String(bid)]
+			b.owner_kind = "lineage"
+			b.owner_id = l.id
+	family.update_strength()
+
+
+func lineage_by_role(role: String) -> SimLineage:
+	for l: SimLineage in family.lineages.values():
+		if l.role == role:
+			return l
+	return null
 
 
 func _generate_trees() -> void:

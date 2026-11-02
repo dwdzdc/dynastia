@@ -124,7 +124,7 @@ Cel: rodzina przestaje być oderwana od świata. Inne rody żyją z tych samych 
 
 ### Faza G — rody AI
 
-- [ ] G1 Rody startowe w danych (3–4 rody, domy zamiast dekoracji, członkowie, kasa) → wszyscy na mapie z domami → test wczytania i przypisań.
+- [x] G1 Rody startowe w danych (3–4 rody, domy zamiast dekoracji, członkowie, kasa) → wszyscy na mapie z domami → test wczytania i przypisań.
 - [ ] G2 Decyzje AI: wybór pracy według potrzeb i dostępnych miejsc, zakupy jedzenia i opału z własnej kasy, ślub i dzieci tymi samymi regułami → test: 30 dób bez zakleszczeń, każdy agent ma powód, rody AI nie głodują przy normalnych warunkach.
 - [ ] G3 Obcy odróżnieni w świecie (barwy rodu, oznaczenie przy imieniu), panel osoby z innego rodu bez poleceń → zrzut ekranu.
 - [ ] G4 Więzi między rodami (S12): wspólny czas i wspomnienia działają między rodami, siła przynależności liczona per ród od jego roota → test: sąsiedzi pracujący razem się lubią, nie zmienia to ich rodu.

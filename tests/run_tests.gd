@@ -67,6 +67,7 @@ func _run_all() -> void:
 	_test_households_separate()
 	_test_rent_eviction_homeless()
 	_test_recipe_from_data()
+	_test_society_from_data()
 	_test_world_deterministic()
 	_test_world_30_days_autonomous()
 	_test_economy_chain_produces_income()
@@ -834,6 +835,30 @@ func _test_recipe_from_data() -> void:
 	check("and it produces its outputs", w.jobs._fx_produce(a, r) and mill.amount("plank") == planks + 1)
 
 
+func _test_society_from_data() -> void:
+	var w = _new_world()
+	var f = w.family
+	var specs: Array = w.people["ai_lineages"]
+	check("all AI lineages spawned", f.lineages.size() == specs.size() + 1)
+	var ok := true
+	for spec in specs:
+		var l = null
+		for x in f.lineages.values():
+			if x.name == spec["name"]:
+				l = x
+		if l == null or f.living_members(l.id).size() != (spec["members"] as Array).size() or l.root_id < 0:
+			ok = false
+			continue
+		for p in f.living_members(l.id):
+			var a = w.agent_by_id(p.agent_id)
+			if a == null or a.home_id != spec["home"] or w.household_of(a) == w.household:
+				ok = false
+	check("each AI family has members, root, its own home and household", ok)
+	check("player's home is owned by the manor lineage", w.home().owner_kind == "lineage" and f.lineages[w.home().owner_id].name == "Dworscy")
+	check("player family list still shows only the player's lineage", f.living().size() == 6)
+	check("merchant lineage found by role", w.lineage_by_role("merchant") != null and w.lineage_by_role("merchant").name == "Bednarz")
+
+
 func _state_sig(w) -> String:
 	var parts: Array = ["%.3f" % w.household.cash, str(w.building("sawmill").stock)]
 	for a in w.agents:
@@ -934,8 +959,12 @@ func _test_marriage_and_birth() -> void:
 	var departed := []
 	for e in w.chronicle.of_kind("departure"):
 		departed.append_array(e["who"])
+	var ours := func(id: int) -> bool:
+		return id >= 0 and (w.family.persons[id].lineage_id == w.family.player_lineage_id or id in departed)
 	for p in w.family.persons.values():
-		if p.lineage_id != w.family.player_lineage_id and not p.id in departed:
+		# Kto wżenił się w ród gracza albo urodził się jego członkowi, musi w nim być (albo odejść).
+		var joined: bool = (p.attached and ours.call(p.spouse_id)) or (p.mother_id >= 0 and w.family.persons[p.mother_id].lineage_id == w.family.player_lineage_id)
+		if joined and p.lineage_id != w.family.player_lineage_id and not p.id in departed:
 			in_lineage = false
 	check("spouses and newborns join player lineage", in_lineage)
 

@@ -26,6 +26,34 @@
     "traits": {"pool": ["silny", "zreczny", "pracowity", "leniwy", "chorowity", "krzepki", "nieostrozny"], "inherit_chance": 0.35, "random_chance": 0.2, "conflicts": [["pracowity", "leniwy"], ["krzepki", "chorowity"]]},
     "character": {"pool": ["lojalny", "porywczy", "pamietliwy", "ambitny", "ciekawski"], "inherit_chance": 0.3, "random_chance": 0.5, "conflicts": []}
   },
+  "ai_lineages": [
+    {"name": "Dworscy", "surname": "Dworski", "home": "manor", "cash": 400.0, "owns": ["manor", "home", "n1", "n2", "n3"], "members": [
+      {"key": "lord", "name": "Wojciech", "sex": "m", "age_days": 48.0, "root": true, "traits": [], "character": ["ambitny"], "job": "none"},
+      {"key": "lady", "name": "Urszula", "sex": "f", "age_days": 44.0, "spouse": "lord", "attached": true, "surname": "Gil", "traits": [], "character": ["pamietliwy"], "job": "none"},
+      {"key": "heir", "name": "Florian", "sex": "m", "age_days": 21.0, "mother": "lady", "father": "lord", "traits": ["zreczny"], "character": ["ciekawski"], "job": "none"}
+    ]},
+    {"name": "Kos", "surname": "Kos", "home": "n1", "cash": 30.0, "members": [
+      {"key": "f", "name": "Bartłomiej", "sex": "m", "age_days": 37.0, "root": true, "traits": ["silny"], "character": ["porywczy"], "job": "laborer", "skills": {"chop": 2.0}},
+      {"key": "m", "name": "Dorota", "sex": "f", "age_days": 31.0, "spouse": "f", "attached": true, "surname": "Sowa", "traits": [], "character": ["lojalny"], "job": "laborer"},
+      {"key": "d", "name": "Jagna", "sex": "f", "age_days": 17.5, "mother": "m", "father": "f", "traits": ["pracowity"], "character": ["ciekawski"], "job": "laborer"},
+      {"key": "s", "name": "Kacper", "sex": "m", "age_days": 8.0, "mother": "m", "father": "f", "traits": [], "character": [], "job": "none"}
+    ]},
+    {"name": "Sowa", "surname": "Sowa", "home": "n2", "cash": 25.0, "members": [
+      {"key": "w", "name": "Helena", "sex": "f", "age_days": 46.0, "root": true, "traits": ["krzepki"], "character": ["lojalny"], "job": "forager"},
+      {"key": "s", "name": "Grzegorz", "sex": "m", "age_days": 19.0, "mother": "w", "traits": ["leniwy"], "character": ["porywczy"], "job": "laborer"},
+      {"key": "d", "name": "Łucja", "sex": "f", "age_days": 16.5, "mother": "w", "traits": [], "character": ["ambitny"], "job": "laborer"}
+    ]},
+    {"name": "Nowak", "surname": "Nowak", "home": "n3", "cash": 20.0, "members": [
+      {"key": "h", "name": "Marcin", "sex": "m", "age_days": 22.0, "root": true, "traits": ["pracowity"], "character": ["ambitny"], "job": "laborer"},
+      {"key": "w", "name": "Teresa", "sex": "f", "age_days": 20.0, "spouse": "h", "attached": true, "surname": "Duda", "traits": [], "character": ["lojalny"], "job": "laborer"},
+      {"key": "b", "name": "Józef", "sex": "m", "age_days": 2.0, "mother": "w", "father": "h", "traits": [], "character": [], "job": "none"}
+    ]},
+    {"name": "Bednarz", "surname": "Bednarz", "home": "t1", "cash": 200.0, "owns": ["t1", "t2", "t3", "market"], "role": "merchant", "members": [
+      {"key": "m", "name": "Mikołaj", "sex": "m", "age_days": 41.0, "root": true, "traits": [], "character": ["ambitny"], "job": "none"},
+      {"key": "w", "name": "Regina", "sex": "f", "age_days": 38.0, "spouse": "m", "attached": true, "surname": "Mazur", "traits": [], "character": ["pamietliwy"], "job": "none"},
+      {"key": "s", "name": "Tomasz", "sex": "m", "age_days": 15.0, "mother": "w", "father": "m", "traits": ["zreczny"], "character": ["ciekawski"], "job": "none"}
+    ]}
+  ],
   "start_family": [
     {"key": "gran", "name": "Agnieszka", "sex": "f", "age_days": 60.5, "traits": ["krzepki"], "character": ["pamietliwy"], "job": "none", "skills": {"craft": 3.0}},
     {"key": "father", "name": "Jan", "sex": "m", "age_days": 38.6, "traits": ["silny"], "character": ["lojalny"], "job": "woodcutter", "mother": "gran", "root": true, "skills": {"chop": 4.0, "saw": 2.0}},
