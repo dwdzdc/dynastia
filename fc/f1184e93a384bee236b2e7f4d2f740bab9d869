@@ -1,0 +1,31 @@
+data/traders.json
+  s_bb6b65b605000f::t_3587a67b9bfdd9 84-86
+sim/traders.gd
+  s_bb6b65b605000f::t_3587a67b9bfdd9 36
+sim/world.gd
+  s_bb6b65b605000f::t_3587a67b9bfdd9 41-42,289-303,1393
+data/balance.json
+  s_bb6b65b605000f::t_3587a67b9bfdd9 230
+tests/run_tests.gd
+  s_bb6b65b605000f::t_3587a67b9bfdd9 1516-1518
+progress.md
+  ai_agent 222
+sim/town.gd
+  s_bb6b65b605000f::t_3587a67b9bfdd9 34,39,65-68,79
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "fcf1184e93a384bee236b2e7f4d2f740bab9d869",
+  "prompts": {},
+  "sessions": {
+    "s_bb6b65b605000f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "8bc32a82-6b1e-41ef-8272-8f242d268239",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Dawid Dziedzic <24682682+dwdzdc@users.noreply.github.com>"
+    }
+  }
+}
