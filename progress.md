@@ -196,6 +196,8 @@ Pętla gry: ród Wilków (6 osób, 3 pokolenia) w chacie pod lasem. Co 5 dni czy
 - [x] V2 Szczeble i co dają (kredyt, dzierżawa, śluby wyżej, urząd) → test.
 - [x] V3 Rody AI awansują i bankrutują tym samym mechanizmem → sonda.
 - [ ] W Sonda „świat bez gracza”: 100 dób → ktoś awansuje, ktoś bankrutuje, brak masowego głodu, pieniądze krążą.
+  - Wynik (seed 1, 02.11.2026, `tools/probe_village.gd -- 100 1`): ród gracza bez decyzji wygasa w 59. dobie (koniec sondy). Do tego czasu ludzi 22 → 9 (6 narodzin, 21 śmierci, około 23 lat życia), Wilkowie awansowali na „mistrzów i kupców” (6. doba), Nowakowie podupadli i sprzedali karczmę Bednarzom (18. doba), sołectwo przeszło na Bednarzy, pieniędzy we wsi przybyło (994 → 1957 zł), żadnej budowy AI.
+  - **Otwarte:** (1) demografia — za mało ślubów i dzieci względem śmierci ze starości, biedne rody bez dachu się nie rozmnażają; (2) biedne rody AI dalej bez domu (problem z Q2); (3) AI nie zbudowało niczego (progi `found_cash` i braku towaru za wysokie albo nikt nie spełnia warunku).
 
 ## Iteracja 2 — społeczeństwo (wstrzymana w połowie)
 
