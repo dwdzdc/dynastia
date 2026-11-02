@@ -207,8 +207,20 @@ func set_job(agent_id: int, job: String) -> void:
 	var a := agent_by_id(agent_id)
 	if a == null or a.status != "active" or is_independent(a):
 		return
+	_order_against_will(a, job)
 	a.job = job
 	jobs.replan(a)
+
+
+# Przydział wbrew woli (D4) zostawia wspomnienie o tym, kto rządzi rodem (root).
+func _order_against_will(a: SimAgent, job: String) -> void:
+	var p := person_of(a)
+	var cfg: Dictionary = balance["will"]
+	var act := String(cfg["job_acts"].get(job, ""))
+	if p == null or act == "" or job == a.job or p.id == family.root_id or family.root_id < 0:
+		return
+	if bonds.preference(p.id, act) < float(cfg["against_will_below"]):
+		bonds.remember(p.id, SimBonds.person(family.root_id), "ordered_against_will", [family.root_id])
 
 
 # Rozkazy ręczne: kolejka kroków wykonywana zamiast autopilota. append = dopisz na
@@ -429,8 +441,10 @@ func _act(a: SimAgent, s: Dictionary, dt: float) -> void:
 	var inside := String(s.get("inside", ""))
 	a.hidden = inside != ""
 	a.inside = inside
+	if (act in SimAgent.WORK_ACTS or act == "labor") and not s.has("will"):
+		_check_will(a, s, act)
 	if act == "labor":
-		earn_for(a, float(balance["jobs"]["laborer_wage_day"]) / (float(balance["schedule"]["work_end"]) - float(balance["schedule"]["work_start"])) / clock.day_seconds * dt * a.age_eff)
+		earn_for(a, float(balance["jobs"]["laborer_wage_day"]) / (float(balance["schedule"]["work_end"]) - float(balance["schedule"]["work_start"])) / clock.day_seconds * dt * a.age_eff * float(s["will"]))
 	if act in ["chop", "saw", "craft"]:
 		var target_face: Vector2 = s.get("face", Vector2.ZERO)
 		if target_face != Vector2.ZERO:
@@ -441,6 +455,24 @@ func _act(a: SimAgent, s: Dictionary, dt: float) -> void:
 	s["left"] = float(s["left"]) - dt
 	if float(s["left"]) <= 0.0:
 		a.steps.pop_front()
+		if s.get("abandon", false):
+			# Porzucona robota: dalsze kroki (efekt, odniesienie) przepadają.
+			jobs.release(a)
+			a.steps.clear()
+
+
+# Na początku czynności: niechętny robi wolniej (w efektywności) i czasem rzuca robotę w połowie (D4).
+func _check_will(a: SimAgent, s: Dictionary, act: String) -> void:
+	var cfg: Dictionary = balance["will"]
+	var wl := jobs.willingness(a, act)
+	s["will"] = wl
+	if wl >= float(cfg["reluctant_below"]):
+		return
+	s["why"] = "%s — niechętnie, %s" % [String(s["why"]), jobs.reluctance_reason(a, act)]
+	if act != "labor" and wl < float(cfg["abandon_below"]) and rng.chance(float(cfg["abandon_chance"])):
+		s["left"] = float(s["left"]) * float(cfg["abandon_fraction"])
+		s["abandon"] = true
+		s["why"] = "rzuci robotę w połowie — %s" % jobs.reluctance_reason(a, act)
 
 
 # Wypadek zostaje w pamięci ofiary (trwale) i świadków obok (B3) jako więź z czynnością.

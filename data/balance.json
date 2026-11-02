@@ -150,7 +150,10 @@
     "xp_per_work_second": 0.012,
     "max": 10.0,
     "eff_base": 0.6,
-    "eff_per_level": 0.07
+    "eff_per_level": 0.07,
+    "weak_health": 50.0,
+    "weak_base": 0.5,
+    "eff_min": 0.15
   },
   "jobs": {
     "chop_seconds": 45.0,
@@ -337,5 +340,23 @@
   "purse": {
     "share_at_zero": 0.2,
     "share_at_full": 1.0
+  },
+  "will": {
+    "pref_scale": 30.0,
+    "pref_penalty": 0.4,
+    "weak_penalty": 0.3,
+    "min": 0.4,
+    "reluctant_below": 0.85,
+    "abandon_below": 0.7,
+    "abandon_chance": 0.3,
+    "abandon_fraction": 0.5,
+    "against_will_below": -5.0,
+    "job_acts": {
+      "woodcutter": "chop",
+      "sawyer": "saw",
+      "carpenter": "craft",
+      "laborer": "labor",
+      "forager": "forage"
+    }
   }
 }

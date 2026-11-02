@@ -61,6 +61,7 @@ func _run_all() -> void:
 	_test_purse_share_by_strength()
 	_test_drift_signals()
 	_test_preferences_from_memories()
+	_test_reluctance_and_orders()
 	_test_world_deterministic()
 	_test_world_30_days_autonomous()
 	_test_economy_chain_produces_income()
@@ -684,6 +685,27 @@ func _test_preferences_from_memories() -> void:
 	piotr.character = ["ambitny"]
 	var craft: float = w.bonds.preference(piotr.id, "craft")
 	check("character tilts preferences", craft > 0.0)
+
+
+func _test_reluctance_and_orders() -> void:
+	var w = _new_world()
+	var f = w.family
+	var piotr = _named(f, "Piotr")
+	var ap = w.agent_by_id(piotr.agent_id)
+	var willing: float = w.jobs.willingness(ap, "chop")
+	var eff0: float = w.jobs.efficiency(ap, "chop")
+	w.bonds.remember(piotr.id, SimBonds.act("chop"), "accident")
+	check("disliked work: less willing and slower", w.jobs.willingness(ap, "chop") < willing and w.jobs.efficiency(ap, "chop") < eff0)
+	var root_bond: float = w.bonds.value(piotr.id, SimBonds.person(f.root_id))
+	w.set_job(ap.id, "woodcutter")
+	var marked := false
+	for m in w.bonds.memories(piotr.id, SimBonds.person(f.root_id)):
+		if m["kind"] == "ordered_against_will":
+			marked = true
+	check("order against will leaves a memory toward the root", marked and w.bonds.value(piotr.id, SimBonds.person(f.root_id)) < root_bond)
+	var s := { "t": "act", "act": "chop", "left": 10.0, "why": "rąbie drzewo" }
+	w._check_will(ap, s, "chop")
+	check("reluctant work has a descriptive reason", String(s["why"]).contains("niechętnie") or String(s["why"]).contains("rzuci"))
 
 
 func _state_sig(w) -> String:

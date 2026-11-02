@@ -87,7 +87,7 @@ Pętla gry: ród Wilków (6 osób, 3 pokolenia) w chacie pod lasem. Co 5 dni czy
 - [x] D1 Sakiewki (S5): wypłata do osoby, część do wspólnej kasy według siły → test: oddalający się oddaje mniej.
 - [x] D2 Sygnały dryfu w zachowaniu: je osobno, wraca późno, unika kolacji, wieczór poza domem; słaby, opisowy `idle_reason` bez liczb → test: przy niskiej sile pojawiają się te zachowania.
 - [x] D3 Preferencje: wyliczane z więzi do czynności i charakteru, z informacją skąd → test: preferencja wynika ze wspomnień.
-- [ ] D4 Wymiganie się: praca nielubiana albo przy słabej więzi trwa krócej, porzucana w połowie, z opisowym powodem; przydział wbrew woli zostawia wspomnienie → test: niechętny robi mniej, rozkaz wbrew woli ma ślad.
+- [x] D4 Wymiganie się: praca nielubiana albo przy słabej więzi trwa krócej, porzucana w połowie, z opisowym powodem; przydział wbrew woli zostawia wspomnienie → test: niechętny robi mniej, rozkaz wbrew woli ma ślad.
 - [ ] D5 Dzieci chodzą za lubianym dorosłym; gracz może nadpisać („idź z ojcem”) → test: dziecko z nadpisaniem idzie do tartaku z ojcem.
 
 ### Faza E — interfejs

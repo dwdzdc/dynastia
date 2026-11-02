@@ -524,11 +524,37 @@ func efficiency(a: SimAgent, act: String) -> float:
 	var sk: Dictionary = w.balance["skills"]
 	var e := float(sk["eff_base"]) + float(sk["eff_per_level"]) * a.skill(act)
 	e *= a.age_eff * a.trait_mult(act)
-	if a.health < 50.0:
-		e *= 0.5 + a.health / 100.0
-	if w.clock.light_factor() < 0.5:
+	if a.health < float(sk["weak_health"]):
+		e *= float(sk["weak_base"]) + a.health / 100.0
+	if w.clock.light_factor() < float(w.balance["risk"]["dark_light_below"]):
 		e *= float(_cfg["dark_work_mult"])
-	return maxf(e, 0.15)
+	e *= willingness(a, act)
+	return maxf(e, float(sk["eff_min"]))
+
+
+# Chęć do pracy (D4): nielubiana czynność albo słaba przynależność do rodu spowalnia.
+# 1.0 = pełna chęć; osoby spoza rodu pracują dla siebie, więc zawsze 1.0.
+func willingness(a: SimAgent, act: String) -> float:
+	var p := w.person_of(a)
+	if p == null or w.is_independent(a):
+		return 1.0
+	var cfg: Dictionary = w.balance["will"]
+	var pref := w.bonds.preference(p.id, act)
+	var s := float(w.family.strength.get(p.id, 1.0))
+	var below := float(w.balance["belonging"]["aloof_below"])
+	var e := 1.0
+	e -= clampf(-pref / float(cfg["pref_scale"]), 0.0, 1.0) * float(cfg["pref_penalty"])
+	e -= clampf((below - s) / below, 0.0, 1.0) * float(cfg["weak_penalty"])
+	return maxf(e, float(cfg["min"]))
+
+
+# Opisowy powód niechęci: najmocniejsze złe wspomnienie o czynności albo brak serca do rodu.
+func reluctance_reason(a: SimAgent, act: String) -> String:
+	var p := w.person_of(a)
+	for e in w.bonds.preferences(p.id):
+		if e["act"] == act and float(e["value"]) < 0.0:
+			return "nie znosi tej roboty (%s)" % String(e["from"][0])
+	return "nie ma serca do roboty dla rodziny"
 
 
 # --- Efekty natychmiastowe ("do") ---
