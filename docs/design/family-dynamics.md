@@ -66,6 +66,33 @@ Kto odpada, przede wszystkim **wychodzi spod kontroli gracza**. Może wejść do
 - To jest część mechaniki: kto poświęca komuś tak mało uwagi, że nie zauważa sygnałów, ten może przegapić też samo odejście.
 - Samo odejście jest zawsze **zapisane w kronice rodu** (kto, kiedy, dlaczego, z jakimi wspomnieniami odszedł), żeby gracz mógł potem dojść, co się stało z daną osobą. Wpis w kronice nie wyskakuje jako okno.
 
+## Odejście z powodu charakteru i powroty
+
+- Odejść można też nie przez zaniedbanie, a przez to, kim się jest: syn ambitny albo ciekawy świata wyjeżdża za granicę spełniać marzenia.
+- Może kiedyś zechcieć wrócić, bogatszy w doświadczenia (umiejętności, pieniądze, znajomości, wspomnienia).
+
+## Decyzje gracza przy rytuałach
+
+- Rytuały wejścia (ślub, pojednanie, powrót syna z wyjazdu) to **decyzje gracza w oknie**: „Syn chce wrócić. Przyjąć?”. To jedyne miejsca na okno obok zdarzeń krytycznych.
+- Odejście nie jest decyzją ani oknem. Trafia do kroniki.
+
+## Preferencje: z doświadczeń, nie z tabelki
+
+- Preferencje postaci rosną głównie z **doświadczeń, zwłaszcza z dzieciństwa**, plus mały miks losowych cech.
+- Ojciec, który w wieku 5–10 lat pokazywał synowi robienie desek, zostawia mu dobre skojarzenie z tartakiem. Ojciec, który bił go w tartaku, zostawia nienawiść do drewna.
+- Model: wspomnienia przypinają się nie tylko do osób, ale też do **czynności i miejsc**. „Lubię tartak” to więź z czynnością, budowana tymi samymi zdarzeniami co więź z ludźmi.
+
+## Niechęć zamiast twardej odmowy
+
+- Postać przydzielona do pracy, której nie chce, albo ze słabą więzią z rodem, nie mówi „nie”. **Wymiguje się**: robi krócej, zostawia deskę niedokrojoną w połowie i idzie na dziewczyny, przychodzi później, wychodzi wcześniej.
+- Skrajny przypadek: przydzielony, a praktycznie nie robi nic.
+- Zawsze da się to wyjaśnić w świecie (`idle_reason` w stylu „wymigał się od roboty, poszedł do karczmy”), bez liczb.
+
+## Kronika i drzewo
+
+- **Kronika rodu** jest dostępna do podglądu: oś czasu ważnych zdarzeń (narodziny, śluby, śmierci, odejścia, powroty, wielkie kłótnie, sukcesy i upadki).
+- **Drzewo genealogiczne** po kliknięciu w osobę pokazuje jej miejsce w drzewie złożonym ze **znanych osób**. Nie widać całego świata: żona wnuka brata ma siostrę z trójką dzieci, ale gracz o niej nie wie, więc jej nie ma.
+
 ## Pieniądze
 
 - Każdy ma **własną sakiewkę**, a gospodarstwo ma **wspólną kasę**.
@@ -85,7 +112,7 @@ Kto odpada, przede wszystkim **wychodzi spod kontroli gracza**. Może wejść do
 
 ## Otwarte pytania
 
-1. **Pojednanie.** Jak wygląda rytuał powrotu do rodu? Kto go inicjuje, gracz czy postać, i co jest warunkiem: więź, wspólny wróg, potrzeba?
-2. **Preferencje.** Skąd postać wie, czego chce? Z cech, z umiejętności, z wzorców (syn chce być jak ojciec), z historii?
-3. **Odmowa.** Od jakiego poziomu więzi postać odmawia rozkazu i co się wtedy dzieje (robi co innego, kłótnia, odejście)?
-4. **Ród gracza po podziale.** Kiedy ród pęka na dwie części, czy druga staje się rodem AI w tym samym świecie (z własnym rootem) i można z nią potem wchodzić w relacje: pojednanie, rywalizacja, spór o spadek?
+(w trakcie uzgadniania — patrz rozmowa)
+## Rody AI
+
+- Oderwana część rodu staje się **rodem AI** z własnym rootem. Rody AI mają tę samą strukturę i te same mechaniki co ród gracza (więzi, przynależność, rytuały, odejścia), tylko decyzje podejmuje AI.
