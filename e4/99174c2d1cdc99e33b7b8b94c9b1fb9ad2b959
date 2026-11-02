@@ -1,0 +1,33 @@
+tests/run_tests.gd
+  s_01663f7cfcc9df::t_c77de9a4906ac3 77,1036-1053
+progress.md
+  s_01663f7cfcc9df::t_c77de9a4906ac3 141
+data/traders.json
+  s_01663f7cfcc9df::t_0b0dc522da226b 33
+sim/family.gd
+  s_01663f7cfcc9df::t_1dd3eb0e853d3b 593,619-621,640,671-673
+sim/ai.gd
+  s_01663f7cfcc9df::t_17834c76f6239a 40-42,46
+data/balance.json
+  s_01663f7cfcc9df::t_5129405a418f98 124
+  s_01663f7cfcc9df::t_17834c76f6239a 192-195,417-427
+  s_01663f7cfcc9df::t_0b0dc522da226b 392
+sim/world.gd
+  s_01663f7cfcc9df::t_17834c76f6239a 65,531,548-591,769
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "e499174c2d1cdc99e33b7b8b94c9b1fb9ad2b959",
+  "prompts": {},
+  "sessions": {
+    "s_01663f7cfcc9df": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0628b2b4-7b30-464d-a1f4-7ea1e2566c94",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Dawid Dziedzic <24682682+dwdzdc@users.noreply.github.com>"
+    }
+  }
+}
