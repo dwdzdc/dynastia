@@ -1,0 +1,38 @@
+docs/design/living-village.md
+  s_bb6b65b605000f::t_9ee4d73a510009 53-71
+docs/adr/0001-logistics-independent.md
+  s_bb6b65b605000f::t_9ee91fb8fa8e2d 3
+sim/traders.gd
+  s_bb6b65b605000f::t_9ee91fb8fa8e2d 144
+CLAUDE.md
+  s_bb6b65b605000f::t_ab400316812538 18
+data/recipes.json
+  s_bb6b65b605000f::t_9ee91fb8fa8e2d 6,12
+sim/jobs.gd
+  s_bb6b65b605000f::t_9ee91fb8fa8e2d 2,14,386-387
+GLOSSARY.md
+  s_bb6b65b605000f::t_9ee91fb8fa8e2d 45,99,106
+docs/adr/0007-jobs-and-step-plans.md
+  s_bb6b65b605000f::t_9ee91fb8fa8e2d 3
+progress.md
+  s_bb6b65b605000f::t_9ee91fb8fa8e2d 19,26,116
+  s_bb6b65b605000f::t_fa0ee63a2781ea 100,102,104-115,117-161,235-236
+ui/hud.gd
+  s_bb6b65b605000f::t_9ee91fb8fa8e2d 29,613,795,806
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "071a89b5530c75aa3aadb4f23de33a8d4295f6d0",
+  "prompts": {},
+  "sessions": {
+    "s_bb6b65b605000f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "8bc32a82-6b1e-41ef-8272-8f242d268239",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Dawid Dziedzic <24682682+dwdzdc@users.noreply.github.com>"
+    }
+  }
+}
