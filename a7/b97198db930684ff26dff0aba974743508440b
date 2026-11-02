@@ -1,0 +1,26 @@
+data/balance.json
+  s_a19542af523da6::t_714cdfa4c7d3b0 124-125,127
+  s_a19542af523da6::t_46023ce6babdde 4,29,50,76-77,80-81,130,132,144-146,227-230,233
+sim/family.gd
+  s_a19542af523da6::t_46023ce6babdde 212-213,219-223,241,245,354
+progress.md
+  ai_agent 57-58
+sim/world.gd
+  s_a19542af523da6::t_714cdfa4c7d3b0 412
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "a7b97198db930684ff26dff0aba974743508440b",
+  "prompts": {},
+  "sessions": {
+    "s_a19542af523da6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7a64d73b-cbda-428d-ba42-774e47e143b9",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Dawid Dziedzic <24682682+dwdzdc@users.noreply.github.com>"
+    }
+  }
+}
