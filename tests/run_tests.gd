@@ -63,6 +63,7 @@ func _run_all() -> void:
 	_test_preferences_from_memories()
 	_test_reluctance_and_orders()
 	_test_child_follows_adult()
+	_test_ai_lineage_lives_independently()
 	_test_world_deterministic()
 	_test_world_30_days_autonomous()
 	_test_economy_chain_produces_income()
@@ -727,6 +728,30 @@ func _test_child_follows_adult() -> void:
 	var near: bool = (ak.inside != "" and ak.inside == aj.inside) or ak.position.distance_to(aj.position) < 4.0
 	check("child with override goes with father (%s / %s)" % [ak.idle_reason, aj.idle_reason], ak.activity in ["watch", "walk"] and near)
 	check("child follows the father, not the more liked mother", ak.idle_reason.contains(jan.name))
+
+
+func _ai_specs() -> Array:
+	return [
+		{ "key": "f", "name": "Bartłomiej", "sex": "m", "age_days": 40.0, "root": true, "job": "laborer" },
+		{ "key": "m", "name": "Dorota", "sex": "f", "age_days": 36.0, "spouse": "f", "attached": true, "surname": "Sowa", "job": "laborer" },
+		{ "key": "s", "name": "Szymon", "sex": "m", "age_days": 18.0, "mother": "m", "father": "f", "job": "laborer" },
+	]
+
+
+func _test_ai_lineage_lives_independently() -> void:
+	var w = _new_world()
+	var f = w.family
+	var l = f.new_lineage("Kos")
+	var ids: Array = f.spawn_family(_ai_specs(), l, w.building("n1"))
+	check("AI lineage spawned with root and surname", l.root_id == ids[0] and f.persons[ids[2]].surname == "Kos" and f.persons[ids[1]].surname == "Sowa")
+	check("AI people are not the player's family", f.living().size() == 6 and f.living_members(l.id).size() == 3)
+	check("AI parents and child start bonded", w.bonds.value(ids[2], SimBonds.person(ids[0])) > 0.0)
+	var prompts0: int = w.events.prompts.size()
+	w.kill(w.agent_by_id(f.persons[ids[0]].agent_id), "zmarł")
+	check("AI root death picks successor without asking the player", l.root_id == ids[2] and w.events.prompts.size() == prompts0)
+	check("player game goes on", not f.game_over and f.root().name == "Jan")
+	_run_days_auto(w, 2.0)
+	check("AI lineage lives on", f.persons[ids[2]].alive() and f.persons[ids[2]].lineage_id == l.id)
 
 
 func _state_sig(w) -> String:

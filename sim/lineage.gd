@@ -7,13 +7,15 @@ extends RefCounted
 
 var id: int
 var name: String
+var surname: String       # nazwisko, które dostają dzieci rodu
 var root_id: int = -1
 var members: Array = []   # id osób, w kolejności dołączenia
 
 
-func _init(p_id: int, p_name: String) -> void:
+func _init(p_id: int, p_name: String, p_surname: String = "") -> void:
 	id = p_id
 	name = p_name
+	surname = p_surname if p_surname != "" else p_name
 
 
 func has(pid: int) -> bool:

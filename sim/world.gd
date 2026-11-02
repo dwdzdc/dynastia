@@ -581,9 +581,9 @@ func kill(a: SimAgent, cause: String) -> void:
 	if p == null:
 		return
 	var age := int(family.age_of(p))
-	note("ŚMIERĆ: %s %s %s w wieku %d lat." % [p.name, p.surname, cause, age], "critical", a.position)
-	var was_root := p.id == family.root_id
 	var ours := not is_independent(a)
+	note("ŚMIERĆ: %s %s %s w wieku %d lat." % [p.name, p.surname, cause, age], "critical" if ours else "info", a.position)
+	var was_root := p.id == family.root_id
 	chronicle.add(clock.now(), "death", "%s %s %s w wieku %d lat." % [p.name, p.surname, cause, age], [p.id], p.lineage_id)
 	family.on_death(p, cause)
 	if ours and not was_root and not family.game_over:

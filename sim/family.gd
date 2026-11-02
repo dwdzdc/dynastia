@@ -1,5 +1,6 @@
-# SimFamily — ród gracza: osoby, wiek i etapy życia, traity, małżeństwa, porody,
-# śmierć, głowa rodu (root), sukcesja i koniec gry przy wygaśnięciu krwi (intro §5).
+# SimFamily — rejestr wszystkich ludzi i rodów świata (F1): osoby, wiek i etapy życia,
+# cechy, małżeństwa, porody, śmierć, rooty i sukcesja. Ród gracza to jeden z rodów;
+# tylko on dostaje okna decyzji i tylko jego wygaśnięcie kończy grę (intro §5).
 # Warstwa tożsamości: ciała (SimAgent) ustawia tylko przez modyfikatory.
 class_name SimFamily
 extends RefCounted
@@ -50,14 +51,21 @@ func _init(world: SimWorld, people: Dictionary) -> void:
 
 
 func setup_start() -> void:
+	spawn_family(_people["start_family"], player_lineage(), w.home())
+
+
+# Ród ze specyfikacji w danych (osoby, pokrewieństwo, małżeństwa) w danym domu.
+# Wspólne dla rodu gracza i rodów AI. Zwraca id osób w kolejności specyfikacji.
+func spawn_family(specs: Array, l: SimLineage, home: SimBuilding) -> Array:
 	var by_key := {}
+	var ids: Array = []
 	var now: float = w.clock.now()
-	for spec in _people["start_family"]:
+	for spec in specs:
 		var p := SimPerson.new()
 		p.id = _new_id()
 		p.name = String(spec["name"])
 		p.sex = String(spec["sex"])
-		p.surname = String(spec.get("surname", dynasty)) if spec.get("attached", false) else dynasty
+		p.surname = String(spec.get("surname", l.surname)) if spec.get("attached", false) else l.surname
 		p.birth_day = now - float(spec["age_days"]) - w.rng.next_float(0.0, float(_fam["start_age_jitter_days"]))
 		p.traits = (spec.get("traits", []) as Array).duplicate()
 		p.character = (spec.get("character", []) as Array).duplicate()
@@ -65,14 +73,16 @@ func setup_start() -> void:
 		p.blood = not p.attached
 		by_key[String(spec["key"])] = p
 		persons[p.id] = p
-		player_lineage().add(p)
-		var a: SimAgent = w.spawn_agent(p, w.home().door() + Vector2(w.rng.next_float(-SPAWN_SPREAD_X, SPAWN_SPREAD_X), w.rng.next_float(SPAWN_DEPTH.x, SPAWN_DEPTH.y)))
+		ids.append(p.id)
+		l.add(p)
+		var a: SimAgent = w.spawn_agent(p, home.door() + Vector2(w.rng.next_float(-SPAWN_SPREAD_X, SPAWN_SPREAD_X), w.rng.next_float(SPAWN_DEPTH.x, SPAWN_DEPTH.y)))
+		a.home_id = home.id
 		a.job = String(spec.get("job", "none"))
 		for s in spec.get("skills", {}):
 			a.skills[s] = float(spec["skills"][s])
 		if bool(spec.get("root", false)):
-			root_id = p.id
-	for spec in _people["start_family"]:
+			l.root_id = p.id
+	for spec in specs:
 		var p: SimPerson = by_key[String(spec["key"])]
 		if spec.has("mother"):
 			p.mother_id = by_key[String(spec["mother"])].id
@@ -85,19 +95,20 @@ func setup_start() -> void:
 			p.spouse_id = s.id
 			s.spouse_id = p.id
 			p.unions.append({ "spouse": s.id, "start": now, "end": -1.0 })
-	for id in persons:
+	for id in ids:
 		generation_of[id] = 0 if persons[id].mother_id < 0 else 1
-	_seed_start_bonds()
+	_seed_start_bonds(ids)
 	update_strength()
-	for id in persons:
+	for id in ids:
 		apply_modifiers(persons[id])
+	return ids
 
 
 # Przeszłość rodziny startowej jako wspomnienia (wychowanie, rodzeństwo, małżeństwo),
 # rodzaje z memories.json → start.
-func _seed_start_bonds() -> void:
+func _seed_start_bonds(ids: Array) -> void:
 	var cfg: Dictionary = w.memories["start"]
-	for id in _sorted_ids():
+	for id in ids:
 		var p: SimPerson = persons[id]
 		for pid in [p.mother_id, p.father_id]:
 			if pid >= 0:
@@ -105,7 +116,7 @@ func _seed_start_bonds() -> void:
 				_remember_all(p.id, pid, cfg["child_to_parent"])
 		if p.spouse_id >= 0:
 			_remember_all(p.id, p.spouse_id, cfg["spouses"])
-		for oid in _sorted_ids():
+		for oid in ids:
 			var o: SimPerson = persons[oid]
 			if o.id != p.id and siblings(p, o):
 				_remember_all(p.id, o.id, cfg["siblings"])
@@ -130,8 +141,8 @@ func update_strength() -> void:
 	strength = SimBelonging.compute(self, w.bonds, player_lineage(), w.balance["belonging"])
 
 
-func new_lineage(lname: String) -> SimLineage:
-	var l := SimLineage.new(_next_lineage, lname)
+func new_lineage(lname: String, surname: String = "") -> SimLineage:
+	var l := SimLineage.new(_next_lineage, lname, surname)
 	_next_lineage += 1
 	lineages[l.id] = l
 	return l
@@ -139,6 +150,10 @@ func new_lineage(lname: String) -> SimLineage:
 
 func player_lineage() -> SimLineage:
 	return lineages.get(player_lineage_id)
+
+
+func is_ours(p: SimPerson) -> bool:
+	return p != null and p.lineage_id == player_lineage_id
 
 
 func lineage_of(p: SimPerson) -> SimLineage:
@@ -332,7 +347,7 @@ func new_day() -> void:
 		_roll_old_age(p)
 	for p in all_living():
 		_tick_pregnancy(p)
-	for p in living():
+	for p in all_living():
 		_roll_conception(p)
 	for p in living():
 		_roll_courtship(p)
@@ -418,8 +433,8 @@ func _roll_conception(p: SimPerson) -> void:
 	var s: SimPerson = persons.get(p.spouse_id)
 	if s == null or not s.alive() or s.lineage_id != p.lineage_id or p.children.size() >= int(_fam["max_children"]):
 		return
-	# Ciasnota: w przepełnionej chacie nie przybywa dzieci.
-	if living().size() >= int(_fam["max_household"]):
+	# Ciasnota: w przepełnionym rodzie nie przybywa dzieci.
+	if living_members(p.lineage_id).size() >= int(_fam["max_household"]):
 		return
 	var a: SimAgent = w.agent_by_id(p.agent_id)
 	if a == null or a.status != "active":
@@ -429,7 +444,8 @@ func _roll_conception(p: SimPerson) -> void:
 		c *= float(_fam["conceive_weak_mult"])
 	if w.rng.chance(c):
 		p.pregnant_left = float(_fam["pregnancy_days"])
-		w.note("%s spodziewa się dziecka." % p.name, "good", a.position)
+		if is_ours(p):
+			w.note("%s spodziewa się dziecka." % p.name, "good", a.position)
 
 
 func _tick_pregnancy(p: SimPerson) -> void:
@@ -454,15 +470,17 @@ func _give_birth(mother: SimPerson) -> void:
 	child.id = _new_id()
 	child.sex = "m" if w.rng.chance(float(_fam["boy_chance"])) else "f"
 	child.name = _pick_name(child.sex)
-	child.surname = dynasty
+	var cl := _lineage_for_child(mother, father)
+	child.surname = cl.surname
 	child.birth_day = w.clock.now()
 	child.mother_id = mother.id
 	child.father_id = father.id if father != null else -1
-	child.blood = mother.blood or (father != null and father.blood)
+	# Krew rodu, do którego dziecko wchodzi: ma ją, jeśli któryś rodzic jest krwią tego rodu.
+	child.blood = (mother.blood and mother.lineage_id == cl.id) or (father != null and father.blood and father.lineage_id == cl.id)
 	child.traits = _inherit("traits", mother.traits, father.traits if father else [])
 	child.character = _inherit("character", mother.character, father.character if father else [])
 	persons[child.id] = child
-	_lineage_for_child(mother, father).add(child)
+	cl.add(child)
 	mother.children.append(child.id)
 	if father != null:
 		father.children.append(child.id)
@@ -472,16 +490,20 @@ func _give_birth(mother: SimPerson) -> void:
 
 	var child_dies := w.rng.chance(float(_fam["birth_child_death"]) * risk)
 	var mother_dies := w.rng.chance(float(_fam["birth_mother_death"]) * risk)
-	var where: Vector2 = ma.position if ma != null else w.home().door()
+	var where: Vector2 = ma.position if ma != null else w.home_of(w.agent_by_id(mother.agent_id)).door()
+	var ours := is_ours(child)
 	if child_dies:
 		child.death_day = w.clock.now()
 		child.death_cause = "zmarł%s przy porodzie" % ("" if child.sex == "m" else "a")
-		w.events.add(w.clock.day_index(), w.clock.time_of_day(),
-			"%s urodził%s się martw%s. %s w żałobie." % [child.name, "" if child.sex == "m" else "a",
-			"y" if child.sex == "m" else "a", mother.name], "critical", where)
-		w.ask_ok("Poród", "Dziecko %s i %s nie przeżyło porodu." % [mother.name, father.name if father else "?"])
+		if ours:
+			w.events.add(w.clock.day_index(), w.clock.time_of_day(),
+				"%s urodził%s się martw%s. %s w żałobie." % [child.name, "" if child.sex == "m" else "a",
+				"y" if child.sex == "m" else "a", mother.name], "critical", where)
+			w.ask_ok("Poród", "Dziecko %s i %s nie przeżyło porodu." % [mother.name, father.name if father else "?"])
 	else:
 		var a: SimAgent = w.spawn_agent(child, where)
+		if ma != null:
+			a.home_id = ma.home_id
 		a.needs["food"] = float(_fam["newborn_food"])
 		apply_modifiers(child)
 		child.set_meta("stage", "child")
@@ -491,7 +513,8 @@ func _give_birth(mother: SimPerson) -> void:
 		var trait_txt := ""
 		if not child.traits.is_empty():
 			trait_txt = " (%s)" % ", ".join(child.traits.map(func(t): return trait_label(t)))
-		w.note("Narodziny! %s %s urodził%s się%s." % [child.name, dynasty, "" if child.sex == "m" else "a", trait_txt], "good", where)
+		if ours:
+			w.note("Narodziny! %s %s urodził%s się%s." % [child.name, child.surname, "" if child.sex == "m" else "a", trait_txt], "good", where)
 		w.chronicle.add(w.clock.now(), "birth", "Narodziny: %s, dziecko %s%s." % [child.name, mother.name,
 			(" i " + father.name) if father != null else ""], [child.id, mother.id], child.lineage_id)
 	if mother_dies and ma != null:
@@ -649,10 +672,21 @@ func on_death(p: SimPerson, cause: String) -> void:
 		for u in s.unions + p.unions:
 			if float(u["end"]) < 0.0:
 				u["end"] = w.clock.now()
-	if p.id == root_id:
-		_succession(p)
-	elif not _blood_alive():
-		_end_game()
+	var l := lineage_of(p)
+	if l != null and l.id == player_lineage_id:
+		if p.id == root_id:
+			_succession(p)
+		elif not _blood_alive():
+			_end_game()
+	elif l != null and p.id == l.root_id:
+		_succession_ai(p, l)
+
+
+# Ród AI wybiera następcę sam: pierwszy kandydat według tych samych reguł.
+# Bez krwi ród gaśnie (pozostali żyją dalej, ale ród nie ma kotwicy).
+func _succession_ai(dead: SimPerson, l: SimLineage) -> void:
+	var cands := succession_candidates(dead.id, l.id)
+	l.root_id = cands[0].id if not cands.is_empty() else -1
 
 
 func _blood_alive() -> bool:
@@ -673,9 +707,9 @@ func is_descendant(p: SimPerson, ancestor_id: int) -> bool:
 
 # Kandydaci: krew rodu. Kolejność: potomkowie zmarłego przed resztą krwi,
 # dorośli przed dziećmi, starsi przed młodszymi. Małżonkowie nigdy (intro §5.3).
-func succession_candidates(dead_id: int = -1) -> Array:
+func succession_candidates(dead_id: int = -1, lineage_id: int = -1) -> Array:
 	var out: Array = []
-	for p in living():
+	for p in living_members(player_lineage_id if lineage_id < 0 else lineage_id):
 		if p.blood:
 			out.append(p)
 	var rank := func(x: SimPerson) -> int:
