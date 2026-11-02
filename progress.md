@@ -111,6 +111,7 @@ Wyjazdy (`away`) i powroty, pojednanie (okno decyzji), drzewo genealogiczne znan
 6. [ ] Scenariusz „odludzie”.
 7. [ ] LOD i rody w tle, materializacja osób spoza okolicy.
 8. [ ] Epoki jako dane i zmiana epoki w trakcie gry (nauka).
+9. [ ] Cele z `docs/design/goals.md`: zagrożenia (zwierzęta, przestępcy, obrona, pożary), zaginięcia i porwania z powrotem po latach, ścieżki kariery, płeć jako czynnik naśladowania dorosłych (tradycja), budowanie, ziemia i pracownicy, mapa proceduralna, wybór epoki/miejsca/rodziny na starcie.
 
 ## Uwagi autora do wdrożenia (02.11.2026)
 

@@ -57,3 +57,4 @@ Najprościej: RimWorld, tylko zamiast dzikiej planety masz społeczeństwo. Pres
   - śluby między krewnymi;
   - dzieci poza małżeństwem;
   - koszt przełączenia roota.
+- **Cele długoterminowe** (zagrożenia, zaginięcia, ścieżki kariery, tradycja i płeć w preferencjach, budowanie, ziemia, pracownicy, mapa proceduralna, wybór startu): `docs/design/goals.md`.
