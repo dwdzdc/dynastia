@@ -1,7 +1,7 @@
 {
   "world_seed": 20261101,
   "time": {
-    "day_seconds": 60.0,
+    "day_seconds": 600.0,
     "days_per_season": 5,
     "days_per_year": 20,
     "seasons": [
@@ -26,7 +26,7 @@
       8
     ],
     "twilight": 0.05,
-    "substep": 0.1,
+    "substep": 0.2,
     "daylight": {
       "spring": {
         "sunrise": 0.25,
@@ -47,7 +47,7 @@
     }
   },
   "aging": {
-    "days_per_year_of_life": 4,
+    "days_per_year_of_life": 0.4,
     "stages": {
       "child": {
         "min": 0,
@@ -73,12 +73,12 @@
       "elder": 0.65
     },
     "old_age_start": 55,
-    "old_age_daily_death": 0.0009,
-    "old_age_growth": 1.12
+    "old_age_death_per_year": 0.0036,
+    "old_age_growth_per_year": 1.12
   },
   "movement": {
-    "speed": 6.5,
-    "child_speed": 4.5,
+    "speed": 4.0,
+    "child_speed": 3.0,
     "arrive_radius": 0.6
   },
   "schedule": {
@@ -121,15 +121,15 @@
     "eff_per_level": 0.07
   },
   "jobs": {
-    "chop_seconds": 3.0,
-    "saw_seconds": 3.5,
+    "chop_seconds": 45.0,
+    "saw_seconds": 40.0,
     "saw_planks_per_log": 2,
-    "craft_seconds": 9.0,
+    "craft_seconds": 130.0,
     "craft_planks": 2,
     "dark_work_mult": 0.6,
-    "wait_seconds": 2.0,
+    "wait_seconds": 3.0,
     "laborer_wage_day": 7.0,
-    "forage_seconds": 5.0,
+    "forage_seconds": 40.0,
     "forage_yield": {
       "spring": 0.7,
       "summer": 1.0,
@@ -141,9 +141,9 @@
   },
   "carry": {
     "log": 2,
-    "plank": 10,
-    "chair": 4,
-    "food": 8
+    "plank": 4,
+    "chair": 2,
+    "food": 5
   },
   "storage": {
     "sawmill": {
@@ -215,22 +215,22 @@
   },
   "family": {
     "marry_min_age": 16,
-    "marry_daily_chance": 0.18,
     "spouse_age_spread": 6,
     "fertile_min": 16,
     "fertile_max": 42,
-    "conceive_daily": 0.04,
     "max_children": 7,
-    "pregnancy_days": 3,
     "birth_mother_death": 0.04,
     "birth_child_death": 0.07,
     "birth_risk_age_mult": 2.0,
     "birth_risk_age": 36,
     "birth_risk_low_health_mult": 2.0,
-    "max_household": 12
+    "max_household": 12,
+    "marry_chance_per_day": 0.3,
+    "conceive_per_year": 0.16,
+    "pregnancy_years": 0.75
   },
   "crime": {
-    "steal_seconds": 6.0,
+    "steal_seconds": 50.0,
     "caught_base": 0.07,
     "caught_skill_reduction": 0.06,
     "caught_dark_mult": 0.6,

@@ -409,7 +409,7 @@ func roll_accident(a: SimAgent, act: String) -> void:
 	var what: String = { "chop": "przy wyrębie", "saw": "przy pile", "craft": "w stolarni" }[act]
 	var roll := rng.next_float()
 	if roll < float(r["fatal_share"]):
-		kill(a, "zginął%s w wypadku %s" % ["" if person == null or person.sex == "m" else "a", what])
+		kill(a, "%s w wypadku %s" % ["zginął" if person == null or person.sex == "m" else "zginęła", what])
 		return
 	var sev := "severe" if roll < float(r["fatal_share"]) + float(r["severe_share"]) else "minor"
 	var cfg: Dictionary = r[sev]

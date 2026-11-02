@@ -209,10 +209,16 @@ func _roll_old_age(p: SimPerson) -> void:
 	var start := float(_aging["old_age_start"])
 	if age < start:
 		return
-	var chance := float(_aging["old_age_daily_death"]) * pow(float(_aging["old_age_growth"]), age - start)
+	var per_year := float(_aging["old_age_death_per_year"]) * pow(float(_aging["old_age_growth_per_year"]), age - start)
+	var chance := _per_day(per_year)
 	if w.rng.chance(chance):
 		var a: SimAgent = w.agent_by_id(p.agent_id)
 		w.kill(a, "zmarł%s ze starości" % ("" if p.sex == "m" else "a"))
+
+
+# Szansa na rok życia → szansa na dobę (doba może trwać kilka lat życia).
+func _per_day(per_year: float) -> float:
+	return 1.0 - pow(1.0 - clampf(per_year, 0.0, 1.0), 1.0 / _days_per_year)
 
 
 func _fertile(p: SimPerson) -> bool:
@@ -232,11 +238,11 @@ func _roll_conception(p: SimPerson) -> void:
 	var a: SimAgent = w.agent_by_id(p.agent_id)
 	if a == null or a.status != "active":
 		return
-	var c := float(_fam["conceive_daily"])
+	var c := _per_day(float(_fam["conceive_per_year"]))
 	if a.hungry_no_food or a.health < 40.0:
 		c *= 0.3
 	if w.rng.chance(c):
-		p.pregnant_left = float(_fam["pregnancy_days"])
+		p.pregnant_left = float(_fam["pregnancy_years"]) * _days_per_year
 		w.note("%s spodziewa się dziecka." % p.name, "good", a.position)
 
 
@@ -345,7 +351,7 @@ func _roll_courtship(p: SimPerson) -> void:
 	var a: SimAgent = w.agent_by_id(p.agent_id)
 	if a == null or a.status != "active":
 		return
-	if not w.rng.chance(float(_fam["marry_daily_chance"])):
+	if not w.rng.chance(float(_fam["marry_chance_per_day"])):
 		return
 	var cand := _materialize_candidate(p)
 	var traits_txt := "brak szczególnych cech"
