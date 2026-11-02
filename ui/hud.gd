@@ -37,6 +37,8 @@ const MILD := 3.0
 const CHRONICLE_ROWS := 40
 const SKILL_LABELS := { "chop": "rąbanie", "saw": "piłowanie", "craft": "stolarka", "forage": "zbieractwo", "steal": "złodziejstwo" }
 
+const FAMILY_W := 440.0   # szerokość panelu rodu (karty zawijają tekst)
+
 var main: Node
 var world: SimWorld
 var camera: Camera3D
@@ -45,6 +47,7 @@ var _top_date: Label
 var _top_speed: Array = []
 var _top_res: RichTextLabel
 var _family_title: Label
+var _family_panel: PanelContainer
 var _family_box: VBoxContainer
 var _family_sig := ""
 var _family_rows: Dictionary = {}   # agent id -> Button
@@ -160,6 +163,8 @@ func _build_top() -> void:
 	_top_res.add_theme_font_size_override("normal_font_size", 21)
 	_top_res.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	h.add_child(_top_res)
+	h.add_child(_button("Ród (G)", func(): toggle_family(), 17))
+	h.add_child(_button("Kronika (K)", func(): toggle_chronicle(), 17))
 	h.add_child(_button("Pomoc (F1)", func(): _help.visible = not _help.visible, 17))
 
 
@@ -195,11 +200,14 @@ func _update_top() -> void:
 
 # --- Panel rodu ---
 
+# Panel rodu jest schowany (jak menu w Cultures): otwiera go przycisk „Ród” albo G.
 func _build_family() -> void:
 	var p := PanelContainer.new()
 	p.position = Vector2(10, 68)
-	p.custom_minimum_size = Vector2(380, 0)
+	p.custom_minimum_size = Vector2(FAMILY_W, 0)
+	p.visible = false
 	add_child(p)
+	_family_panel = p
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 6)
 	p.add_child(v)
@@ -213,7 +221,13 @@ func _build_family() -> void:
 	v.add_child(_family_box)
 
 
+func toggle_family() -> void:
+	_family_panel.visible = not _family_panel.visible
+
+
 func _update_family() -> void:
+	if not _family_panel.visible:
+		return
 	var fam := world.family
 	var r := fam.root()
 	_family_title.text = "Ród %s%s" % [fam.dynasty, ("  ·  głowa: " + r.name) if r != null else ""]
@@ -228,8 +242,8 @@ func _update_family() -> void:
 			var aid: int = p.agent_id
 			var b := _button("", func(): main.select_agent(aid, true), 16)
 			b.alignment = HORIZONTAL_ALIGNMENT_LEFT
-			b.custom_minimum_size = Vector2(356, 50)
-			b.clip_text = true
+			b.custom_minimum_size = Vector2(FAMILY_W - 24, 0)
+			b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 			_family_box.add_child(b)
 			_family_rows[aid] = b
 	for p in living:
@@ -245,7 +259,7 @@ func _update_family() -> void:
 			extra = " · w ciąży"
 		if debug:
 			extra += " · [%.2f]" % float(fam.strength.get(p.id, -1.0))
-		b.text = "%s%s, %d · %s%s\n   %s" % [mark, p.name, int(fam.age_of(p)), job, extra, _status_short(a)]
+		b.text = "%s%s, %d · %s%s\n%s" % [mark, p.name, int(fam.age_of(p)), job, extra, _status_short(a)]
 		var col := TEXT
 		if a.alert or a.hungry_no_food or a.status == "jailed":
 			col = BAD
@@ -801,7 +815,7 @@ STEROWANIE
 LPM — zaznacz osobę / budynek       PPM — rozkaz: idź / zetnij drzewo (Shift = do kolejki)
 Przeciągnij LPM / ŚPM, WASD, dwa palce — przesuń kamerę       Kółko / szczypanie — zoom
 Q / E — obrót kamery       SPACJA — pauza       1–4 — tempo       TAB — następna osoba       ESC — odznacz
-K — kronika rodu       F — kamera za zaznaczoną osobą       R — pokaż głowę rodu       F3 — debug
+G — panel rodu       K — kronika rodu       F — kamera za zaznaczoną osobą       R — pokaż głowę rodu       F3 — debug
 
 Zawód widać po tym, co ktoś robi i niesie; kliknij osobę, by zobaczyć przydział.
 Czerwony „!” = problem (kliknij, by zobaczyć jaki).""", 17)

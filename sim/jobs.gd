@@ -23,7 +23,8 @@ var recipes: Dictionary          # data/recipes.json (S13): produkcja w budynkac
 var work_acts: Array = ["chop", "forage", "labor"]  # czynności, które są pracą (+ z receptur)
 
 const BASE_WORK_ACTS := ["chop", "forage", "labor"]
-const IDLE_AT_MANOR := Vector2(2.0, 1.0)   # gdzie czeka robotnik, gdy w polu nie ma roboty
+const FREE_SPOT_RADIUS := Vector2(1.5, 4.0)  # wolne: jak daleko od drzwi domu (min, max)
+const FREE_TIME_WAITS := 3.0                  # wolne trwa tyle „czekań”, potem nowy plan
 const AT_DOOR := 1.0   # skrzynia: trzeba stać przy drzwiach domu (albo w środku)
 
 
@@ -391,8 +392,7 @@ func _plan_work(a: SimAgent) -> void:
 			_plan_woodcutter(a)
 		"carrier":
 			if not _plan_carrier(a):
-				_walk(a, (_home(a).door() if _home(a) != null else _homeless_spot(a)) + Vector2(1.5, 1.0), "tragarz — nic do noszenia")
-				_wait(a, "tragarz — nic do noszenia")
+				_free_time(a, "nie ma nic do noszenia")
 		"laborer":
 			_plan_laborer(a)
 		"forager":
@@ -513,8 +513,7 @@ func _plan_laborer(a: SimAgent) -> void:
 	var manor: SimBuilding = w.building(String(w.balance["estate"]["building"]))
 	var f := w.field_with_work(manor.id)
 	if f == null:
-		_walk(a, manor.door() + IDLE_AT_MANOR, "idzie do dworu spytać o robotę")
-		_wait(a, "dwór nie ma dziś roboty w polu")
+		_free_time(a, "dwór nie ma dziś roboty w polu")
 		return
 	var season := w.clock.current_season()
 	var i := f.free_cell(season)
@@ -664,10 +663,6 @@ func _plan_carrier(a: SimAgent) -> bool:
 	if _hh(a).sell_planks and mill.amount("plank") > 0 and w.market.wants("plank") + w.traders.wants("plank") > 0:
 		_pickup_and_deliver(a, mill, "plank", market, "niesie deski na targ")
 		return true
-	if mill.amount("plank") > 0 and _hh(a).sell_planks:
-		_walk(a, market.door() + Vector2(1.5, 1.0), "idzie spytać kupca o deski")
-		_wait(a, "kupiec nie chce więcej desek — nie ma pieniędzy albo zbytu", "wait", true)
-		return true
 	return false
 
 
@@ -677,6 +672,17 @@ func _pickup_and_deliver(a: SimAgent, from: SimBuilding, good: String, to: SimBu
 	_do(a, "pickup", { "b": from.id, "good": good, "qty": qty })
 	_walk(a, to.door(), why)
 	_do(a, "deposit", to.id)
+
+
+# Gdy nie da się robić swojej roboty (nic do noszenia, brak zbytu, brak roboty w polu):
+# czas wolny przed domem, wśród ludzi, zamiast stania w miejscu (jak w Cultures).
+# Kto obsadza stanowisko (tartak, później stragan), ten czeka przy nim.
+func _free_time(a: SimAgent, why: String) -> void:
+	var base: Vector2 = _home(a).door() if _home(a) != null else _homeless_spot(a)
+	var k := w.rng.next_float(0.0, TAU)
+	var r := w.rng.next_float(FREE_SPOT_RADIUS.x, FREE_SPOT_RADIUS.y)
+	_walk(a, base + Vector2(cos(k), absf(sin(k)) * 0.6 + 0.6) * r, "wolne — %s" % why)
+	_act(a, "rest", float(_cfg["wait_seconds"]) * FREE_TIME_WAITS, "wolne — %s" % why)
 
 
 # Dokąd odnieść to, co agent ma w rękach (np. po przerwaniu planu).
@@ -700,8 +706,10 @@ func _plan_deliver_carried(a: SimAgent) -> void:
 				dest = "sawmill"
 		"plank":
 			dest = "workshop" if (_carpenter_present() and w.building("workshop").space("plank") > 0) else "market"
+			if dest == "market" and w.market.wants("plank") + w.traders.wants("plank") <= 0:
+				dest = "sawmill"   # bez zbytu wraca do składu
 		"chair":
-			dest = "market"
+			dest = "market" if w.market.wants("chair") + w.traders.wants("chair") > 0 else "workshop"
 	var b: SimBuilding = w.building(dest)
 	_walk(a, b.door(), "odnosi: %s → %s" % [w.good_label(a.carrying), b.name])
 	_do(a, "deposit", dest)
@@ -895,10 +903,10 @@ func _fx_deposit(a: SimAgent, bid: String) -> bool:
 		if a.carrying_qty <= 0:
 			a.clear_carry()
 			return true
-		# Reszty kupiec nie weźmie: osoba czeka z towarem i mówi dlaczego.
-		a.steps.push_front({ "t": "act", "act": "wait", "left": float(_cfg["wait_seconds"]) * 3.0,
-			"why": "kupiec nie bierze więcej (%s) — brak pieniędzy albo zbytu" % w.good_label(a.carrying),
-			"inside": "", "alert": true, "work": false })
+		# Reszty kupiec nie weźmie: odnosi ją tam, skąd wziął, i idzie na wolne.
+		w.events.float_text(b.door(), "kupiec nie bierze: %s" % w.good_label(a.carrying), "info")
+		a.steps.clear()
+		_plan_deliver_carried(a)
 		return true
 	var n := mini(a.carrying_qty, b.space(a.carrying))
 	if n <= 0:

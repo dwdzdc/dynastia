@@ -63,6 +63,10 @@ Mechaniki z iteracji 2 rozstrzygały wynik funkcją zamiast procesem w świecie:
 
 **Czas wolny rodu z majątkiem.** Kto nie musi pracować rękami, może: nadzorować pracowników (jeden nadzorca ogarnia więcej ludzi, mniej się migają), prowadzić księgę, bywać (imprezy, flirty, zabawa), uczyć się, rozkręcać nowy interes, prowadzić badania.
 
+**Brak roboty to czas wolny, nie stanie w miejscu.** Kto nie może robić swojej pracy (nic do noszenia, kupiec nie bierze, w polu pusto), odnosi towar i spędza czas wśród ludzi, jak w Cultures. Czeka tylko ten, kto obsadza stanowisko (tartak, stragan).
+
+**Panel rodu schowany** (jak menu w Cultures): przycisk „Ród” albo G.
+
 **Stragan.** Bez sprzedawcy nie sprzedaje. Niezwinięty na noc i niepilnowany jest łatwym łupem (towar, który na nim został).
 
 ## Na później (z tej rozmowy)

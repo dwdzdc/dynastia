@@ -288,6 +288,8 @@ func _unhandled_input(event: InputEvent) -> void:
 				hud._help.visible = not hud._help.visible
 			KEY_K:
 				hud.toggle_chronicle()
+			KEY_G:
+				hud.toggle_family()
 			KEY_F:
 				follow_cam = not follow_cam and selected_id >= 0
 			KEY_R:

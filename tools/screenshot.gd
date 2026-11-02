@@ -31,8 +31,10 @@ func _shoot() -> void:
 	await _frames(30)
 	_save("01_start.png")
 	game.select_agent(game.world.family.root().agent_id, true)
+	game.hud.toggle_family()
 	await _frames(20)
 	_save("02_selected.png")
+	game.hud.toggle_family()
 	game.selected_id = -1
 	game.selected_building = "sawmill"
 	game.cam_target = Vector3(30, 0, 24)
