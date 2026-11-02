@@ -628,12 +628,19 @@ func _succession(dead: SimPerson) -> void:
 		opts, {})
 
 
-func set_root(pid: int) -> void:
+# Root to kotwica grafu rodu: żywy członek rodu gracza, nigdy wżeniony małżonek.
+func can_be_root(p: SimPerson) -> bool:
+	return p != null and p.alive() and p.lineage_id == player_lineage_id and not p.attached
+
+
+func set_root(pid: int) -> bool:
 	var p: SimPerson = persons.get(pid)
-	if p == null or not p.alive():
-		return
+	if not can_be_root(p):
+		return false
 	root_id = pid
+	update_strength()
 	w.note("%s jest nową głową rodu %s." % [p.name, dynasty], "good", null)
+	return true
 
 
 func _end_game() -> void:

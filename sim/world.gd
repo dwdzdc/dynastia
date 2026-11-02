@@ -233,6 +233,11 @@ func release_manual(agent_id: int) -> void:
 	jobs.replan(a)
 
 
+# Komenda gracza: przełącz roota (kotwicę rodu) na innego członka rodu (C2).
+func switch_root(person_id: int) -> bool:
+	return family.set_root(person_id)
+
+
 func resolve_prompt(prompt_id: int, value: Variant) -> void:
 	var p := events.pop_prompt(prompt_id)
 	if p.is_empty():

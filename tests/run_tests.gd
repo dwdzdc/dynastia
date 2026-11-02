@@ -56,6 +56,7 @@ func _run_all() -> void:
 	_test_activity_bonds_child_and_accident()
 	_test_drift_never_below_stranger()
 	_test_strength_scenarios()
+	_test_switch_root()
 	_test_world_deterministic()
 	_test_world_30_days_autonomous()
 	_test_economy_chain_produces_income()
@@ -568,6 +569,21 @@ func _test_strength_scenarios() -> void:
 	_bond(w, brother, maria, 100.0)
 	f.update_strength()
 	check("spouse does not pull in her family", not f.strength.has(brother.id))
+
+
+func _test_switch_root() -> void:
+	var w = _new_world()
+	var f = w.family
+	var jan = f.root()
+	var maria = f.persons[jan.spouse_id]
+	var piotr = _named(f, "Piotr")
+	check("attached spouse cannot become root", not w.switch_root(maria.id) and f.root_id == jan.id)
+	w.bonds.bonds.clear()
+	_bond(w, jan, piotr, 50.0)
+	f.update_strength()
+	var before: float = f.strength[piotr.id]
+	check("switch root to a blood member", w.switch_root(piotr.id) and f.root_id == piotr.id and f.player_lineage().root_id == piotr.id)
+	check("strength recomputed from the new root", is_zero_approx(before) and is_equal_approx(float(f.strength[piotr.id]), 1.0) and float(f.strength[jan.id]) > 0.4 and float(f.strength[jan.id]) < 1.0)
 
 
 func _state_sig(w) -> String:
