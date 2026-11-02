@@ -138,6 +138,7 @@ Cel: rodzina przestaje być oderwana od świata. Inne rody żyją z tych samych 
 - [ ] H4 Pole (osobny moduł): siew wiosną, wzrost, żniwa latem, zboże do spichrza; zima bez plonów → test: plon tylko w sezonie, zaniedbane pole daje mniej.
 - [ ] H5 Młyn i piekarnia z receptur: zboże → mąka → chleb, chleb jest jedzeniem → test: łańcuch daje chleb bez nowego kodu produkcji.
 - [ ] H6 Kamieniołom z receptury: kamień jako budulec → test: kamień trafia do składu.
+- [x] H7a Dwór jako pracodawca (zrobione wcześniej, bo bez tego gospodarka nie miała obiegu): dniówka płacona z kasy dworu, praca na folwarku daje plon (jedzenie, sezonowo) do spiżarni dworu, dwór sprzedaje nadwyżki kupcowi; bez pieniędzy nie zatrudnia (AI idzie do lasu).
 - [ ] H7 Praca u kogoś: miejsce pracy ma właściciela, zatrudnia ludzi z innych gospodarstw, dniówka na dobę od pracodawcy do sakiewki pracownika; dwór to pracodawca, nie automat → test: płaca przechodzi od pracodawcy, pracodawca bez pieniędzy nie zatrudnia.
 
 ### Faza I — budowa i mieszkanie

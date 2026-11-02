@@ -74,6 +74,7 @@ func _run_all() -> void:
 	_test_merchant_is_a_person()
 	_test_buyers_pay_from_own_money()
 	_test_traveling_traders()
+	_test_estate_pays_wages()
 	_test_world_deterministic()
 	_test_world_30_days_autonomous()
 	_test_economy_chain_produces_income()
@@ -1030,6 +1031,26 @@ func _test_traveling_traders() -> void:
 			break
 		w.step_sim(1.0)
 	check("missed offer expires when the wagon leaves", a.status == "away" and tr.wants("plank") == 0)
+
+
+func _test_estate_pays_wages() -> void:
+	var w = _new_world()
+	var est = w.estate_owner()
+	check("the manor household is the employer", est != null and w.family.persons[est.members[0]].surname == "Dworski")
+	var a = w.agent_by_id(_named(w.family, "Piotr").agent_id)
+	var s := { "t": "act", "act": "labor", "left": 100.0, "why": "dniówka", "will": 1.0 }
+	var est0: float = est.cash
+	var hh0: float = w.household.cash + w.family.persons[a.person_id].purse
+	var food0: int = w.building("manor").amount("food")
+	for i in 60:
+		w._labor(a, s, 1.0)
+	var paid: float = est0 - est.cash
+	check("wage is paid from the employer's cash to the worker", paid > 0.0 and is_equal_approx(w.household.cash + w.family.persons[a.person_id].purse - hh0, paid))
+	check("estate work yields food for the manor", w.building("manor").amount("food") > food0)
+	est.cash = 0.0
+	s["left"] = 100.0
+	w._labor(a, s, 1.0)
+	check("employer without money stops paying and sends people home", float(s["left"]) <= 0.0)
 
 
 func _state_sig(w) -> String:

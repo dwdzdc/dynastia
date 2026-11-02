@@ -62,7 +62,7 @@ func _init(seed: int, p_balance: Dictionary, p_map: Dictionary, p_people: Dictio
 	var storage: Dictionary = balance["storage"]
 	for b in map["buildings"]:
 		var t := String(b["type"])
-		var cap: Dictionary = storage.get("home" if t in HOUSE_TYPES else t, {})
+		var cap: Dictionary = storage.get(t, storage["home"] if t in HOUSE_TYPES else {})
 		var nb := SimBuilding.new(String(b["id"]), String(b["name"]), t,
 			Vector2(float(b["x"]), float(b["y"])), cap)
 		nb.rent_per_day = float(balance["economy"]["rent_per_day"].get(t, 0.0))
@@ -528,7 +528,7 @@ func _act(a: SimAgent, s: Dictionary, dt: float) -> void:
 	if jobs.is_work(act) and not s.has("will"):
 		_check_will(a, s, act)
 	if act == "labor":
-		earn_for(a, float(balance["jobs"]["laborer_wage_day"]) / (float(balance["schedule"]["work_end"]) - float(balance["schedule"]["work_start"])) / clock.day_seconds * dt * a.age_eff * float(s["will"]))
+		_labor(a, s, dt)
 	if jobs.is_work(act):
 		var target_face: Vector2 = s.get("face", Vector2.ZERO)
 		if target_face != Vector2.ZERO:
@@ -543,6 +543,50 @@ func _act(a: SimAgent, s: Dictionary, dt: float) -> void:
 			# Porzucona robota: dalsze kroki (efekt, odniesienie) przepadają.
 			jobs.release(a)
 			a.steps.clear()
+
+
+# Dniówka na folwarku (H7): pracodawca to ród właściciela dworu. Płaci z własnej kasy,
+# a praca daje plon (jedzenie) do spiżarni dworu, zależny od pory roku.
+func estate_owner() -> SimHousehold:
+	var b: SimBuilding = building(String(balance["estate"]["building"]))
+	var best: SimHousehold = null
+	for h: SimHousehold in households.values():
+		if h.home_id == b.id and not h.members.is_empty():
+			best = h
+	return best
+
+
+func _labor(a: SimAgent, s: Dictionary, dt: float) -> void:
+	var sch: Dictionary = balance["schedule"]
+	var work_day := (float(sch["work_end"]) - float(sch["work_start"])) * clock.day_seconds
+	var share := dt / work_day * a.age_eff * float(s["will"])
+	var employer := estate_owner()
+	var wage := float(balance["jobs"]["laborer_wage_day"]) * share
+	if employer == null or employer.cash < wage:
+		s["left"] = 0.0
+		a.idle_reason = "dwór nie ma czym płacić — schodzi z pola"
+		return
+	employer.pay(wage)
+	earn_for(a, wage)
+	var est: Dictionary = balance["estate"]
+	var acc := float(s.get("yield_acc", 0.0)) + float(est["food_per_labor_day"].get(clock.current_season(), 0.0)) * share
+	var n := int(floor(acc))
+	s["yield_acc"] = acc - n
+	if n > 0:
+		building(String(est["building"])).add("food", n)
+
+
+# Dwór sprzedaje nadwyżkę plonów kupcowi (pieniądze wracają do dworu i dalej do ludzi).
+func _estate_sells() -> void:
+	var est: Dictionary = balance["estate"]
+	var b: SimBuilding = building(String(est["building"]))
+	var owner := estate_owner()
+	if owner == null:
+		return
+	var surplus := mini(b.amount("food") - int(est["reserve_food"]), int(est["sell_to_merchant_per_day"]))
+	if surplus > 0:
+		var r: Dictionary = market.buy_from(owner, "food", surplus, [])
+		b.take("food", int(r["qty"]))
 
 
 # Na początku czynności: niechętny robi wolniej (w efektywności) i czasem rzuca robotę w połowie (D4).
@@ -722,6 +766,7 @@ func _new_day() -> void:
 			var pr := person_of(a)
 			note("%s zachorował%s." % [pr.name, "" if pr.sex == "m" else "a"], "warn", a.position)
 	together.end_day()
+	_estate_sells()
 	market.new_day()
 	ai.new_day()
 	family.new_day()

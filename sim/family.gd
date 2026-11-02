@@ -590,7 +590,7 @@ func set_seeking(pid: int, on: bool) -> void:
 
 
 func _roll_courtship(p: SimPerson) -> void:
-	if not p.seeking_spouse or not can_marry(p):
+	if not p.seeking_spouse or not can_marry(p) or p.has_meta("engaged"):
 		return
 	var a: SimAgent = w.agent_by_id(p.agent_id)
 	if a == null or a.status != "active":
@@ -616,6 +616,9 @@ func _roll_courtship(p: SimPerson) -> void:
 		else ("%s przejdzie do rodu %s i zamieszka u nich." % [ours.name, lineage_of(other).name])
 	var traits_txt := "brak szczególnych" if other.traits.is_empty() else ", ".join(other.traits.map(func(t): return trait_label(t)))
 	var char_txt := "nic szczególnego" if other.character.is_empty() else ", ".join(other.character.map(func(x): return character_label(x)))
+	# Para czeka na decyzję gracza: nikt inny jej w tym czasie nie zaręczy.
+	ours.set_meta("engaged", true)
+	other.set_meta("engaged", true)
 	w.events.ask("marriage", "Propozycja ślubu",
 		"%s %s (lat %d, ród %s) i %s — %s.\n%s\nCechy: %s. Charakter: %s.\nWesele kosztuje %d zł (płaci rodzina, do której wchodzi panna młoda lub pan młody; brak pójdzie w dług)." % [
 			other.name, other.surname, int(age_of(other)), lineage_of(other).name, ours.name, acquaintance,
@@ -634,7 +637,7 @@ func marriage_candidates(p: SimPerson) -> Array:
 	var gap := float(_marriage()["max_age_gap_days"])
 	var out: Array = []
 	for c in all_living():
-		if c.id == p.id or c.sex == p.sex or c.lineage_id == p.lineage_id or not can_marry(c):
+		if c.id == p.id or c.sex == p.sex or c.lineage_id == p.lineage_id or not can_marry(c) or c.has_meta("engaged"):
 			continue
 		if absf(days_lived(c) - days_lived(p)) > gap:
 			continue
@@ -665,6 +668,9 @@ func _mover(a: SimPerson, b: SimPerson) -> SimPerson:
 func resolve_marriage(data: Dictionary, accepted: bool) -> void:
 	var p: SimPerson = persons.get(int(data["person"]))
 	var c: SimPerson = persons.get(int(data["cand"]))
+	for x in [p, c]:
+		if x != null and x.has_meta("engaged"):
+			x.remove_meta("engaged")
 	if p == null or c == null or not p.alive() or not c.alive() or not can_marry(p) or not can_marry(c):
 		return
 	if not accepted:

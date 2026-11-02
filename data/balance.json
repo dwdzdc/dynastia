@@ -121,7 +121,7 @@
         70.0,
         95.0
       ],
-      "dinner_eat_below": 85.0
+      "dinner_eat_below": 55.0
     },
     "sleep": {
       "decay_day": 70.0,
@@ -188,6 +188,10 @@
     },
     "home": {
       "food": 30,
+      "log": 12
+    },
+    "manor": {
+      "food": 200,
       "log": 12
     }
   },
@@ -385,7 +389,7 @@
         "export_price": 0.5
       },
       "plank": {
-        "base": 3.0,
+        "base": 3.8,
         "target": 30,
         "import_price": 1.2,
         "export_price": 0.9
@@ -410,5 +414,16 @@
     "reputation_neutral_quality": 0.35,
     "reputation_min": -20.0,
     "valve": false
+  },
+  "estate": {
+    "building": "manor",
+    "food_per_labor_day": {
+      "spring": 5.0,
+      "summer": 7.0,
+      "autumn": 9.0,
+      "winter": 1.5
+    },
+    "reserve_food": 30,
+    "sell_to_merchant_per_day": 40
   }
 }
