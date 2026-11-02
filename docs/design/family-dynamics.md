@@ -55,10 +55,16 @@ Kto odpada, przede wszystkim **wychodzi spod kontroli gracza**. Może wejść do
 ## Więzi
 
 - `Bond(A→B)`: wartość od −100 do 100 plus wspomnienia (zdarzenie, data, waga). Lekkie wspomnienia blakną, ciężkie zostają na zawsze.
-- Na plus: wspólny czas, pomoc, nauka od kogoś, dzielenie się, wspólny sukces.
+- Na plus: wspólny czas (wspólna praca, rozmowa, posiłek — interakcje pozytywne i neutralne), pomoc, nauka od kogoś, dzielenie się, wspólny sukces. Kłótnia to też czas razem, ale nie buduje lojalności.
 - Na minus: krzywda, kłótnia, zdrada, decyzja rodu wbrew komuś, rozkaz wbrew woli.
 - Zaniedbanie: brak kontaktu powoli sprowadza więź ku „obcy”, nigdy do wrogości. Wrogość wymaga zdarzenia.
 - Cechy charakteru modyfikują siłę i kierunek zmian (np. pamiętliwy, lojalny, porywczy).
+
+## Sygnały dryfu i odejście
+
+- Odejście przez degradację poprzedza faza **subtelnych sygnałów w zachowaniu**: zatrzymuje wypłatę, je osobno, wraca późno, unika wspólnych wieczorów, mniej mówi przy stole. Nie ma alertów, liczników ani komunikatów typu „za dwie doby Staś odejdzie”. Wartości liczbowe są ukryte przed graczem (widoczne tylko w trybie debug).
+- To jest część mechaniki: kto poświęca komuś tak mało uwagi, że nie zauważa sygnałów, ten może przegapić też samo odejście.
+- Samo odejście jest zawsze **zapisane w kronice rodu** (kto, kiedy, dlaczego, z jakimi wspomnieniami odszedł), żeby gracz mógł potem dojść, co się stało z daną osobą. Wpis w kronice nie wyskakuje jako okno.
 
 ## Pieniądze
 
@@ -73,14 +79,13 @@ Kto odpada, przede wszystkim **wychodzi spod kontroli gracza**. Może wejść do
 ## Na później (świadomie poza pierwszą iteracją)
 
 - Śluby między krewnymi jako możliwość (z konsekwencjami społecznymi i zdrowotnymi).
+- Dzieci poza małżeństwem (bękarty): pokrewieństwo jest faktem niezależnym od ślubu, a przynależność dziecka do rodu jest osobną sprawą (uznanie albo nie) i źródłem historii.
 - Warunki albo koszt przełączenia roota.
 - Spór o spadek między rodami, które się rozeszły.
 
 ## Otwarte pytania
 
 1. **Pojednanie.** Jak wygląda rytuał powrotu do rodu? Kto go inicjuje, gracz czy postać, i co jest warunkiem: więź, wspólny wróg, potrzeba?
-2. **Próg odejścia.** Czy odejście przez degradację jest natychmiastowe po przekroczeniu progu, czy poprzedza je faza sygnałów (zatrzymuje pieniądze, je osobno, kłóci się) i ostatnia szansa na reakcję?
 3. **Preferencje.** Skąd postać wie, czego chce? Z cech, z umiejętności, z wzorców (syn chce być jak ojciec), z historii?
 4. **Odmowa.** Od jakiego poziomu więzi postać odmawia rozkazu i co się wtedy dzieje (robi co innego, kłótnia, odejście)?
-5. **Zasięg „czasu razem”.** Czy wspólna praca w tym samym miejscu wystarcza, czy liczy się tylko czas jawnie społeczny (rozmowa, posiłek)?
-6. **Ród gracza po podziale.** Kiedy ród pęka na dwie części, czy druga staje się rodem AI w tym samym świecie (z własnym rootem) i można z nią potem wchodzić w relacje: pojednanie, rywalizacja, spór o spadek?
+4. **Ród gracza po podziale.** Kiedy ród pęka na dwie części, czy druga staje się rodem AI w tym samym świecie (z własnym rootem) i można z nią potem wchodzić w relacje: pojednanie, rywalizacja, spór o spadek?
