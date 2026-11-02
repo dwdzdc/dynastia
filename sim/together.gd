@@ -26,7 +26,7 @@ func _init(world: SimWorld, cfg: Dictionary) -> void:
 
 
 func _is_work(act: String) -> bool:
-	return act in SimAgent.WORK_ACTS or act == "labor"
+	return w.jobs.is_work(act)
 
 
 func sample(dt: float) -> void:

@@ -66,6 +66,7 @@ func _run_all() -> void:
 	_test_ai_lineage_lives_independently()
 	_test_households_separate()
 	_test_rent_eviction_homeless()
+	_test_recipe_from_data()
 	_test_world_deterministic()
 	_test_world_30_days_autonomous()
 	_test_economy_chain_produces_income()
@@ -211,7 +212,7 @@ func _map() -> Dictionary:
 
 
 func _new_world(seed := 12345) -> RefCounted:
-	return WORLD_SCRIPT.new(seed, _balance(), _map(), _people(), LOADER_SCRIPT.load_json("res://data/memories.json"))
+	return WORLD_SCRIPT.new(seed, _balance(), _map(), _people(), LOADER_SCRIPT.load_json("res://data/memories.json"), LOADER_SCRIPT.load_json("res://data/recipes.json"))
 
 
 func _run_days(world, days: float) -> void:
@@ -812,6 +813,25 @@ func _test_rent_eviction_homeless() -> void:
 	w.buildings["n2"].type = "decor_house"
 	w._settle_rent(w.household)
 	check("with money the family rents a free house again", w.household.home_id != "" and a.home_id == w.household.home_id)
+
+
+func _test_recipe_from_data() -> void:
+	var w = _new_world()
+	check("saw and craft come from recipes", w.jobs.recipe_for_job("sawyer").get("act") == "saw" and w.jobs.recipe_for_job("carpenter").get("act") == "craft")
+	# Nowa receptura tylko w danych: „łupanie” kłody na dwie deski w tartaku.
+	var r := { "job": "splitter", "building": "sawmill", "act": "split", "skill": "saw", "seconds": 5.0,
+		"inputs": { "log": 1 }, "outputs": { "plank": 1 }, "spot": [0.0, 1.0], "doing": "łupie kłodę",
+		"accident_where": "przy łupaniu", "wait_input": "czeka na kłody", "full": "pełno" }
+	w.jobs.recipes["split"] = r
+	var a = w.agent_by_id(_named(w.family, "Piotr").agent_id)
+	var mill = w.building("sawmill")
+	mill.add("log", 2)
+	var planks: int = mill.amount("plank")
+	a.job = "splitter"
+	w.jobs.replan(a)
+	var acts: Array = a.steps.filter(func(s): return s["t"] == "act").map(func(s): return s["act"])
+	check("a recipe added only in data is planned", "split" in acts)
+	check("and it produces its outputs", w.jobs._fx_produce(a, r) and mill.amount("plank") == planks + 1)
 
 
 func _state_sig(w) -> String:

@@ -43,7 +43,7 @@ var _last_day := 0
 var _regrow_total: float
 
 
-func _init(seed: int, p_balance: Dictionary, p_map: Dictionary, p_people: Dictionary, p_memories: Dictionary) -> void:
+func _init(seed: int, p_balance: Dictionary, p_map: Dictionary, p_people: Dictionary, p_memories: Dictionary, p_recipes: Dictionary) -> void:
 	balance = p_balance
 	map = p_map
 	people = p_people
@@ -53,7 +53,7 @@ func _init(seed: int, p_balance: Dictionary, p_map: Dictionary, p_people: Dictio
 	rng = SimRng.new(seed)
 	events = SimEvents.new()
 	household = new_household("home", float(balance["economy"]["start_cash"]))
-	jobs = SimJobs.new(self)
+	jobs = SimJobs.new(self, p_recipes)
 	_regrow_total = float(balance["trees"]["regrow_days"]) * clock.day_seconds
 
 	var storage: Dictionary = balance["storage"]
@@ -496,11 +496,11 @@ func _act(a: SimAgent, s: Dictionary, dt: float) -> void:
 	var inside := String(s.get("inside", ""))
 	a.hidden = inside != ""
 	a.inside = inside
-	if (act in SimAgent.WORK_ACTS or act == "labor") and not s.has("will"):
+	if jobs.is_work(act) and not s.has("will"):
 		_check_will(a, s, act)
 	if act == "labor":
 		earn_for(a, float(balance["jobs"]["laborer_wage_day"]) / (float(balance["schedule"]["work_end"]) - float(balance["schedule"]["work_start"])) / clock.day_seconds * dt * a.age_eff * float(s["will"]))
-	if act in ["chop", "saw", "craft"]:
+	if jobs.is_work(act):
 		var target_face: Vector2 = s.get("face", Vector2.ZERO)
 		if target_face != Vector2.ZERO:
 			a.facing = target_face
@@ -558,7 +558,10 @@ func roll_accident(a: SimAgent, act: String) -> void:
 		return
 	var person := person_of(a)
 	var nm := person.name if person else "Ktoś"
-	var what: String = { "chop": "przy wyrębie", "saw": "przy pile", "craft": "w stolarni" }[act]
+	var what := "przy wyrębie"
+	for rid in jobs.recipes:
+		if String(jobs.recipes[rid]["act"]) == act:
+			what = String(jobs.recipes[rid]["accident_where"])
 	var roll := rng.next_float()
 	var sev := "fatal" if roll < float(r["fatal_share"]) else (
 		"severe" if roll < float(r["fatal_share"]) + float(r["severe_share"]) else "minor")

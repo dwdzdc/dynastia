@@ -158,10 +158,6 @@
   },
   "jobs": {
     "chop_seconds": 45.0,
-    "saw_seconds": 40.0,
-    "saw_planks_per_log": 2,
-    "craft_seconds": 130.0,
-    "craft_planks": 2,
     "dark_work_mult": 0.6,
     "wait_seconds": 3.0,
     "laborer_wage_day": 7.0,

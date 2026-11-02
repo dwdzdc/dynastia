@@ -11,8 +11,6 @@ class_name SimAgent
 extends RefCounted
 
 
-const WORK_ACTS := ["chop", "saw", "craft", "forage"]
-
 var id: int
 var person_id: int = -1
 var position: Vector2 = Vector2.ZERO
@@ -109,7 +107,7 @@ func interruptible(drop_work := false) -> bool:
 		return true
 	if s["t"] == "act":
 		var act := String(s["act"])
-		if drop_work and act in WORK_ACTS:
+		if drop_work and bool(s.get("work", false)):
 			return true
 		return act in ["wait", "rest", "sleep", "labor", "play", "idle", "dine", "watch"]
 	return false

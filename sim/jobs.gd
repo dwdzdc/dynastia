@@ -19,11 +19,33 @@ const JOB_LABELS := {
 
 var w: SimWorld
 var _cfg: Dictionary
+var recipes: Dictionary          # data/recipes.json (S13): produkcja w budynkach jako dane
+var work_acts: Array = ["chop", "forage", "labor"]  # czynności, które są pracą (+ z receptur)
+
+const BASE_WORK_ACTS := ["chop", "forage", "labor"]
 
 
-func _init(world: SimWorld) -> void:
+func _init(world: SimWorld, p_recipes: Dictionary) -> void:
 	w = world
 	_cfg = world.balance["jobs"]
+	recipes = p_recipes
+	work_acts = BASE_WORK_ACTS.duplicate()
+	for id in recipes:
+		var act := String(recipes[id]["act"])
+		if not act in work_acts:
+			work_acts.append(act)
+
+
+func is_work(act: String) -> bool:
+	return act in work_acts
+
+
+# Receptura przypisana do zawodu (np. tracz → piłowanie), albo pusty słownik.
+func recipe_for_job(job: String) -> Dictionary:
+	for id in recipes:
+		if String(recipes[id]["job"]) == job:
+			return recipes[id]
+	return {}
 
 
 # --- Harmonogram ---
@@ -154,7 +176,7 @@ func _walk(a: SimAgent, to: Vector2, why: String) -> void:
 
 
 func _act(a: SimAgent, act: String, secs: float, why: String, inside: String = "", alert := false) -> void:
-	a.steps.append({ "t": "act", "act": act, "left": secs, "why": why, "inside": inside, "alert": alert })
+	a.steps.append({ "t": "act", "act": act, "left": secs, "why": why, "inside": inside, "alert": alert, "work": is_work(act) })
 
 
 func _do(a: SimAgent, fn: String, arg: Variant = null) -> void:
@@ -373,13 +395,13 @@ func _plan_child(a: SimAgent) -> void:
 
 
 func _plan_work(a: SimAgent) -> void:
+	var r := recipe_for_job(a.job)
+	if not r.is_empty():
+		_plan_producer(a, r)
+		return
 	match a.job:
 		"woodcutter":
 			_plan_woodcutter(a)
-		"sawyer":
-			_plan_producer(a, w.building("sawmill"), "saw")
-		"carpenter":
-			_plan_producer(a, w.building("workshop"), "craft")
 		"carrier":
 			if not _plan_carrier(a):
 				_walk(a, (_home(a).door() if _home(a) != null else _homeless_spot(a)) + Vector2(1.5, 1.0), "nosiciel — nic do noszenia")
@@ -465,35 +487,35 @@ func _plan_forage(a: SimAgent) -> void:
 	_do(a, "forage_done")
 
 
-func _plan_producer(a: SimAgent, b: SimBuilding, act: String) -> void:
-	if a.carrying != "" and a.carrying != "plank":
+# Praca w budynku według receptury (S13): wejścia → wyjścia, czas, umiejętność.
+func _plan_producer(a: SimAgent, r: Dictionary) -> void:
+	var b: SimBuilding = w.building(String(r["building"]))
+	var inputs: Dictionary = r["inputs"]
+	var outputs: Dictionary = r["outputs"]
+	if a.carrying != "" and not inputs.has(a.carrying):
 		_plan_deliver_carried(a)
 		return
-	var spot := b.door() + (Vector2(1.6, 0.4) if act == "saw" else Vector2(-1.6, 0.4))
-	var input := "log" if act == "saw" else "plank"
-	var output := "plank" if act == "saw" else "chair"
-	var need := 1 if act == "saw" else int(_cfg["craft_planks"])
-	var out_n := int(_cfg["saw_planks_per_log"]) if act == "saw" else 1
-	# Stolarz, który sam niesie deski (zadanie z wieczora), najpierw je odkłada.
-	if a.carrying == "plank":
-		_walk(a, spot, "niesie deski do warsztatu")
+	var sp: Array = r["spot"]
+	var spot := b.door() + Vector2(float(sp[0]), float(sp[1]))
+	# Kto sam niesie wsad (np. stolarz z deskami z wieczora), najpierw go odkłada.
+	if a.carrying != "":
+		_walk(a, spot, "niesie %s do: %s" % [w.good_label(a.carrying), b.name])
 		_do(a, "deposit", b.id)
 		return
-	if b.amount(input) < need:
-		_walk(a, spot, "idzie do warsztatu")
-		var who := "drwal" if act == "saw" else "nosiciel"
-		var what := "kłody" if act == "saw" else "deski"
-		_wait(a, "czeka na %s — potrzebny %s" % [what, who], "wait", true)
-		return
-	if b.space(output) < out_n:
-		_walk(a, spot, "idzie do warsztatu")
-		var what2 := "desek" if act == "saw" else "krzeseł"
-		_wait(a, "skład %s pełny — potrzebny nosiciel" % what2, "wait", true)
-		return
-	var base := float(_cfg["saw_seconds"]) if act == "saw" else float(_cfg["craft_seconds"])
-	_walk(a, spot, "idzie do warsztatu")
-	_act(a, act, _dur(a, act, base), "tnie kłody na deski" if act == "saw" else "robi krzesło")
-	_do(a, "produce", { "b": b.id, "act": act })
+	for g in inputs:
+		if b.amount(g) < int(inputs[g]):
+			_walk(a, spot, "idzie do: %s" % b.name)
+			_wait(a, String(r["wait_input"]), "wait", true)
+			return
+	for g in outputs:
+		if b.space(g) < int(outputs[g]):
+			_walk(a, spot, "idzie do: %s" % b.name)
+			_wait(a, String(r["full"]), "wait", true)
+			return
+	var act := String(r["act"])
+	_walk(a, spot, "idzie do: %s" % b.name)
+	_act(a, act, _dur(a, String(r["skill"]), float(r["seconds"])), String(r["doing"]))
+	_do(a, "produce", r)
 
 
 func _plan_laborer(a: SimAgent) -> void:
@@ -645,6 +667,7 @@ func _plan_deliver_carried(a: SimAgent) -> void:
 
 # Czas czynności z umiejętnością, wiekiem, traitami, zdrowiem i światłem.
 func _dur(a: SimAgent, act: String, base: float) -> float:
+	# `act` to tu umiejętność (dla receptur pole „skill”), której używa efektywność.
 	return base / efficiency(a, act)
 
 
@@ -866,24 +889,28 @@ func _fx_forage(a: SimAgent) -> bool:
 	return true
 
 
-func _fx_produce(a: SimAgent, arg: Dictionary) -> bool:
-	var b: SimBuilding = w.building(String(arg["b"]))
-	var act := String(arg["act"])
-	if act == "saw":
-		if b.take("log", 1) <= 0:
+func _fx_produce(a: SimAgent, r: Dictionary) -> bool:
+	var b: SimBuilding = w.building(String(r["building"]))
+	var inputs: Dictionary = r["inputs"]
+	for g in inputs:
+		if b.amount(g) < int(inputs[g]):
 			return false
-		b.add("plank", int(_cfg["saw_planks_per_log"]))
-		_gain_skill(a, "saw", float(_cfg["saw_seconds"]))
-	else:
-		if b.amount("plank") < int(_cfg["craft_planks"]):
-			return false
-		b.take("plank", int(_cfg["craft_planks"]))
-		var q := clampf(0.15 + 0.07 * a.skill("craft") + a.quality_bonus + w.rng.next_float(-0.1, 0.15), 0.05, 1.0)
-		b.add("chair", 1)
-		b.chair_qualities.append(q)
-		w.events.float_text(b.door(), "krzesło (%s)" % quality_label(q), "info")
-		_gain_skill(a, "craft", float(_cfg["craft_seconds"]))
-	w.roll_accident(a, act)
+	for g in inputs:
+		b.take(g, int(inputs[g]))
+	var outputs: Dictionary = r["outputs"]
+	for g in outputs:
+		b.add(g, int(outputs[g]))
+		# Jakość wyrobu (np. krzesła) z umiejętności, cech i odrobiny losu.
+		if r.has("quality") and g == "chair":
+			var qc: Dictionary = r["quality"]
+			var jit: Array = qc["jitter"]
+			for i in int(outputs[g]):
+				var q := clampf(float(qc["base"]) + float(qc["per_skill"]) * a.skill(String(r["skill"])) + a.quality_bonus
+					+ w.rng.next_float(float(jit[0]), float(jit[1])), float(qc["min"]), float(qc["max"]))
+				b.chair_qualities.append(q)
+				w.events.float_text(b.door(), "krzesło (%s)" % quality_label(q), "info")
+	_gain_skill(a, String(r["skill"]), float(r["seconds"]))
+	w.roll_accident(a, String(r["act"]))
 	return true
 
 

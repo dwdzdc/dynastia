@@ -39,7 +39,7 @@ func _ready() -> void:
 	var balance := DataLoader.load_json("res://data/balance.json")
 	if _seed == 0:
 		_seed = int(balance["world_seed"])
-	world = SimWorld.new(_seed, balance, DataLoader.load_json("res://data/map.json"), DataLoader.load_json("res://data/people.json"), DataLoader.load_json("res://data/memories.json"))
+	world = SimWorld.new(_seed, balance, DataLoader.load_json("res://data/map.json"), DataLoader.load_json("res://data/people.json"), DataLoader.load_json("res://data/memories.json"), DataLoader.load_json("res://data/recipes.json"))
 
 	_env = Environment.new()
 	_env.background_mode = Environment.BG_COLOR
