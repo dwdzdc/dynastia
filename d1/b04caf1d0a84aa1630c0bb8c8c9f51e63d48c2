@@ -1,0 +1,21 @@
+docs/design/family-dynamics.md
+  s_a19542af523da6::t_8cfe5ae9f81d61 1-86
+progress.md
+  ai_agent 4-6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "d1b04caf1d0a84aa1630c0bb8c8c9f51e63d48c2",
+  "prompts": {},
+  "sessions": {
+    "s_a19542af523da6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7a64d73b-cbda-428d-ba42-774e47e143b9",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Dawid Dziedzic <24682682+dwdzdc@users.noreply.github.com>"
+    }
+  }
+}
