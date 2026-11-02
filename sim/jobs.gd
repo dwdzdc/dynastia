@@ -146,7 +146,11 @@ func replan(a: SimAgent) -> void:
 			_plan_collect(a)
 		"chore":
 			if not _plan_chore(a):
-				_go_inside(a, _home(a), "rest", 3.0, _rest_reason(a))
+				# W dzień wolne wśród ludzi przed domem, wieczorem odpoczynek w środku.
+				if block_at(w.clock.time_of_day()) == "work" and not a.is_child:
+					_free_time(a, _rest_reason(a).trim_prefix("wolne — "))
+				else:
+					_go_inside(a, _home(a), "rest", 3.0, _rest_reason(a))
 
 
 func release(a: SimAgent) -> void:

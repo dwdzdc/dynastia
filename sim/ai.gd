@@ -22,14 +22,16 @@ func new_day() -> void:
 		for pid in h.members:
 			var p: SimPerson = w.family.persons[pid]
 			var a := w.agent_by_id(p.agent_id)
-			var l := w.family.lineage_of(p)
 			if a == null or a.status != "active" or not a.can_work() or w.family.is_ours(p):
 				continue
-			# Ziemiaństwo i kupcy żyją z majątku i handlu, nie z dniówki.
-			if l != null and l.role in cfg["idle_roles"]:
-				a.job = "none"
-				continue
 			workers.append(a)
+		# Bez klas (S20): kogo stać, ten nie najmuje się do cudzej roboty — żyje z majątku,
+		# płaci, nadzoruje, bywa. Decyduje skrzynia, nie rola w danych.
+		if not workers.is_empty() and h.cash / float(workers.size()) >= float(cfg["wealthy_cash_per_adult"]):
+			for a: SimAgent in workers:
+				w.contracts.quit(w.person_of(a), "")
+				_assign(a, "none")
+			continue
 		# Dorośli bez pary z rodów AI rozglądają się za małżonkiem sami.
 		for pid in h.members:
 			var q: SimPerson = w.family.persons[pid]

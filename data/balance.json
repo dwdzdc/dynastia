@@ -356,10 +356,7 @@
     "forage_when_cash_below": 10.0,
     "max_foragers": 1,
     "default_job": "laborer",
-    "idle_roles": [
-      "merchant",
-      "gentry"
-    ]
+    "wealthy_cash_per_adult": 60.0
   },
   "marriage": {
     "residence": "bride_moves",

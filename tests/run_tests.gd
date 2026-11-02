@@ -80,6 +80,7 @@ func _run_all() -> void:
 	_test_estate_pays_wages()
 	_test_field_work()
 	_test_assign_by_place()
+	_test_ai_visible_by_day()
 	_test_world_deterministic()
 	_test_world_30_days_autonomous()
 	_test_economy_chain_produces_income()
@@ -1261,6 +1262,32 @@ func _test_assign_by_place() -> void:
 	w.post_player_offer("sawmill", "sawyer", 1, 30.0)
 	var best: Dictionary = w.contracts.best_offer_for(stranger)
 	check("good wage in the player's sawmill attracts a stranger", best.get("place", "") == "sawmill")
+
+
+# L5 (S20): o pracy AI decyduje majątek, nie rola; w godzinach pracy dorośli AI są
+# w świecie (praca, wolne wśród ludzi), a nie zamknięci w domu bez powodu.
+func _test_ai_visible_by_day() -> void:
+	var w = _new_world()
+	var est = w.estate_owner()
+	_run_days_auto(w, 1.0)
+	var adults_est: Array = est.members.filter(func(pid): return w.family.stage_of(w.family.persons[pid]) == "adult")
+	check("wealthy household does not hire itself out", adults_est.all(func(pid):
+		return w.contracts.of_worker(pid).is_empty()))
+	w.clock.set_time(w.clock.day_index(), float(w.balance["schedule"]["work_start"]) + 0.1)
+	var inside := 0
+	var total := 0
+	for i in 40:
+		w.step_sim(2.0)
+		for a in w.agents:
+			var p = w.person_of(a)
+			if a.status != "active" or p == null or w.family.is_ours(p) or not a.can_work() or a.status == "away":
+				continue
+			if w.family.lineage_of(p).role == "trader":
+				continue
+			total += 1
+			if a.inside == a.home_id and a.activity in ["rest", "idle", "wait"]:
+				inside += 1
+	check("AI adults are out in the world during work hours", total > 0 and float(inside) / float(total) < 0.15)
 
 
 func _state_sig(w) -> String:
