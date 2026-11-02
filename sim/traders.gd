@@ -11,6 +11,7 @@ var w: SimWorld
 var visits: Array = []          # aktywne wizyty: { origin, origin_name, person, stall, leave_at }
 var _cfg: Dictionary
 var _people: Dictionary = {}    # origin id -> id osoby kupca
+var town_cash: Dictionary = {}  # origin id -> kasa miasta (S22: pieniądze wozów są skądś i tam wracają)
 var _next_day := 0
 var _origin_i := 0
 
@@ -19,6 +20,15 @@ func _init(world: SimWorld, cfg: Dictionary) -> void:
 	w = world
 	_cfg = cfg
 	_next_day = int(cfg["every_days"]) - 1
+	for o: Dictionary in cfg["origins"]:
+		town_cash[String(o["id"])] = float(o["town_cash"])
+
+
+func town_cash_total() -> float:
+	var s := 0.0
+	for k in town_cash:
+		s += float(town_cash[k])
+	return s
 
 
 func tick() -> void:
@@ -60,7 +70,10 @@ func arrive(o: Dictionary) -> Dictionary:
 	var h: SimHousehold = w.households[p.household_id]
 	var rng := w.rng
 	var cash_r: Array = o["cash"]
-	p.purse = rng.next_float(float(cash_r[0]), float(cash_r[1]))
+	# Kasa wozu to pieniądze miasta: kupiec bierze je z domu i z nimi wraca.
+	var take := minf(rng.next_float(float(cash_r[0]), float(cash_r[1])), float(town_cash[String(o["id"])]))
+	town_cash[String(o["id"])] = float(town_cash[String(o["id"])]) - take
+	p.purse += take
 	p.held = 0.0
 	h.prices = {}
 	var goods: Array = []
@@ -158,6 +171,10 @@ func _depart(v: Dictionary) -> void:
 # Wóz za krawędzią mapy: oferta przepada, towar i pieniądze wyjeżdżają z nim.
 func gone(a: SimAgent, origin: String) -> void:
 	visits = visits.filter(func(v): return v["origin"] != origin)
+	var p := w.person_of(a)
+	if p != null:
+		town_cash[origin] = float(town_cash.get(origin, 0.0)) + p.purse
+		p.purse = 0.0
 	a.status = "away"
 	a.hidden = true
 	a.steps.clear()

@@ -182,7 +182,46 @@ func new_household(home_id: String, cash: float) -> SimHousehold:
 	_next_household += 1
 	households[h.id] = h
 	h.set_chest(buildings.get(home_id))
+	h.repay = pay_to
 	return h
+
+
+# --- Obieg pieniędzy (S22, R1): każda złotówka trafia do kogoś ---
+
+# Odbiorcy płatności, które nie idą z ręki do ręki: „b:<budynek>” (właściciel budynku),
+# „authority” (pan na włościach: grzywny, kaucje), „tavern” (karczmarz: posiłki na
+# mieście, wesela), „merchant” (kupiec: drobiazgi na prezent).
+func pay_to(to: String, amount: float) -> void:
+	if amount <= 0.0:
+		return
+	if to.begins_with("b:") and buildings.has(to.substr(2)):
+		pay_owner(buildings[to.substr(2)], amount)
+		return
+	var h: SimHousehold = null
+	match to:
+		"tavern":
+			if buildings.has("tavern") and buildings["tavern"].owner_kind != "none":
+				pay_owner(buildings["tavern"], amount)
+				return
+		"merchant":
+			for st: SimStall in trade.stalls.values():
+				if not st.temporary and not st.buys.is_empty():
+					h = households.get(st.owner)
+					break
+	if h == null:
+		h = household_at(String(balance["economy"]["authority_home"]))
+	if h != null:
+		h.earn(amount)
+
+
+# Wszystkie pieniądze świata: skrzynie, sakwy (także osób w drodze) i kasy miast okolicy.
+func money_total() -> float:
+	var s := 0.0
+	for h: SimHousehold in households.values():
+		s += h.cash
+	for p: SimPerson in family.persons.values():
+		s += p.purse
+	return s + traders.town_cash_total()
 
 
 # Osoba zamieszkuje w gospodarstwie: ciało dostaje jego dom.
@@ -739,6 +778,7 @@ func resolve_prompt(prompt_id: int, value: Variant) -> void:
 			var a := agent_by_id(int(p["data"]["agent"]))
 			if String(value) == "bail" and a != null and a.status == "jailed":
 				household.pay(float(balance["crime"]["bail"]))
+				pay_to("authority", float(balance["crime"]["bail"]))
 				release_from_jail(a)
 
 
@@ -1070,7 +1110,7 @@ func arrest(a: SimAgent) -> void:
 	a.hidden = true
 	a.jail_days = float(c["jail_days"])
 	var h := household_of(a)
-	h.debt += float(c["fine"])
+	h.owe("authority", float(c["fine"]))
 	h.reputation -= float(c["reputation_hit"])
 	stats["arrests"] = int(stats.get("arrests", 0)) + 1
 	var who := "Złapany" if p.sex == "m" else "Złapana"
@@ -1110,6 +1150,12 @@ func kill(a: SimAgent, cause: String) -> void:
 	var ours := not is_independent(a)
 	note("ŚMIERĆ: %s %s %s w wieku %d lat." % [p.name, p.surname, cause, age], "critical" if ours else "info", a.position)
 	var was_root := p.id == family.root_id
+	# Sakwa zmarłego zostaje w domu (spadek do skrzyni gospodarstwa).
+	var dh: SimHousehold = households.get(p.household_id)
+	if dh != null and p.purse > 0.0:
+		dh.cash += p.purse
+		p.purse = 0.0
+		p.held = 0.0
 	chronicle.add(clock.now(), "death", "%s %s %s w wieku %d lat." % [p.name, p.surname, cause, age], [p.id], p.lineage_id)
 	family.on_death(p, cause)
 	if ours and not was_root and not family.game_over:
@@ -1197,7 +1243,7 @@ func _settle_rent(h: SimHousehold) -> void:
 		return
 	if b.rent_per_day <= 0.0 or owns(h, b):
 		return
-	var missing := b.rent_per_day - h.pay_due(b.rent_per_day)
+	var missing := b.rent_per_day - h.pay_due(b.rent_per_day, "b:" + b.id)
 	pay_owner(b, b.rent_per_day - missing)
 	if missing > 0.0 and h == household:
 		note("Brak na czynsz! Dług %d zł." % int(h.debt), "warn", null)
@@ -1228,13 +1274,19 @@ func pay_owner(b: SimBuilding, amount: float) -> void:
 	match b.owner_kind:
 		"person":
 			var p: SimPerson = family.persons.get(b.owner_id)
-			if p != null:
+			if p != null and p.alive():
 				p.purse += amount
+				return
 		"lineage":
 			var l: SimLineage = family.lineages.get(b.owner_id)
 			var r: SimPerson = family.persons.get(l.root_id) if l != null else null
 			if r != null and households.has(r.household_id):
 				households[r.household_id].earn(amount)
+				return
+	# Właściciel nieznany albo nie żyje: pieniądze bierze pan na włościach (S22).
+	var auth := household_at(String(balance["economy"]["authority_home"]))
+	if auth != null:
+		auth.earn(amount)
 
 
 func move_household(h: SimHousehold, b: SimBuilding) -> void:
@@ -1280,9 +1332,8 @@ func _debt_jail() -> void:
 	a.status = "jailed"
 	a.hidden = true
 	a.jail_days = float(balance["economy"]["debt_jail_days"])
-	var forgiven := household.debt * float(balance["economy"]["debt_jail_forgive"])
 	household.evict_days = 0
-	household.debt -= forgiven
+	household.forgive(float(balance["economy"]["debt_jail_forgive"]))
 	note("Straż zabrała %s do aresztu za długi rodu (%d dni). Połowa długu umorzona." % [p.name, int(a.jail_days)], "critical", building("jail").door())
 	ask_ok("Areszt za długi", "Dług przekroczył %d zł. Straż zabrała %s do aresztu na %d dni.\nPołowa długu umorzona, reszta (%d zł) zostaje." % [
 		int(household.debt_limit), p.name, int(a.jail_days), int(household.debt)])

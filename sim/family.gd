@@ -625,6 +625,7 @@ func after_talk(p: SimPerson, q: SimPerson, compat: float) -> void:
 	if love(p, q) >= float(r["gift_love"]) and p.purse >= float(r["gift_cost"]):
 		p.purse -= float(r["gift_cost"])
 		p.held = minf(p.held, p.purse)
+		w.pay_to("merchant", float(r["gift_cost"]))
 		w.bonds.remember(q.id, SimBonds.love(p.id), "gift", [p.id])
 		var a: SimAgent = w.agent_by_id(p.agent_id)
 		if a != null:
@@ -783,7 +784,7 @@ func marry(a: SimPerson, b: SimPerson) -> void:
 	var new_l := lineage_of(stayer)
 	var sh: SimHousehold = w.households.get(stayer.household_id)
 	if sh != null:
-		sh.pay_or_debt(float(_marriage()["wedding_cost"]))
+		sh.pay_or_debt(float(_marriage()["wedding_cost"]), "tavern")
 	old.remove(mover)
 	new_l.add(mover)
 	mover.attached = true

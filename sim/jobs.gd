@@ -1134,6 +1134,7 @@ func _fx_meal_away(a: SimAgent, price: float) -> bool:
 		_hh(a).pay(price)
 	else:
 		return false
+	w.pay_to("tavern", price)   # gotowy posiłek kupuje się od karczmarza
 	a.needs["food"] = minf(100.0, a.needs["food"] + float(w.balance["needs"]["food"]["meal"]))
 	return true
 

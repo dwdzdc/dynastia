@@ -22,6 +22,8 @@ var cash: float:
 		else:
 			_bundle = v
 var debt: float = 0.0
+var creditors: Array = []            # komu ród jest winien: { to, amount } (S22), spłata po kolei
+var repay: Callable                  # (to, kwota): oddanie pieniędzy wierzycielowi — ustawia SimWorld
 var debt_interest: float             # na dobę
 var debt_limit: float
 var evict_days: int = 0              # ile dób z rzędu dług za dom przekracza próg eksmisji
@@ -37,6 +39,8 @@ var last_day_net: float = 0.0
 var burn_acc: float = 0.0            # ułamek kłody opału do spalenia
 
 var _rep_decay: float
+
+const CENT := 0.0001                 # poniżej tego dług wobec wierzyciela uznaje się za spłacony
 
 
 func _init(p_id: int, p_home: String, eco: Dictionary, start_cash: float) -> void:
@@ -69,21 +73,58 @@ func pay(amount: float) -> void:
 
 
 func _earn(amount: float) -> void:
-	# Zarobek najpierw spłaca dług.
+	# Zarobek najpierw spłaca dług — pieniądze idą do wierzycieli (S22).
 	if debt > 0.0:
 		var d := minf(debt, amount)
 		debt -= d
 		amount -= d
+		_pay_creditors(d)
 	cash += amount
 	earned_today += amount
 
 
-# Wydatek, na który nie ma odmowy (np. wesele): brakująca część idzie w dług.
-func pay_or_debt(amount: float) -> void:
+# Dług wobec konkretnego wierzyciela (S22): `to` to klucz rozumiany przez SimWorld.
+func owe(to: String, amount: float) -> void:
+	if amount <= 0.0:
+		return
+	debt += amount
+	for c: Dictionary in creditors:
+		if c["to"] == to:
+			c["amount"] = float(c["amount"]) + amount
+			return
+	creditors.append({ "to": to, "amount": amount })
+
+
+func _pay_creditors(d: float) -> void:
+	while d > CENT and not creditors.is_empty():
+		var c: Dictionary = creditors[0]
+		var x := minf(float(c["amount"]), d)
+		c["amount"] = float(c["amount"]) - x
+		d -= x
+		if repay.is_valid():
+			repay.call(String(c["to"]), x)
+		if float(c["amount"]) <= CENT:
+			creditors.pop_front()
+
+
+# Umorzenie części długu: każdy wierzyciel traci tę samą część.
+func forgive(frac: float) -> float:
+	var f := debt * frac
+	debt -= f
+	for c: Dictionary in creditors:
+		c["amount"] = float(c["amount"]) * (1.0 - frac)
+	return f
+
+
+# Wydatek, na który nie ma odmowy (np. wesele): zapłacona część idzie do `to`,
+# brakująca w dług wobec niego.
+func pay_or_debt(amount: float, to: String) -> void:
 	var paid := minf(maxf(cash, 0.0), amount)
 	cash -= paid
 	spent_today += paid
-	debt += amount - paid
+	if repay.is_valid():
+		repay.call(to, paid)
+	owe(to, amount - paid)
 
 
 func earn(amount: float) -> void:
@@ -99,12 +140,14 @@ func new_day() -> void:
 	reputation = maxf(0.0, reputation - _rep_decay) if reputation > 0.0 else minf(0.0, reputation + _rep_decay)
 	if debt > 0.0:
 		debt *= 1.0 + debt_interest
+		for c: Dictionary in creditors:
+			c["amount"] = float(c["amount"]) * (1.0 + debt_interest)
 
 
-# Opłata dzienna (czynsz): płaci z kasy, brak idzie w dług. Zwraca zapłaconą część.
-func pay_due(amount: float) -> float:
+# Opłata dzienna (czynsz): płaci z kasy, brak idzie w dług wobec `to`. Zwraca zapłaconą część.
+func pay_due(amount: float, to: String) -> float:
 	var paid := minf(maxf(cash, 0.0), amount)
 	cash -= paid
 	spent_today += paid
-	debt += amount - paid
+	owe(to, amount - paid)
 	return paid

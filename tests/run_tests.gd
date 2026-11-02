@@ -86,6 +86,7 @@ func _run_all() -> void:
 	_test_housing_orders()
 	_test_construction()
 	_test_build_catalog()
+	_test_money_invariant()
 	_test_theft_process()
 	_test_world_deterministic()
 	_test_world_30_days_autonomous()
@@ -1487,6 +1488,18 @@ func _test_build_catalog() -> void:
 		and is_equal_approx(w.site_work_allowed(rs), w.site_total(rs)))
 	w.build_work(rid, 99999.0)
 	check("finished road is on the map and the site is gone", w.roads_built.size() == 1 and not w.buildings.has(rid))
+
+
+# R1 (S22): zamknięty obieg — suma pieniędzy świata (skrzynie, sakwy, kasy miast)
+# nie zmienia się przez dni życia wsi: czynsz, długi, wypłaty, handel, wozy, śluby.
+func _test_money_invariant() -> void:
+	var w = _new_world(31)
+	var m0: float = w.money_total()
+	var worst := 0.0
+	for d in 6:
+		_run_days_auto(w, 1.0)
+		worst = maxf(worst, absf(w.money_total() - m0))
+	check("money of the world is constant (closed economy)", worst < 0.01)
 
 
 func _test_theft_process() -> void:

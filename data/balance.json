@@ -228,7 +228,7 @@
     "default_target_food": 20,
     "default_target_firewood": 6,
     "debt_jail_forgive": 0.5,
-    "meal_away_price": 1.5,
+    "meal_away_price": 1.5, "authority_home": "manor",
     "homeless_spot": [
       60.0,
       46.0
