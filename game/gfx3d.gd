@@ -81,6 +81,7 @@ static func plane(size: Vector2, color: Color) -> MeshInstance3D:
 	var mi := MeshInstance3D.new()
 	var pm := PlaneMesh.new()
 	pm.size = size
+	pm.flip_faces = true  # PlaneMesh patrzy w -Y; od góry chcemy widzieć przednią ścianę
 	pm.material = mat(color)
 	mi.mesh = pm
 	return mi

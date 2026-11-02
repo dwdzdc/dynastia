@@ -1,7 +1,18 @@
 # Dynastia — progress
 
 Roboczy plan implementacji. Źródło: plik `intro` (wizja, filary, model danych, architektura, zakres MVP).
-Faza: **planowanie** — nic nie jest zaimplementowane, ten plik tylko rozbija pracę na atomowe kroki.
+Faza: **implementacja w toku** — etapy 0–2 gotowe, render 3D izo zrobiony.
+
+## Stan na przekazanie (02.11.2026)
+
+- Etapy 0–2 zrobione (commity w historii, email autora poprawiony). Testy headless:
+  `godot --headless --script res://tests/run_tests.gd` → 32 OK.
+- Render: **3D izometryczny** (proste bryły + `StandardMaterial3D`, wzorzec z `gierka`). Warstwa `sim/` czysto 2D i nietknięta — render tylko mapuje `(x,y) → (X,Z)`.
+- Sterowanie: LPM = zaznacz, PPM = każ iść, przeciągnij/WASD = kamera, kółko = zoom, SPACE/1/2/3 = tempo.
+- Licznik drewna rośnie, gdy osadnicy pracują (zalążek gospodarki; pełna produkcja = Etap 3).
+- Narzędzie: `tools/screenshot.gd` robi zrzuty na prawdziwym wyświetlaczu (wymaga display; z `--headless` nie renderuje).
+- Znane do dopracowania po przekazaniu: balans światła (drogi lekko prześwietlone), kąt/odległość/zoom kamery, skala brył vs ludzików.
+- Uwaga techniczna: `PlaneMesh` w Godocie leży poziomo (XZ, normalna −Y) — teren zrobiono jako płaski `BoxMesh`, nie `PlaneMesh` (ten sprawiał, że świat znikał).
 
 ## Decyzje i dokumentacja towarzysząca
 

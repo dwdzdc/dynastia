@@ -34,7 +34,7 @@ var selected: RefCounted = null
 var _selected_node: Node3D = null
 
 var cam_target := Vector3.ZERO
-var cam_dist := 100.0
+var cam_dist := 120.0
 var _manual_target: Vector2
 var _has_manual_target := false
 var _dragging := false
@@ -72,8 +72,8 @@ func _ready() -> void:
 
 	camera.make_current()
 	camera.fov = 50.0
-	var vc := _village_center()
-	cam_target = Vector3(vc.x * S, 0.0, vc.y * S)
+	var ws: Array = map_data["world_size"]
+	cam_target = Vector3(float(ws[0]) * 0.5 * S, 0.0, float(ws[1]) * 0.5 * S)
 	_update_camera()
 
 
@@ -101,9 +101,13 @@ func _process(delta: float) -> void:
 # --- Budowa świata 3D ---
 
 func _build_world() -> void:
-	var size: Array = map_data["world_size"]
-	var ground := Gfx3D.plane(Vector2(float(size[0]) * S, float(size[1]) * S), GRASS)
-	ground.rotation_degrees = Vector3(-90, 0, 0)
+	var ws: Array = map_data["world_size"]
+	var cx := float(ws[0]) * 0.5 * S
+	var cz := float(ws[1]) * 0.5 * S
+	# Duży teren (trawa) — płaski box zamiast PlaneMesh (orientacja PlaneMesh sprawiała,
+	# że teren stał pionowo/cullowany i kadr zalewał niebem). Box renderuje się pewnie.
+	var ground := Gfx3D.box(Vector3(1400.0, 0.5, 1400.0), GRASS)
+	ground.position = Vector3(cx, -0.25, cz)
 	world_root.add_child(ground)
 
 	var forest := _pos("forest")
