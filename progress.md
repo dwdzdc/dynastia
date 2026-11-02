@@ -1,7 +1,7 @@
 # Dynastia — progress
 
 Źródło wizji: plik `intro` (filary, model danych, zakres MVP). Ten plik to stan prac i kolejność dalszych kroków — sugestia, nie dogmat.
-Decyzje: `docs/adr/`, terminy: `GLOSSARY.md`, model rodu: `docs/design/family-dynamics.md` (ma pierwszeństwo przed `intro` §5).
+Wizja: `docs/design/vision.md` (najwyższe źródło prawdy), model rodu: `docs/design/family-dynamics.md`, decyzje: `docs/adr/`, terminy: `GLOSSARY.md`.
 
 > Kierunek (02.11.2026): obecne MVP za bardzo przypomina grę o osadzie. Następny etap to dynamika rodu (więzi, przynależność, uwaga jako czas w świecie) według `docs/design/family-dynamics.md`, potem społeczeństwo (targ, praca i lokum jako relacje z konkretnymi ludźmi z innych rodów, a nie abstrakcyjne systemy).
 
@@ -46,7 +46,7 @@ Pętla gry: ród Wilków (6 osób, 3 pokolenia) w chacie pod lasem. Co 5 dni czy
 
 Źródło: `docs/design/family-dynamics.md`. Format: **wejście → wyjście → weryfikacja**. Kolejność ma znaczenie: każda faza stoi na poprzedniej.
 
-### Decyzje szkieletowe (do zatwierdzenia przed kodem)
+### Decyzje szkieletowe (zatwierdzone przez autora 02.11.2026)
 
 - **S1. Ród jako osobny byt.** `SimLineage { id, name, root_id, members }`; `Person.lineage_id`. Gospodarstwo (kto mieszka razem, kasa wspólna) to osobny byt; ród może mieć ich 0..n. Przynależność zmieniają tylko zdarzenia.
 - **S2. Jeden magazyn więzi dla ludzi i czynności.** Rzadki słownik `(od, cel) → Bond`, gdzie cel to id osoby albo klucz czynności/miejsca (`act:saw`, `place:sawmill`).
