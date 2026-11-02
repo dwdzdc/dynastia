@@ -190,8 +190,8 @@ func is_independent(a: SimAgent) -> bool:
 	return p != null and p.lineage_id != family.player_lineage_id
 
 
-# Zarobek osoby (dniówka, łup) trafia najpierw do niej (S5, D1). Do kasy gospodarstwa
-# oddaje tym więcej, im silniej należy do swojego rodu.
+# Zarobek osoby (dniówka, łup) trafia do jej sakwy (S5, S14). Część gospodarstwa
+# (`held`) oddaje do skrzyni w domu — tym większą, im silniej należy do rodu (D1, K3).
 func earn_for(a: SimAgent, amount: float) -> void:
 	var p := person_of(a)
 	if p == null:
@@ -200,8 +200,8 @@ func earn_for(a: SimAgent, amount: float) -> void:
 	var pc: Dictionary = balance["purse"]
 	var s := clampf(float(family.strength.get(p.id, 1.0)), 0.0, 1.0)
 	var share := lerpf(float(pc["share_at_zero"]), float(pc["share_at_full"]), s)
-	household_of(a).earn(amount * share)
-	p.purse += amount * (1.0 - share)
+	p.purse += amount
+	p.held += amount * share
 
 
 func building(id: String) -> SimBuilding:

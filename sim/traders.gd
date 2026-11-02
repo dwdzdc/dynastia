@@ -151,7 +151,7 @@ func wants(good: String) -> int:
 
 
 # Sprzedaż prosto na wóz (lepsza cena niż u miejscowego). Zwraca { qty, paid }.
-func sell_to_wagon(seller: SimHousehold, good: String, qty: int, qualities: Array) -> Dictionary:
+func sell_to_wagon(seller: SimHousehold, good: String, qty: int, qualities: Array, payee: SimPerson = null) -> Dictionary:
 	var n := 0
 	var paid := 0.0
 	for v: Dictionary in visits:
@@ -164,7 +164,7 @@ func sell_to_wagon(seller: SimHousehold, good: String, qty: int, qualities: Arra
 				break
 			v["cash"] = float(v["cash"]) - price
 			v["buys"][good]["qty"] = int(v["buys"][good]["qty"]) - 1
-			seller.earn(price)
+			SimMarket.pay_into(seller, payee, price)
 			paid += price
 			n += 1
 	return { "qty": n, "paid": paid }

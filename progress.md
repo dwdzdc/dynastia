@@ -116,7 +116,7 @@ Pętla gry: ród Wilków (6 osób, 3 pokolenia) w chacie pod lasem. Co 5 dni czy
 - [x] K0 „Nosiciel” → „tragarz” w danych, UI i dokumentach → grep pusty.
 - [x] K1 Skrzynia (S14): kasa gospodarstwa jako `coin` w domu → test: suma pieniędzy w świecie stała; gracz widzi monety na etykiecie domu.
 - [x] K2 Zakup przez sakwę: brak w sakwie → najpierw dom i skrzynia, płaci z sakwy, reszta zostaje na okazję albo wraca → test: bez pieniędzy w sakwie i bez wizyty w domu nie kupi; gracz widzi, jak ktoś zagląda do chaty przed targiem.
-- [ ] K3 Zarobek do sakwy, oddanie do skrzyni to czynność w domu; ile oddaje i ile wydaje na siebie zależy od siły (D1 w świecie) → test: oddalający się oddaje mniej, zadbany oddaje mimo pełnej sakwy.
+- [x] K3 Zarobek do sakwy, oddanie do skrzyni to czynność w domu; ile oddaje i ile wydaje na siebie zależy od siły (D1 w świecie) → test: oddalający się oddaje mniej, zadbany oddaje mimo pełnej sakwy.
 
 ### Faza L — widoczna praca
 
@@ -234,6 +234,7 @@ Zegar pór dnia zamiast godzin (tarcza jak w Don't Starve: poranek, dzień, zmie
 9. [ ] Epoki jako dane i zmiana epoki w trakcie gry (nauka).
 10. [ ] Księgowość jako miejsce pracy: księga przychodów i rozchodów, bez niej gracz zna tylko stan skrzyni (`living-village.md`).
 11. [ ] Wózki, plecaki, potem auta jako towar zwiększający udźwig.
+12. [ ] Lepsze narzędzia (siekiery, kosy, piły) jako towar: dla rodziny albo pożyczane pracownikom.
 
 ## Uwagi autora do wdrożenia (02.11.2026)
 

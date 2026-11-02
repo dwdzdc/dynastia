@@ -69,3 +69,4 @@ Mechaniki z iteracji 2 rozstrzygały wynik funkcją zamiast procesem w świecie:
 
 - **Księgowość jako miejsce pracy.** Ktoś z rodu albo pracownik prowadzi księgę przychodów i rozchodów; tylko z niej gracz widzi, ile na co idzie i czy ktoś nie chowa. Bez księgowego gracz zna tylko stan skrzyni.
 - **Wózki, plecaki, potem auta** jako towar: więcej niesionego na raz. Kolejny łańcuch gospodarki.
+- **Lepsze narzędzia** (siekiery, kosy, piły…) jako towar: szybsza i bezpieczniejsza praca. Używane przez rodzinę albo pożyczane pracownikom (narzędzie jest czyjeś, może nie wrócić).

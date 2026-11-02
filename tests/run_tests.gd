@@ -652,13 +652,19 @@ func _test_purse_share_by_strength() -> void:
 	var az = w.agent_by_id(zofia.agent_id)
 	f.strength[piotr.id] = 1.0
 	f.strength[zofia.id] = 0.25
+	var pocket := float(w.balance["purse"]["pocket_money"])
 	var c0: float = w.household.cash
 	w.earn_for(ap, 10.0)
+	check("earnings land in the purse, not the chest far away", is_equal_approx(piotr.purse, 10.0) and is_equal_approx(w.household.cash, c0))
+	ap.position = w.home().door()
+	w.jobs._return_coins(ap)
 	var close_gives: float = w.household.cash - c0
 	c0 = w.household.cash
 	w.earn_for(az, 10.0)
+	az.position = w.home().door()
+	w.jobs._return_coins(az)
 	var far_gives: float = w.household.cash - c0
-	check("close member hands over everything", is_equal_approx(close_gives, 10.0) and is_zero_approx(piotr.purse))
+	check("close member hands over all but pocket money at home", is_equal_approx(close_gives, 10.0 - pocket) and is_equal_approx(piotr.purse, pocket))
 	check("drifting member hands over less and keeps the rest", far_gives < close_gives and is_equal_approx(zofia.purse, 10.0 - far_gives))
 
 

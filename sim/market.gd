@@ -74,8 +74,9 @@ func wants(good: String) -> int:
 	return maxi(0, mini(building.space(good), cap - building.amount(good)))
 
 
-# Sprzedawca oddaje towar kupcowi. Zwraca { qty, paid }; kupiec płaci z własnej kasy.
-func buy_from(seller: SimHousehold, good: String, qty: int, qualities: Array) -> Dictionary:
+# Sprzedawca oddaje towar kupcowi. Zwraca { qty, paid }; kupiec płaci z własnej kasy
+# do ręki osoby, która przyniosła towar (`payee`, S14), a bez niej — gospodarstwu.
+func buy_from(seller: SimHousehold, good: String, qty: int, qualities: Array, payee: SimPerson = null) -> Dictionary:
 	var t := till()
 	var n := 0
 	var paid := 0.0
@@ -85,7 +86,7 @@ func buy_from(seller: SimHousehold, good: String, qty: int, qualities: Array) ->
 		if t.cash < price:
 			break
 		t.pay(price)
-		seller.earn(price)
+		SimMarket.pay_into(seller, payee, price)
 		paid += price
 		building.add(good, 1)
 		if good == "chair":
@@ -94,6 +95,15 @@ func buy_from(seller: SimHousehold, good: String, qty: int, qualities: Array) ->
 				float(_cfg["reputation_min"]))
 		n += 1
 	return { "qty": n, "paid": paid }
+
+
+# Zapłata do ręki: pieniądze gospodarstwa w sakwie tej osoby (do oddania w domu).
+static func pay_into(h: SimHousehold, payee: SimPerson, amount: float) -> void:
+	if payee == null:
+		h.earn(amount)
+		return
+	payee.purse += amount
+	payee.held += amount
 
 
 # Kupujący bierze towar z zapasu kupca i płaci z sakwy (S14). Zwraca liczbę kupionych sztuk.

@@ -118,7 +118,9 @@ func replan(a: SimAgent) -> void:
 		"eat":
 			_plan_eat(a)
 		"sleep":
-			_go_inside(a, _home(a), "sleep", 4.0, "śpi")
+			_walk(a, _home(a).door(), "idzie spać")
+			_do(a, "return_coins")
+			_act(a, "sleep", 4.0, "śpi", _home(a).id)
 		"child":
 			_plan_child(a)
 		"dinner":
@@ -738,6 +740,9 @@ func apply(a: SimAgent, step: Dictionary) -> bool:
 			return _fx_deposit(a, String(step["arg"]))
 		"pickup":
 			return _fx_pickup(a, step["arg"])
+		"return_coins":
+			_return_coins(a)
+			return true
 		"take_coins":
 			return _fx_take_coins(a, float(step["arg"]))
 		"buy_food":
@@ -779,6 +784,7 @@ func _fx_meal_away(a: SimAgent, price: float) -> bool:
 
 
 func _fx_dinner(a: SimAgent) -> void:
+	_return_coins(a)
 	if a.dinner_day == w.clock.day_index():
 		return
 	a.dinner_day = w.clock.day_index()
@@ -792,13 +798,14 @@ func _fx_take_coins(a: SimAgent, amt: float) -> bool:
 	if p == null or hh.chest == null or a.position.distance_to(hh.chest.door()) > AT_DOOR:
 		return false
 	var n := clampf(amt, 0.0, maxf(hh.cash, 0.0))
-	hh.cash -= n
+	hh.pay(n)
 	p.purse += n
 	p.held += n
 	return true
 
 
-# Po powrocie do domu: pieniądze gospodarstwa ponad kieszonkowe wracają do skrzyni.
+# W domu (zostawia towar, kolacja, sen): pieniądze gospodarstwa ponad kieszonkowe
+# wracają do skrzyni (K2, K3). Kto ich nie oddaje, ten je chowa.
 func _return_coins(a: SimAgent) -> void:
 	var p := w.person_of(a)
 	var hh := _hh(a)
@@ -806,8 +813,8 @@ func _return_coins(a: SimAgent) -> void:
 		return
 	var back := maxf(0.0, minf(p.held, p.purse) - float(w.balance["purse"]["pocket_money"]))
 	p.purse -= back
-	p.held = minf(p.held, p.purse) if back <= 0.0 else p.held - back
-	hh.cash += back
+	p.held = minf(p.held - back, p.purse)
+	hh.earn(back)
 
 
 func _fx_deposit(a: SimAgent, bid: String) -> bool:
@@ -818,7 +825,7 @@ func _fx_deposit(a: SimAgent, bid: String) -> bool:
 		return true
 	if b.type == "market":
 		# Najpierw na wóz kupca wędrownego (lepsza cena), resztę miejscowemu kupcowi (H1, H3).
-		var rw: Dictionary = w.traders.sell_to_wagon(_hh(a), a.carrying, a.carrying_qty, a.carrying_qualities)
+		var rw: Dictionary = w.traders.sell_to_wagon(_hh(a), a.carrying, a.carrying_qty, a.carrying_qualities, w.person_of(a))
 		if int(rw["qty"]) > 0:
 			w.events.float_text(b.door() + Vector2(2, 0), "+%d zł (wóz)" % int(round(float(rw["paid"]))), "money")
 			w.stats["sold_" + a.carrying] = int(w.stats.get("sold_" + a.carrying, 0)) + int(rw["qty"])
@@ -827,7 +834,7 @@ func _fx_deposit(a: SimAgent, bid: String) -> bool:
 			if a.carrying_qty <= 0:
 				a.clear_carry()
 				return true
-		var r: Dictionary = w.market.buy_from(_hh(a), a.carrying, a.carrying_qty, a.carrying_qualities)
+		var r: Dictionary = w.market.buy_from(_hh(a), a.carrying, a.carrying_qty, a.carrying_qualities, w.person_of(a))
 		var n := int(r["qty"])
 		if n > 0:
 			w.events.float_text(b.door(), "+%d zł" % int(round(float(r["paid"]))), "money")
@@ -893,7 +900,6 @@ func _buy(a: SimAgent, good: String, qty: int) -> bool:
 	var purse0 := p.purse
 	var n := w.market.sell_to(p, good, qty)
 	var spent := purse0 - p.purse
-	hh.spent_today += spent
 	if hh.chest == null:
 		var back := minf(bundle, p.purse)
 		p.purse -= back
