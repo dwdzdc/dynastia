@@ -1,0 +1,36 @@
+sim/world.gd
+  s_01663f7cfcc9df::t_8819cbfc7fe41a 11,19,41,45,66
+  s_01663f7cfcc9df::t_6cc81c94db93bf 546
+tools/probe.gd
+  s_01663f7cfcc9df::t_8819cbfc7fe41a 11
+sim/bonds.gd.uid
+  s_01663f7cfcc9df::t_6cc81c94db93bf 1
+progress.md
+  ai_agent 66-67
+game/main.gd
+  s_01663f7cfcc9df::t_8819cbfc7fe41a 40
+sim/bonds.gd
+  s_01663f7cfcc9df::t_8819cbfc7fe41a 1-127
+data/memories.json
+  s_01663f7cfcc9df::t_8819cbfc7fe41a 1-26
+tests/run_tests.gd
+  s_01663f7cfcc9df::t_6cc81c94db93bf 51-52,313-358,360-367
+  s_01663f7cfcc9df::t_8819cbfc7fe41a 198
+  s_01663f7cfcc9df::t_acac78269727bb 359
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "63172891f1f36386a2155821c2523356b09efc15",
+  "prompts": {},
+  "sessions": {
+    "s_01663f7cfcc9df": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0628b2b4-7b30-464d-a1f4-7ea1e2566c94",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Dawid Dziedzic <24682682+dwdzdc@users.noreply.github.com>"
+    }
+  }
+}
