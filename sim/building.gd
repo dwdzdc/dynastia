@@ -16,6 +16,7 @@ var chair_qualities: Array = []  # jakość każdego krzesła w zapasie (FIFO)
 var owner_kind: String = "none"
 var owner_id: int = -1
 var rent_per_day: float = 0.0
+var condition: float = 1.0       # stan domu 0..1 (R3): niszczeje, remontuje się deskami
 # Skrzynie (S14): id gospodarstwa -> pieniądze w jego skrzyni. Kilka gospodarstw może
 # mieszkać pod jednym dachem (kąt u sąsiadów), każde ma swoją skrzynię.
 var chests: Dictionary = {}

@@ -1,14 +1,58 @@
 {
-  "labels": { "tools": "narzędzia", "cloth": "ubranie", "luxury": "towary luksusowe" },
+  "labels": {
+    "tools": "narzędzia",
+    "cloth": "ubranie",
+    "luxury": "towary luksusowe"
+  },
   "tiers": [
-    { "id": "survival", "label": "przetrwanie", "min_wealth": 0.0 },
-    { "id": "comfort", "label": "wygoda", "min_wealth": 12.0 },
-    { "id": "prestige", "label": "prestiż (na pokaz)", "min_wealth": 60.0 }
+    {
+      "id": "survival",
+      "label": "przetrwanie",
+      "min_wealth": 0.0
+    },
+    {
+      "id": "comfort",
+      "label": "wygoda",
+      "min_wealth": 12.0
+    },
+    {
+      "id": "prestige",
+      "label": "prestiż (na pokaz)",
+      "min_wealth": 60.0
+    }
   ],
   "needs": {
-    "tools": { "tier": "comfort", "per": "adult", "qty": 1, "wear_days": 25.0 },
-    "cloth": { "tier": "comfort", "per": "person", "qty": 1, "wear_days": 18.0 },
-    "chair": { "tier": "prestige", "per": "person", "qty": 1, "wear_days": 80.0 },
-    "luxury": { "tier": "prestige", "per": "household", "qty": 2, "wear_days": 6.0 }
-  }
+    "tools": {
+      "tier": "comfort",
+      "per": "adult",
+      "qty": 1,
+      "wear_days": 25.0
+    },
+    "cloth": {
+      "tier": "comfort",
+      "per": "person",
+      "qty": 1,
+      "wear_days": 18.0
+    },
+    "chair": {
+      "tier": "prestige",
+      "per": "person",
+      "qty": 1,
+      "wear_days": 80.0
+    },
+    "luxury": {
+      "tier": "prestige",
+      "per": "household",
+      "qty": 2,
+      "wear_days": 6.0
+    }
+  },
+  "house": {
+    "decay_per_day": 0.012,
+    "repair_below": 0.75,
+    "planks_per_full": 20,
+    "repair_seconds": 25.0,
+    "cold_extra_burn": 1.0
+  },
+  "reserve_meals": 6
 }

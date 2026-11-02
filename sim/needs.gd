@@ -82,3 +82,41 @@ func wants(h: SimHousehold) -> Dictionary:
 
 func goods() -> Array:
 	return _cfg["needs"].keys()
+
+
+# Zużycie (R3): rzeczy w domu zużywają się z czasem, dom niszczeje. Raz na dobę.
+func wear_day(h: SimHousehold) -> void:
+	var home: SimBuilding = w.buildings.get(h.home_id)
+	if home == null:
+		return
+	for good in _cfg["needs"]:
+		var have := home.amount(good)
+		if have <= 0:
+			continue
+		var acc := float(h.wear_acc.get(good, 0.0)) + float(have) / float(_cfg["needs"][good]["wear_days"])
+		var n := int(floor(acc))
+		h.wear_acc[good] = acc - n
+		if n > 0:
+			home.take(good, n)
+	home.condition = maxf(0.0, home.condition - float(_cfg["house"]["decay_per_day"]))
+
+
+func needs_repair(home: SimBuilding) -> bool:
+	return home != null and home.condition < float(_cfg["house"]["repair_below"])
+
+
+# Ile desek trzeba, żeby dom był jak nowy.
+func repair_planks(home: SimBuilding) -> int:
+	return int(ceil((1.0 - home.condition) * float(_cfg["house"]["planks_per_full"])))
+
+
+func repair(home: SimBuilding, planks: int) -> void:
+	home.condition = minf(1.0, home.condition + float(planks) / float(_cfg["house"]["planks_per_full"]))
+
+
+func house_cfg() -> Dictionary:
+	return _cfg["house"]
+
+
+func reserve_meals() -> int:
+	return int(_cfg["reserve_meals"])

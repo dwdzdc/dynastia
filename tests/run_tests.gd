@@ -88,6 +88,7 @@ func _run_all() -> void:
 	_test_build_catalog()
 	_test_money_invariant()
 	_test_needs_tiers()
+	_test_wear_and_repair()
 	_test_theft_process()
 	_test_world_deterministic()
 	_test_world_30_days_autonomous()
@@ -1513,6 +1514,45 @@ func _test_needs_tiers() -> void:
 	check("poor household has no prestige wants", not w.needs.wants(poor).has("luxury"))
 	poor.cash = 500.0
 	check("money lifts a household to wanting more", w.needs.wants(poor).has("luxury"))
+
+
+# R3: rzeczy się zużywają, domy niszczeją; wieś bez gracza kupuje deski na remont
+# i towary z potrzeb, a łatanie chaty widać jako czynność.
+func _test_wear_and_repair() -> void:
+	var w = _new_world()
+	var h = w.household_at("n1")
+	var home = w.building("n1")
+	home.add("cloth", 4)
+	for d in 10:
+		w.needs.wear_day(h)
+	check("goods wear out and the house decays", home.amount("cloth") < 4 and home.condition < 1.0)
+	home.condition = 0.3
+	h.cash = 200.0
+	var st = _stall_ready(w, "stall_bednarz")
+	st.stock.add("plank", 10)
+	var adult = null
+	for pid in h.members:
+		var a = w.agent_by_id(w.family.persons[pid].agent_id)
+		if a.can_work():
+			adult = a
+	adult.steps.clear()
+	w.home_of(adult).add("food", 30)
+	w.home_of(adult).add("log", 12)
+	check("village household without the player goes to buy planks for repairs", w.jobs._repair_trip(adult)
+		and adult.steps.any(func(x): return x["t"] == "do" and x["fn"] == "buy_at" and x["arg"]["good"] == "plank"))
+	home.add("plank", 14)
+	adult.steps.clear()
+	w.jobs.release(adult)
+	w.jobs._repair_trip(adult)
+	adult.position = home.door()
+	var c0: float = home.condition
+	w.jobs.apply(adult, { "t": "do", "fn": "repair", "arg": "n1" })
+	check("patching the house uses planks and restores it", home.condition > c0 and home.amount("plank") < 14)
+	var rich = w.estate_owner()
+	var ra = w.agent_by_id(w.family.persons[rich.members[1]].agent_id)
+	ra.steps.clear()
+	w.trade.stalls["stall_bednarz"].stock.add("cloth", 5)
+	check("a well-off household shops for what it lacks", w.jobs._wants_trip(ra) or w.needs.wants(rich).is_empty())
 
 
 func _test_theft_process() -> void:

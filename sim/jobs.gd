@@ -31,6 +31,7 @@ const OVERSEE_WAITS := 4.0                    # jak długo stoi przy jednym miej
 const BUILD_RADIUS := 2.2                     # budowlańcy krążą wokół placu
 const THIEF_OFFSET := Vector2(0.8, 0.9)       # złodziej staje obok celu, nie na nim
 const LOVE_OFFSET := Vector2(1.5, 0.8)        # zakochany staje obok tej drugiej osoby
+const REPAIR_SPOT := Vector2(1.8, -0.6)       # gdzie staje ten, kto łata chatę
 const POOR_MEALS := 4.0                       # bieda: w skrzyni mniej niż na tyle posiłków
 const FIREWOOD_TRIP := 2                      # ile kłód opału niesie się na raz
 const PAY_QUEUE_SPREAD := 6                  # ilu ludzi stoi obok siebie po wypłatę
@@ -644,6 +645,10 @@ func _plan_chore(a: SimAgent) -> bool:
 		return true
 	if _firewood_trip(a):
 		return true
+	if _repair_trip(a):
+		return true
+	if _wants_trip(a):
+		return true
 	# Bieda: spiżarnia pustoszeje, a nie ma za co kupić — las jest za darmo.
 	var hh = _hh(a)
 	if _home(a).amount("food") < hh.target_food / 2 and hh.cash < w.trade.ref("food") * POOR_MEALS \
@@ -651,6 +656,53 @@ func _plan_chore(a: SimAgent) -> bool:
 		_plan_forage(a)
 		return true
 	return false
+
+
+# Remont domu (R3): deski z własnego tartaku albo kupione, potem łatanie chaty.
+func _repair_trip(a: SimAgent) -> bool:
+	var home: SimBuilding = _home(a)
+	if not w.needs.needs_repair(home) or w.chore_claims.has(_claim(a, "repair")):
+		return false
+	var hc := w.needs.house_cfg()
+	if home.amount("plank") > 0:
+		w.chore_claims[_claim(a, "repair")] = a.id
+		a.claims.append("chore:" + _claim(a, "repair"))
+		_walk(a, home.door() + REPAIR_SPOT, "idzie łatać chatę")
+		_act(a, "craft", float(hc["repair_seconds"]), "łata chatę (stan %d%%)" % int(home.condition * 100.0))
+		_do(a, "repair", home.id)
+		return true
+	var want := mini(w.needs.repair_planks(home), int(w.balance["carry"]["plank"]))
+	var mill: SimBuilding = w.building("sawmill")
+	if _hh(a) == w.household and mill.amount("plank") > 0:
+		_pickup_and_deliver(a, mill, "plank", home, "niesie deski na remont chaty", want)
+	elif _spare_money(a) <= 0.0 or not _buy_trip(a, "plank", want, home, "idzie kupić deski na remont", "niesie deski na remont chaty"):
+		return false
+	w.chore_claims[_claim(a, "repair")] = a.id
+	a.claims.append("chore:" + _claim(a, "repair"))
+	return true
+
+
+# Zakupy braków z potrzeb (S23, R3): tylko z pieniędzy ponad zapas na jedzenie.
+func _wants_trip(a: SimAgent) -> bool:
+	var hh := _hh(a)
+	var home: SimBuilding = _home(a)
+	if w.chore_claims.has(_claim(a, "wants")) or _spare_money(a) <= 0.0:
+		return false
+	var miss: Dictionary = w.needs.wants(hh)
+	for good in miss:
+		var st := w.trade.best_seller(a, good)
+		if st == null or w.trade.quote(st, a, good) > _spare_money(a):
+			continue
+		if _buy_trip(a, good, mini(int(miss[good]), home.space(good)), home, "idzie kupić: %s" % w.good_label(good), "niesie do domu: %s" % w.good_label(good)):
+			w.chore_claims[_claim(a, "wants")] = a.id
+			a.claims.append("chore:" + _claim(a, "wants"))
+			return true
+	return false
+
+
+# Pieniądze, które można wydać na coś więcej niż chleb: ponad zapas na kilka posiłków.
+func _spare_money(a: SimAgent) -> float:
+	return _budget(a) - w.trade.ref("food") * float(w.needs.reserve_meals()) * float(_hh(a).members.size())
 
 
 func _food_trip(a: SimAgent, urgent: bool) -> bool:
@@ -1073,6 +1125,15 @@ func apply(a: SimAgent, step: Dictionary) -> bool:
 			return true
 		"build_work":
 			w.build_work(String(step["arg"]["site"]), float(step["arg"]["secs"]))
+			return true
+		"repair":
+			var hb: SimBuilding = w.building(String(step["arg"]))
+			var n := mini(hb.amount("plank"), w.needs.repair_planks(hb))
+			if n <= 0:
+				return false
+			hb.take("plank", n)
+			w.needs.repair(hb, n)
+			w.events.float_text(hb.door(), "chata załatana", "info")
 			return true
 		"tavern_pay":
 			var tp := w.person_of(a)

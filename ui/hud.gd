@@ -1139,7 +1139,7 @@ func _draw_overlay() -> void:
 func _stock_text(b: SimBuilding) -> String:
 	match b.type:
 		"home":
-			return "jedzenie %d · opał %d · skrzynia %d zł" % [b.amount("food"), b.amount("log"), int(b.chests.get(world.household.id, 0.0))]
+			return "jedzenie %d · opał %d · skrzynia %d zł · stan %d%%" % [b.amount("food"), b.amount("log"), int(b.chests.get(world.household.id, 0.0)), int(b.condition * 100.0)]
 		"sawmill":
 			return "kłody %d/%d · deski %d/%d" % [b.amount("log"), int(b.capacity["log"]), b.amount("plank"), int(b.capacity["plank"])]
 		"workshop":

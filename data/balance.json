@@ -188,11 +188,10 @@
     },
     "home": {
       "food": 30,
-      "log": 12, "tools": 6, "cloth": 10, "chair": 10, "luxury": 4},
+      "log": 12, "tools": 6, "cloth": 10, "chair": 10, "luxury": 4, "plank": 20},
     "manor": {
       "food": 200,
-      "log": 12
-    },
+      "log": 12, "tools": 8, "cloth": 12, "chair": 12, "luxury": 6, "plank": 20},
     "stall": {"food": 60, "log": 20, "plank": 40, "chair": 12, "tools": 10, "cloth": 15, "luxury": 8}
   },
   "trees": {
@@ -349,7 +348,7 @@
     "wedding_cost": 15.0,
     "know_well": 15.0
   },
-  "trade": {"ref": {"tools": 6.0, "cloth": 4.0, "luxury": 12.0, "food": 0.7, "log": 2.5, "plank": 3.8, "chair": 9.0}, "quality_bonus": {"chair": 14.0}, "default_sell_min": 0.75, "default_buy_max": 1.3, "price_per_distance": 0.02, "price_per_bond": 0.01, "haggle_per_skill": 0.05, "haggle_min": 0.15, "haggle_max": 0.85, "skill_per_deal": 0.05, "slots": [[66.5, 29.0], [70.5, 28.0], [74.5, 29.0], [68.5, 32.0], [72.5, 32.0]], "keeper_float": 40.0, "stall_close": 0.85, "quiet_days": 0.15, "restock_target": {"food": 40, "log": 12, "plank": 20, "chair": 3}, "restock_margin": 0.15, "ai_sell_min": 0.85, "ai_buy_max": 1.25, "ai_buy_max_hungry": 1.8, "stall_sell_min": 1.25, "stall_buy_max": 0.95},
+  "trade": {"ref": {"tools": 6.0, "cloth": 4.0, "luxury": 12.0, "food": 0.7, "log": 2.5, "plank": 3.8, "chair": 9.0}, "quality_bonus": {"chair": 14.0}, "default_sell_min": 0.75, "default_buy_max": 1.3, "price_per_distance": 0.02, "price_per_bond": 0.01, "haggle_per_skill": 0.05, "haggle_min": 0.15, "haggle_max": 0.85, "skill_per_deal": 0.05, "slots": [[66.5, 29.0], [70.5, 28.0], [74.5, 29.0], [68.5, 32.0], [72.5, 32.0]], "keeper_float": 40.0, "stall_close": 0.85, "quiet_days": 0.15, "restock_target": {"food": 40, "log": 12, "plank": 20, "chair": 3, "tools": 4, "cloth": 6, "luxury": 3}, "restock_margin": 0.15, "ai_sell_min": 0.85, "ai_buy_max": 1.25, "ai_buy_max_hungry": 1.8, "stall_sell_min": 1.25, "stall_buy_max": 0.95},
   "market": {
     "storage": {
       "food": 140,

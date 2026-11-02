@@ -37,6 +37,7 @@ var earned_today: float = 0.0
 var spent_today: float = 0.0
 var last_day_net: float = 0.0
 var burn_acc: float = 0.0            # ułamek kłody opału do spalenia
+var wear_acc: Dictionary = {}        # towar -> ułamek zużycia (R3)
 
 var _rep_decay: float
 

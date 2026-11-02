@@ -1180,7 +1180,10 @@ func _new_day() -> void:
 				if ha != null:
 					ha.cold = need > 0.0
 			continue
-		h.burn_acc += need
+		# Zniszczony dom trzyma mniej ciepła: więcej opału (R3).
+		var home_b: SimBuilding = buildings[h.home_id]
+		h.burn_acc += need * (1.0 + float(needs.house_cfg()["cold_extra_burn"]) * (1.0 - home_b.condition))
+		needs.wear_day(h)
 		var burn := int(floor(h.burn_acc))
 		h.burn_acc -= burn
 		var cold := false
