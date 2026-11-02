@@ -20,50 +20,33 @@
         "sex": "m",
         "age_days": 34.0
       },
-      "cash": [
-        120,
-        200
-      ],
-      "buys": {
-        "plank": {
-          "qty": [
-            10,
-            24
-          ],
-          "price": 4.4
+      "town_cash": 3000.0,
+      "town": {
+        "population": 400,
+        "produce": {
+          "food": 60,
+          "cloth": 8,
+          "luxury": 1
         },
-        "chair": {
-          "qty": [
-            1,
-            4
-          ],
-          "price_mult": 1.15
+        "consume_per_person": {
+          "food": 0.14,
+          "plank": 0.02,
+          "chair": 0.002,
+          "cloth": 0.015,
+          "luxury": 0.003,
+          "log": 0.06,
+          "tools": 0.004
+        },
+        "start_stock": {
+          "food": 300,
+          "cloth": 60,
+          "luxury": 10,
+          "plank": 20,
+          "chair": 2,
+          "log": 60,
+          "tools": 4
         }
-      },
-      "sells": {
-        "food": {
-          "qty": [
-            30,
-            50
-          ],
-          "price": 1.5
-        },
-        "cloth": {
-          "qty": [
-            6,
-            14
-          ],
-          "price": 4.5
-        },
-        "luxury": {
-          "qty": [
-            2,
-            5
-          ],
-          "price": 13.0
-        }
-      },
-      "town_cash": 3000.0
+      }
     },
     {
       "id": "gorzyn",
@@ -74,50 +57,51 @@
         "sex": "m",
         "age_days": 45.0
       },
-      "cash": [
-        60,
-        120
-      ],
-      "buys": {
-        "chair": {
-          "qty": [
-            0,
-            2
-          ],
-          "price_mult": 1.05
+      "town_cash": 3000.0,
+      "town": {
+        "population": 250,
+        "produce": {
+          "food": 30,
+          "log": 25,
+          "tools": 3,
+          "cloth": 3
+        },
+        "consume_per_person": {
+          "food": 0.11,
+          "plank": 0.025,
+          "chair": 0.002,
+          "cloth": 0.012,
+          "luxury": 0.002,
+          "log": 0.05,
+          "tools": 0.004
+        },
+        "start_stock": {
+          "food": 150,
+          "log": 100,
+          "tools": 20,
+          "cloth": 20,
+          "plank": 10
         }
-      },
-      "sells": {
-        "food": {
-          "qty": [
-            35,
-            55
-          ],
-          "price": 1.5
-        },
-        "log": {
-          "qty": [
-            12,
-            24
-          ],
-          "price": 3.0
-        },
-        "tools": {
-          "qty": [
-            3,
-            8
-          ],
-          "price": 6.5
-        },
-        "cloth": {
-          "qty": [
-            4,
-            10
-          ],
-          "price": 4.8
-        }
-      },
-      "town_cash": 3000.0
+      }
     }
-  ]
+  ],
+  "town": {
+    "buffer_days": 5,
+    "scarcity": 0.8,
+    "min_mult": 0.6,
+    "max_mult": 2.2,
+    "wagon_capacity": 60,
+    "wagon_cash_share": 0.08,
+    "export_markup": 1.15,
+    "import_ratio": 0.85,
+    "trade_goods": [
+      "food",
+      "log",
+      "plank",
+      "chair",
+      "tools",
+      "cloth",
+      "luxury"
+    ]
+  }
 }

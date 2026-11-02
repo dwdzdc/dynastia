@@ -1296,6 +1296,7 @@ func _new_day() -> void:
 			note("Niezebrane zboże zgniło na polu (%s)." % building(f.owner_building).name, "warn", f.center())
 	contracts.settle_day()
 	together.end_day()
+	traders.new_day()
 	ai.new_day()
 	family.new_day()
 	bonds.prune()

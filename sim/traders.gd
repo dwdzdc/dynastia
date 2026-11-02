@@ -11,7 +11,7 @@ var w: SimWorld
 var visits: Array = []          # aktywne wizyty: { origin, origin_name, person, stall, leave_at }
 var _cfg: Dictionary
 var _people: Dictionary = {}    # origin id -> id osoby kupca
-var town_cash: Dictionary = {}  # origin id -> kasa miasta (S22: pieniądze wozów są skądś i tam wracają)
+var towns: Dictionary = {}      # origin id -> SimTown (S25): skąd jadą wozy, dokąd wracają pieniądze i towar
 var _next_day := 0
 var _origin_i := 0
 
@@ -21,14 +21,19 @@ func _init(world: SimWorld, cfg: Dictionary) -> void:
 	_cfg = cfg
 	_next_day = int(cfg["every_days"]) - 1
 	for o: Dictionary in cfg["origins"]:
-		town_cash[String(o["id"])] = float(o["town_cash"])
+		towns[String(o["id"])] = SimTown.new(o, w.balance["trade"]["ref"], cfg["town"])
 
 
 func town_cash_total() -> float:
 	var s := 0.0
-	for k in town_cash:
-		s += float(town_cash[k])
+	for t: SimTown in towns.values():
+		s += t.cash
 	return s
+
+
+func new_day() -> void:
+	for t: SimTown in towns.values():
+		t.new_day()
 
 
 func tick() -> void:
@@ -68,38 +73,39 @@ func arrive(o: Dictionary) -> Dictionary:
 	var p := _trader_person(o)
 	var a := w.agent_by_id(p.agent_id)
 	var h: SimHousehold = w.households[p.household_id]
-	var rng := w.rng
-	var cash_r: Array = o["cash"]
-	# Kasa wozu to pieniądze miasta: kupiec bierze je z domu i z nimi wraca.
-	var take := minf(rng.next_float(float(cash_r[0]), float(cash_r[1])), float(town_cash[String(o["id"])]))
-	town_cash[String(o["id"])] = float(town_cash[String(o["id"])]) - take
+	var town: SimTown = towns[String(o["id"])]
+	var tc: Dictionary = _cfg["town"]
+	# Kasa wozu to pieniądze miasta: kupiec bierze część z domu i z nią wraca (S22).
+	var take := town.cash * float(tc["wagon_cash_share"])
+	town.cash -= take
 	p.purse += take
 	p.held = 0.0
 	h.prices = {}
 	var goods: Array = []
-	var cap := {}
 	var b := SimBuilding.new("wagon_" + String(o["id"]), "Wóz z: %s" % String(o["name"]), "stall", slot, {})
 	var st := w.trade.add_stall(b, b, h.id, [])
 	st.temporary = true
-	for g in o["sells"]:
-		var q2: Array = o["sells"][g]["qty"]
-		var n := rng.next_int(int(q2[0]), int(q2[1]))
+	# Wóz wiezie nadwyżki miasta i skupuje to, czego miastu brakuje (U2).
+	var room := int(tc["wagon_capacity"])
+	for g in tc["trade_goods"]:
+		var n := mini(town.surplus(g), room)
+		if n <= 0:
+			continue
+		n = town.take(g, n)
+		room -= n
 		b.capacity[g] = n
 		b.add(g, n)
-		w.trade.set_limit(h, g, "sell_min", float(o["sells"][g]["price"]))
+		w.trade.set_limit(h, g, "sell_min", town.price(g) * float(tc["export_markup"]))
 		goods.append(g)
-	for g in o["buys"]:
-		var q: Array = o["buys"][g]["qty"]
-		var n := rng.next_int(int(q[0]), int(q[1]))
-		b.capacity[g] = int(b.capacity.get(g, 0)) + n
-		if not b.stock.has(g):
-			b.stock[g] = 0
+	for g in tc["trade_goods"]:
+		var n := mini(town.lack(g), int(tc["wagon_capacity"]))
+		if n <= 0 or g in goods:
+			continue
+		b.capacity[g] = n
+		b.stock[g] = 0
 		st.wants[g] = n
 		st.buys.append(g)
-		var price := float(o["buys"][g].get("price", 0.0))
-		if price <= 0.0:
-			price = w.trade.ref(g) * float(o["buys"][g].get("price_mult", 1.0))
-		w.trade.set_limit(h, g, "buy_max", price)
+		w.trade.set_limit(h, g, "buy_max", town.price(g) * float(tc["import_ratio"]))
 		goods.append(g)
 	st.goods = goods
 	w.buildings[b.id] = b
@@ -157,6 +163,7 @@ func _depart(v: Dictionary) -> void:
 	v["leaving"] = true
 	var st := stall_of(v)
 	if st != null:
+		v["cargo"] = st.stock.stock.duplicate()
 		w.trade.remove_stall(st)
 	var a := w.agent_by_id(w.family.persons[int(v["person"])].agent_id)
 	var e: Array = _cfg["entry"]
@@ -170,10 +177,17 @@ func _depart(v: Dictionary) -> void:
 
 # Wóz za krawędzią mapy: oferta przepada, towar i pieniądze wyjeżdżają z nim.
 func gone(a: SimAgent, origin: String) -> void:
+	var town: SimTown = towns.get(origin)
+	# Niesprzedane i skupione towary oraz kasa wracają do miasta.
+	for v: Dictionary in visits:
+		if v["origin"] == origin and town != null:
+			var cargo: Dictionary = v.get("cargo", {})
+			for g in cargo:
+				town.add(g, int(cargo[g]))
 	visits = visits.filter(func(v): return v["origin"] != origin)
 	var p := w.person_of(a)
-	if p != null:
-		town_cash[origin] = float(town_cash.get(origin, 0.0)) + p.purse
+	if p != null and town != null:
+		town.cash += p.purse
 		p.purse = 0.0
 	a.status = "away"
 	a.hidden = true

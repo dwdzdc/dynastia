@@ -94,6 +94,7 @@ func _run_all() -> void:
 	_test_ai_runs_enterprise()
 	_test_ai_founds_enterprise()
 	_test_land_owners()
+	_test_towns()
 	_test_theft_process()
 	_test_world_deterministic()
 	_test_world_30_days_autonomous()
@@ -1689,6 +1690,30 @@ func _test_land_owners() -> void:
 	w.household.cash = 100.0
 	var e1: float = est.cash
 	check("buying the plot pays the landowner", w.commission("house", Vector2(40, 62)) != "" and est.cash > e1)
+
+
+# U1–U2 (S25): miasto okolicy to agregat — czego samo nie robi, tego mu ubywa i to
+# drożeje; wóz wiezie jego nadwyżki i skupuje braki, a po powrocie towar i kasa
+# wracają do miasta.
+func _test_towns() -> void:
+	var w = _new_world()
+	var town = w.traders.towns["rzeczyca"]
+	var p0: float = town.price("plank")
+	for d in 6:
+		town.new_day()
+	check("a town that doesn't make planks runs out and pays more", town.amount("plank") < 20 and town.price("plank") > p0)
+	var origin: Dictionary = (w.traders._cfg["origins"] as Array)[0]
+	var cash0: float = town.cash
+	var v: Dictionary = w.traders.arrive(origin)
+	var st = w.traders.stall_of(v)
+	check("the wagon carries the town's money and its shortages", town.cash < cash0 and "plank" in st.buys)
+	check("the wagon brings the town's surplus", st.goods.any(func(g): return not g in st.buys and st.stock.amount(g) > 0))
+	var a = w.agent_by_id(w.family.persons[int(v["person"])].agent_id)
+	st.stock.add("plank", 3)
+	w.traders._depart(v)
+	var planks: int = town.amount("plank")
+	w.traders.gone(a, "rzeczyca")
+	check("bought goods and the purse go back to the town", town.amount("plank") >= planks + 3 and is_zero_approx(w.person_of(a).purse))
 
 
 func _test_theft_process() -> void:
