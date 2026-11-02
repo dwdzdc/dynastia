@@ -133,6 +133,38 @@ func strongest(from: int, targets: Array, count: int) -> Array:
 	return all.slice(0, count)
 
 
+# Preferencje (D3): więź z każdą czynnością plus skłonność z charakteru, z informacją
+# skąd się wzięła. Zwraca [{ act, value, from: [teksty] }] od najbardziej lubianej.
+func preferences(pid: int) -> Array:
+	var p: SimPerson = w.family.persons.get(pid)
+	var out: Array = []
+	for act_name in w.memories["act_labels"]:
+		var target := SimBonds.act(String(act_name))
+		var v := value(pid, target)
+		var src: Array = []
+		for e in strongest(pid, [target], int(w.memories["pref_sources"])):
+			var txt := describe(e["m"], target)
+			if not txt in src:
+				src.append(txt)
+		if p != null:
+			for c in p.character:
+				var bias := float(w.memories["character_prefs"].get(c, {}).get(act_name, 0.0))
+				if bias != 0.0:
+					v += bias
+					src.append("charakter: %s" % w.family.character_label(c))
+		if not src.is_empty():
+			out.append({ "act": String(act_name), "value": v, "from": src })
+	out.sort_custom(func(x, y): return float(x["value"]) > float(y["value"]))
+	return out
+
+
+func preference(pid: int, act_name: String) -> float:
+	for e in preferences(pid):
+		if e["act"] == act_name:
+			return float(e["value"])
+	return 0.0
+
+
 # Cele, do których `from` ma jakąkolwiek więź (z prefiksem, np. „p:” albo „act:”).
 func targets_of(from: int, prefix: String = "") -> Array:
 	var out: Array = []

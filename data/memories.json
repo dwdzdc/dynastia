@@ -37,6 +37,12 @@
   },
   "act_labels": {"chop": "wyrąb", "saw": "tartak", "craft": "stolarka", "labor": "dniówka", "forage": "zbieractwo"},
   "departure_memories": 3,
+  "character_prefs": {
+    "ambitny": {"craft": 10.0, "labor": -8.0},
+    "ciekawski": {"craft": 5.0, "forage": 6.0},
+    "porywczy": {"chop": 6.0}
+  },
+  "pref_sources": 3,
   "accident_scale": {"minor": 0.5, "severe": 1.0, "fatal": 1.0},
   "stage_weight_mult": {"child": 1.6, "teen": 1.25, "adult": 1.0, "elder": 1.0},
   "character_mods": {

@@ -60,6 +60,7 @@ func _run_all() -> void:
 	_test_departure_and_ai_life()
 	_test_purse_share_by_strength()
 	_test_drift_signals()
+	_test_preferences_from_memories()
 	_test_world_deterministic()
 	_test_world_30_days_autonomous()
 	_test_economy_chain_produces_income()
@@ -668,6 +669,21 @@ func _test_drift_signals() -> void:
 	w.jobs._plan_aloof(az)
 	var why := String(az.steps[az.steps.size() - 1]["why"])
 	check("aloof reason is descriptive, no numbers", why != "" and not why.contains("0.") and not why.contains("%"))
+
+
+func _test_preferences_from_memories() -> void:
+	var w = _bond_world()
+	var piotr = _named(w.family, "Piotr")
+	piotr.character = []
+	check("no memories, no preferences", w.bonds.preferences(piotr.id).is_empty())
+	w.bonds.remember(piotr.id, SimBonds.act("saw"), "did_work")
+	w.bonds.remember(piotr.id, SimBonds.act("chop"), "accident")
+	var prefs: Array = w.bonds.preferences(piotr.id)
+	check("preference follows memories", prefs[0]["act"] == "saw" and prefs[prefs.size() - 1]["act"] == "chop" and float(prefs[prefs.size() - 1]["value"]) < 0.0)
+	check("preference says where it came from", String(prefs[prefs.size() - 1]["from"][0]).contains("wypadek"))
+	piotr.character = ["ambitny"]
+	var craft: float = w.bonds.preference(piotr.id, "craft")
+	check("character tilts preferences", craft > 0.0)
 
 
 func _state_sig(w) -> String:
