@@ -19,6 +19,9 @@ var heap: int = 0              # zebrany plon leżący na polu
 var _cfg: Dictionary
 
 const RIPE_EPS := 0.0001   # suma ułamków dób nie trafia równo w 1.0
+const HEAP_INSET := 1.0    # snopy: odległość od narożnika pola
+const SPOT_MARGIN := 0.8   # robotnicy nie stają na samej miedzy
+const TASK_LABELS := { "plow": "orka", "sow": "siew", "harvest": "żniwa" }
 
 
 func _init(spec: Dictionary, cfg: Dictionary) -> void:
@@ -30,6 +33,23 @@ func _init(spec: Dictionary, cfg: Dictionary) -> void:
 
 func center() -> Vector2:
 	return rect.get_center()
+
+
+# Gdzie składa się snopy (róg pola od strony drogi).
+func heap_spot() -> Vector2:
+	return rect.end - Vector2(HEAP_INSET, HEAP_INSET)
+
+
+# Miejsce pracy danej osoby na polu: rozrzucone po działce, stałe dla osoby.
+func work_spot(person_seed: int) -> Vector2:
+	var span := rect.size - Vector2(SPOT_MARGIN, SPOT_MARGIN) * 2.0
+	var u := fmod(float(person_seed) * 0.618034, 1.0)
+	var v := fmod(float(person_seed) * 0.381966 + 0.37, 1.0)
+	return rect.position + Vector2(SPOT_MARGIN, SPOT_MARGIN) + Vector2(span.x * u, span.y * v)
+
+
+func has_work(season: String) -> bool:
+	return heap > 0 or task(season) != ""
 
 
 # Co jest teraz do zrobienia na polu w tej porze roku ("" = nic).

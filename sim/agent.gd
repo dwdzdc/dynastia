@@ -29,6 +29,8 @@ var jail_days: float = 0.0
 var carrying: String = ""
 var carrying_qty: int = 0
 var carrying_qualities: Array = []
+var carry_to: String = ""           # cudzy towar (np. snopy dworu): budynek, do którego trzeba go zanieść
+var labor_task: String = ""         # przy pracy w polu: plow | sow | harvest (do animacji)
 
 var steps: Array = []
 var plan_kind: String = ""          # eat | sleep | work | chore | rest | child | sick | manual
@@ -89,6 +91,7 @@ func clear_carry() -> void:
 	carrying = ""
 	carrying_qty = 0
 	carrying_qualities = []
+	carry_to = ""
 
 
 func current_step() -> Dictionary:

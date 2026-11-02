@@ -532,6 +532,7 @@ func _act(a: SimAgent, s: Dictionary, dt: float) -> void:
 	a.inside = inside
 	if jobs.is_work(act) and not s.has("will"):
 		_check_will(a, s, act)
+	a.labor_task = String(s.get("task", ""))
 	if act == "labor":
 		_labor(a, s, dt)
 	if jobs.is_work(act):
@@ -550,8 +551,24 @@ func _act(a: SimAgent, s: Dictionary, dt: float) -> void:
 			a.steps.clear()
 
 
-# Dniówka na folwarku (H7): pracodawca to ród właściciela dworu. Płaci z własnej kasy,
-# a praca daje plon (jedzenie) do spiżarni dworu, zależny od pory roku.
+# Dniówka na folwarku (H7, L2): pracodawca to ród właściciela dworu. Płaci z własnej
+# kasy za czas pracy na jego polach; plon to zebrane i zniesione snopy.
+# Pole właściciela (budynku), na którym jest dziś robota albo snopy do zniesienia.
+func field_with_work(owner_building: String) -> SimField:
+	var season := clock.current_season()
+	for f: SimField in fields:
+		if f.owner_building == owner_building and f.has_work(season):
+			return f
+	return null
+
+
+func field_by_id(id: String) -> SimField:
+	for f: SimField in fields:
+		if f.id == id:
+			return f
+	return null
+
+
 func estate_owner() -> SimHousehold:
 	var b: SimBuilding = building(String(balance["estate"]["building"]))
 	var best: SimHousehold = null
@@ -573,12 +590,16 @@ func _labor(a: SimAgent, s: Dictionary, dt: float) -> void:
 		return
 	employer.pay(wage)
 	earn_for(a, wage)
-	var est: Dictionary = balance["estate"]
-	var acc := float(s.get("yield_acc", 0.0)) + float(est["food_per_labor_day"].get(clock.current_season(), 0.0)) * share
-	var n := int(floor(acc))
-	s["yield_acc"] = acc - n
-	if n > 0:
-		building(String(est["building"])).add("food", n)
+	# Praca posuwa robotę na konkretnym polu (L2); po skończonym zadaniu nowy plan.
+	var f := field_by_id(String(s.get("field", "")))
+	if f == null:
+		s["left"] = 0.0
+		return
+	var done := f.work(clock.current_season(), dt * a.age_eff * float(s["will"]) * a.trait_mult("labor"))
+	if done != "":
+		s["left"] = 0.0
+		if done == "harvest":
+			note("Żniwa skończone na polu (%s): %d snopów do zniesienia." % [building(f.owner_building).name, f.heap], "info", f.heap_spot())
 
 
 # Dwór sprzedaje nadwyżkę plonów kupcowi (pieniądze wracają do dworu i dalej do ludzi).

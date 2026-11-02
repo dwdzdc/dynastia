@@ -23,6 +23,7 @@ var recipes: Dictionary          # data/recipes.json (S13): produkcja w budynkac
 var work_acts: Array = ["chop", "forage", "labor"]  # czynności, które są pracą (+ z receptur)
 
 const BASE_WORK_ACTS := ["chop", "forage", "labor"]
+const IDLE_AT_MANOR := Vector2(2.0, 1.0)   # gdzie czeka robotnik, gdy w polu nie ma roboty
 const AT_DOOR := 1.0   # skrzynia: trzeba stać przy drzwiach domu (albo w środku)
 
 
@@ -504,11 +505,28 @@ func _plan_laborer(a: SimAgent) -> void:
 	if a.carrying != "":
 		_plan_deliver_carried(a)
 		return
-	var manor: SimBuilding = w.building("manor")
+	# Robota w polu (L2): orka, siew, żniwa na konkretnej działce dworu, snopy do spichrza.
+	var manor: SimBuilding = w.building(String(w.balance["estate"]["building"]))
+	var f := w.field_with_work(manor.id)
+	if f == null:
+		_walk(a, manor.door() + IDLE_AT_MANOR, "idzie do dworu spytać o robotę")
+		_wait(a, "dwór nie ma dziś roboty w polu")
+		return
+	var season := w.clock.current_season()
+	var t := f.task(season)
+	if f.heap > 0 and (t == "" or f.heap >= int(w.balance["carry"]["food"])):
+		_walk(a, f.heap_spot(), "idzie po snopy na pole")
+		_do(a, "field_pickup", f.id)
+		_walk(a, manor.door(), "niesie snopy do spichrza: %s" % manor.name)
+		_do(a, "deposit", manor.id)
+		return
 	var s: Dictionary = w.balance["schedule"]
 	var left := (float(s["work_end"]) - w.clock.time_of_day()) * w.clock.day_seconds
-	_walk(a, manor.door(), "idzie na dniówkę do dworu")
-	_act(a, "labor", maxf(left, 1.0), "pracuje na dniówce w dworze", manor.id)
+	var label := String(SimField.TASK_LABELS[t])
+	_walk(a, f.work_spot(a.person_id), "idzie w pole dworu: %s" % label)
+	_act(a, "labor", maxf(left, 1.0), "%s na polu dworu (dniówka)" % label)
+	a.steps[a.steps.size() - 1]["field"] = f.id
+	a.steps[a.steps.size() - 1]["task"] = t
 
 
 # Obowiązki domowe (każdy dorosły po pracy i bez przydziału).
@@ -655,6 +673,11 @@ func _plan_deliver_carried(a: SimAgent) -> void:
 		a.clear_carry()
 		_wait(a, "nie ma dokąd tego zanieść — bez domu")
 		return
+	if a.carry_to != "":
+		var owner: SimBuilding = w.building(a.carry_to)
+		_walk(a, owner.door(), "odnosi cudzy towar: %s → %s" % [w.good_label(a.carrying), owner.name])
+		_do(a, "deposit", owner.id)
+		return
 	var dest := ""
 	match a.carrying:
 		"food":
@@ -743,6 +766,8 @@ func apply(a: SimAgent, step: Dictionary) -> bool:
 		"return_coins":
 			_return_coins(a)
 			return true
+		"field_pickup":
+			return _fx_field_pickup(a, String(step["arg"]))
 		"take_coins":
 			return _fx_take_coins(a, float(step["arg"]))
 		"buy_food":
@@ -790,6 +815,20 @@ func _fx_dinner(a: SimAgent) -> void:
 	a.dinner_day = w.clock.day_index()
 	if a.needs["food"] < float(w.balance["needs"]["food"]["dinner_eat_below"]):
 		_fx_eat(a)
+
+
+# Snopy z pola: towar właściciela pola, idzie do jego spichrza (nie do domu robotnika).
+func _fx_field_pickup(a: SimAgent, field_id: String) -> bool:
+	var f := w.field_by_id(field_id)
+	if f == null or f.heap <= 0 or a.position.distance_to(f.heap_spot()) > AT_DOOR:
+		return false
+	var n := mini(f.heap, int(w.balance["carry"]["food"]))
+	f.heap -= n
+	a.carrying = "food"
+	a.carrying_qty = n
+	a.carrying_qualities = []
+	a.carry_to = f.owner_building
+	return true
 
 
 func _fx_take_coins(a: SimAgent, amt: float) -> bool:

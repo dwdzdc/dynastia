@@ -430,12 +430,6 @@
   },
   "estate": {
     "building": "manor",
-    "food_per_labor_day": {
-      "spring": 5.0,
-      "summer": 7.0,
-      "autumn": 9.0,
-      "winter": 1.5
-    },
     "reserve_food": 30,
     "sell_to_merchant_per_day": 40
   }

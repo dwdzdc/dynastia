@@ -78,6 +78,7 @@ func _run_all() -> void:
 	_test_buyers_pay_from_own_money()
 	_test_traveling_traders()
 	_test_estate_pays_wages()
+	_test_field_work()
 	_test_world_deterministic()
 	_test_world_30_days_autonomous()
 	_test_economy_chain_produces_income()
@@ -1133,19 +1134,64 @@ func _test_estate_pays_wages() -> void:
 	var est = w.estate_owner()
 	check("the manor household is the employer", est != null and w.family.persons[est.members[0]].surname == "Dworski")
 	var a = w.agent_by_id(_named(w.family, "Piotr").agent_id)
-	var s := { "t": "act", "act": "labor", "left": 100.0, "why": "dniówka", "will": 1.0 }
+	var f = w.fields[0]
+	var s := { "t": "act", "act": "labor", "left": 100.0, "why": "dniówka", "will": 1.0, "field": f.id, "task": "plow" }
 	var est0: float = est.cash
 	var hh0: float = w.household.cash + w.family.persons[a.person_id].purse
-	var food0: int = w.building("manor").amount("food")
 	for i in 60:
 		w._labor(a, s, 1.0)
 	var paid: float = est0 - est.cash
 	check("wage is paid from the employer's cash to the worker", paid > 0.0 and is_equal_approx(w.household.cash + w.family.persons[a.person_id].purse - hh0, paid))
-	check("estate work yields food for the manor", w.building("manor").amount("food") > food0)
+	check("estate work advances work on a concrete field", f.work_done > 0.0)
 	est.cash = 0.0
 	s["left"] = 100.0
 	w._labor(a, s, 1.0)
 	check("employer without money stops paying and sends people home", float(s["left"]) <= 0.0)
+
+
+# L2: robotnik dworu idzie na konkretne pole i robi to, co jest w tej porze do zrobienia;
+# snopy niesie do spichrza dworu, nie do własnego domu; bez roboty w polu czeka z powodem.
+func _test_field_work() -> void:
+	var w = _new_world()
+	var a = w.agent_by_id(_named(w.family, "Piotr").agent_id)
+	a.job = "laborer"
+	w.clock.set_time(0, float(w.balance["schedule"]["work_start"]) + 0.05)
+	w.jobs.release(a)
+	a.steps.clear()
+	w.jobs._plan_laborer(a)
+	var st: Dictionary = a.steps[a.steps.size() - 1]
+	check("spring: laborer goes to plow a field, outside, visible", st.get("act") == "labor" and st.get("task") == "plow" and st.get("inside", "") == "")
+	var f = w.field_by_id(String(st["field"]))
+	a.position = f.work_spot(a.person_id)
+	a.steps = [st]
+	st["will"] = 1.0
+	st["left"] = 99999.0
+	for i in 3000:
+		if a.steps.is_empty():
+			break
+		w._act(a, st, 1.0)
+	check("enough work plows the field and ends the shift step", f.stage == "plowed")
+	f.stage = "stubble"
+	f.heap = 12
+	var food0: int = w.building("manor").amount("food")
+	a.steps.clear()
+	w.jobs._plan_laborer(a)
+	check("harvest on the field is carried, not left", a.steps.any(func(x): return x["t"] == "do" and x["fn"] == "field_pickup"))
+	a.position = f.heap_spot()
+	w.jobs._fx_field_pickup(a, f.id)
+	var home_food: int = w.home().amount("food")
+	a.steps.clear()
+	w.jobs._plan_deliver_carried(a)
+	check("sheaves go to the owner's granary even after an interrupted plan", a.steps[0]["to"].distance_to(w.building("manor").door()) < 0.01)
+	a.position = w.building("manor").door()
+	w.jobs._fx_deposit(a, "manor")
+	check("manor granary gets the crop, the worker's home does not", w.building("manor").amount("food") > food0 and w.home().amount("food") == home_food)
+	for g in w.fields:
+		g.stage = "sown"
+		g.heap = 0
+	a.steps.clear()
+	w.jobs._plan_laborer(a)
+	check("no field work: laborer says so instead of vanishing", String(a.steps[a.steps.size() - 1]["why"]).contains("nie ma dziś roboty"))
 
 
 func _state_sig(w) -> String:

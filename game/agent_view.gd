@@ -199,6 +199,30 @@ func _animate() -> void:
 			arm_l = -0.4
 			arm_r = -0.9 + sin(_t * 3.0) * 0.4
 			crouch = 0.12
+		"labor":
+			match agent.labor_task:
+				"plow":
+					# Pchanie radła: pochylony, ręce przed sobą, wolny krok.
+					lean = 0.45
+					arm_l = -1.3
+					arm_r = -1.3
+					leg = sin(_t * 3.0) * 0.4
+				"sow":
+					# Siew z garści: zamach ręką na bok.
+					arm_r = -1.2 + sin(_t * 4.0) * 0.9
+					arm_l = -0.6
+					leg = sin(_t * 2.0) * 0.25
+				"harvest":
+					# Kosa: zamach oburącz nisko nad ziemią.
+					_tool.visible = true
+					var k := sin(_t * 3.2)
+					arm_l = -0.9 + k * 0.6
+					arm_r = -0.9 + k * 0.6
+					lean = 0.35
+				_:
+					lean = 0.4
+					arm_l = -0.9 + sin(_t * 4.0) * 0.4
+					arm_r = -0.9 - sin(_t * 4.0) * 0.4
 		"play":
 			bob = absf(sin(_t * 6.0)) * 0.35
 			arm_l = -2.6
