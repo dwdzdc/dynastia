@@ -1,7 +1,9 @@
 ## tools/probe_village.gd — sonda wsi (Q2): przewija N dób i co kilka dób drukuje stan
 ## wszystkich gospodarstw: pieniądze (skrzynia + sakwy), dług, dom, spiżarnię, ludzi.
 ## Na koniec: czy pieniądze krążą, czy rody AI przeżywają, ile było kradzieży i ślubów.
-## Uruchomienie:  godot --headless -s res://tools/probe_village.gd -- [dni] [seed]
+## Uruchomienie:  godot --headless -s res://tools/probe_village.gd -- [dni] [seed] [solo]
+## „solo” (S30): ród gracza to jeden robotnik w polu — sprawdza, czy świat żyje bez gracza.
+## Sonda nie zatrzymuje się na game over: świat ma trwać dalej.
 extends SceneTree
 
 const EVERY_DAYS := 5   # co ile dób wypisać stan
@@ -12,13 +14,19 @@ func _initialize() -> void:
 	var days := int(args[0]) if args.size() > 0 else 60
 	var balance := DataLoader.load_json("res://data/balance.json")
 	var seed := int(args[1]) if args.size() > 1 else int(balance["world_seed"])
-	var w := SimWorld.new(seed, balance, DataLoader.load_json("res://data/map.json"), DataLoader.load_json("res://data/people.json"), DataLoader.load_json("res://data/memories.json"), DataLoader.load_json("res://data/recipes.json"), DataLoader.load_json("res://data/traders.json"))
+	var people := DataLoader.load_json("res://data/people.json")
+	if args.size() > 2 and args[2] == "solo":
+		var root: Dictionary = (people["start_family"] as Array).filter(func(x): return bool(x.get("root", false)))[0].duplicate()
+		root["job"] = "laborer"
+		people["start_family"] = [root]
+	var w := SimWorld.new(seed, balance, DataLoader.load_json("res://data/map.json"), people, DataLoader.load_json("res://data/memories.json"), DataLoader.load_json("res://data/recipes.json"), DataLoader.load_json("res://data/traders.json"))
 	var start_people := w.family.all_living().size()
 	var idle_samples := 0
+	var printed_over := false
 	var samples := 0
 	for d in days:
 		var end := w.clock.now() + 1.0
-		while w.clock.now() < end and not w.family.game_over:
+		while w.clock.now() < end:
 			w.step_sim(2.0)
 			while w.events.blocking():
 				var p: Dictionary = w.events.prompts[0]
@@ -33,9 +41,9 @@ func _initialize() -> void:
 						idle_samples += 1
 		if (d + 1) % EVERY_DAYS == 0 or d == days - 1:
 			_print_state(w, d + 1)
-		if w.family.game_over:
-			print("KONIEC GRY w dobie %d" % (d + 1))
-			break
+		if w.family.game_over and not printed_over:
+			print("koniec gry gracza w dobie %d — świat żyje dalej" % (d + 1))
+			printed_over = true
 	print("\nPodsumowanie po %d dobach:" % days)
 	print("  ludzi żywych: %d (na starcie %d)" % [w.family.all_living().size(), start_people])
 	print("  pieniądze w okolicy: %.0f zł" % _money(w))
@@ -79,3 +87,7 @@ func _print_state(w: SimWorld, day: int) -> void:
 		var home: SimBuilding = w.buildings.get(h.home_id)
 		print("  %-10s dom=%-8s skrzynia=%5.0f sakwy=%4.0f dług=%4.0f jedzenie=%3d ludzi=%d" % [name, h.home_id if h.home_id != "" else "BRAK",
 			h.cash, purses, h.debt, home.amount("food") if home != null else -1, alive])
+	var town_txt: Array = []
+	for t: SimTown in w.traders.towns.values():
+		town_txt.append("%s %d ludzi, %.0f zł" % [t.name, t.population, t.cash])
+	print("  miasta: " + "; ".join(town_txt))

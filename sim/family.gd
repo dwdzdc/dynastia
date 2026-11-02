@@ -342,9 +342,9 @@ func apply_modifiers(p: SimPerson) -> void:
 
 # --- Doba ---
 
+# Doba rodów. Game over to koniec gry dla gracza, nie dla świata: rody AI żyją dalej
+# (S30) — starzeją się, rodzą, żenią i odchodzą także po wygaśnięciu rodu gracza.
 func new_day() -> void:
-	if game_over:
-		return
 	for p in all_living():
 		var before := String(p.get_meta("stage", ""))
 		var now_stage := stage_of(p)
