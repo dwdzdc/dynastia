@@ -531,6 +531,15 @@ func _build_person_info(a: SimAgent) -> void:
 			if hint.text == "":
 				hint.text = JOB_HINTS.get(a.job, ""))
 
+	if fam.is_ours(p) and fam.stage_of(p) in ["adult", "elder"]:
+		# Wyprawa do miasta (U3): towar, którego miastu brakuje, i zakupy dla domu.
+		var trip := HBoxContainer.new()
+		trip.add_theme_constant_override("separation", 4)
+		for tid in world.traders.towns:
+			var town: SimTown = world.traders.towns[tid]
+			var t_id: String = tid
+			trip.add_child(_button("Wyprawa: %s" % town.name, func(): world.send_on_trip(a.id, t_id), 15))
+		_info_box.add_child(trip)
 	_dyn(func():
 		var b := fam.beloved(p)
 		return ("Zakochan%s w: %s" % ["y" if p.sex == "m" else "a", fam.persons[b].name]) if b >= 0 else "", 16, Color(1.0, 0.6, 0.7))

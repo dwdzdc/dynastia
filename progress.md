@@ -191,7 +191,7 @@ Pętla gry: ród Wilków (6 osób, 3 pokolenia) w chacie pod lasem. Co 5 dni czy
 - [x] T4 Las i działki mają właściciela (S27) → test.
 - [x] U1 Miasto-agregat (S25) z danych → test: bez handlu braki i rosnące ceny.
 - [x] U2 Wóz jako przewóz między miastem a wsią, skończona kasa, czas drogi → test: suma pieniędzy świata stała.
-- [ ] U3 Wyjazd z wioski do miasta (kupiec znika za krawędzią, wraca z towarem, ryzyko), także dla gracza.
+- [x] U3 Wyjazd z wioski do miasta (kupiec znika za krawędzią, wraca z towarem, ryzyko), także dla gracza.
 - [ ] V1 Pozycja widoczna opisowo (co mówią o rodzie i dlaczego) → zrzut.
 - [ ] V2 Szczeble i co dają (kredyt, dzierżawa, śluby wyżej, urząd) → test.
 - [ ] V3 Rody AI awansują i bankrutują tym samym mechanizmem → sonda.

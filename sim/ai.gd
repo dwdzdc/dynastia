@@ -20,6 +20,7 @@ func new_day() -> void:
 	post_offers()
 	set_prices()
 	found_enterprises()
+	_merchant_trips()
 	for h: SimHousehold in w.households.values():
 		if h == w.household or h.members.is_empty():
 			continue
@@ -171,6 +172,36 @@ func _surplus(h: SimHousehold, g: String) -> float:
 		if cap > 0.0:
 			best = maxf(best, clampf(float(st.stock.amount(g)) / cap, 0.0, 1.0))
 	return best
+
+
+# Kupiec AI jeździ do miasta (U3), gdy ma na półce coś, czego miastu brakuje, a tam
+# zapłacą więcej niż on sam bierze we wsi.
+func _merchant_trips() -> void:
+	var min_value := float(w.traders._cfg["trips"]["min_trip_value"])
+	for h: SimHousehold in w.households.values():
+		if h == w.household:
+			continue
+		var own: Array = w.trade.stalls_of(h.id).filter(func(x): return not x.temporary and not x.buys.is_empty())
+		if own.is_empty():
+			continue
+		var st: SimStall = own[0]
+		var traveler: SimAgent = null
+		for pid in h.members:
+			var a := w.agent_by_id(w.family.persons[pid].agent_id)
+			if a != null and a.is_active() and a.job == "carrier" and not w.trips.on_trip(a):
+				traveler = a
+		if traveler == null:
+			continue
+		for tid in w.traders.towns:
+			var town: SimTown = w.traders.towns[tid]
+			var plan: Dictionary = w.trips.cargo_plan(town, st.stock)
+			var value := 0.0
+			for g in plan:
+				if town.price(g) > w.trade.sell_min(h, g):
+					value += float(plan[g]) * town.price(g)
+			if value >= min_value:
+				w.trips.start(traveler, tid, st.stock)
+				break
 
 
 # Zakładanie warsztatów (T3): zamożny ród AI, który widzi, że wyrobu brakuje u kupca

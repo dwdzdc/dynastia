@@ -1211,6 +1211,12 @@ func apply(a: SimAgent, step: Dictionary) -> bool:
 			tp.held = minf(tp.held, tp.purse)
 			w.pay_owner(w.building("tavern"), price)
 			return true
+		"trip_leave":
+			w.trips.leave(a, String(step["arg"]))
+			return true
+		"trip_unload":
+			w.trips.unload(a, step["arg"])
+			return true
 		"talk_done":
 			w.talk.done(a, int(step["arg"]))
 			return true

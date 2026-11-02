@@ -22,6 +22,7 @@ var bonds: SimBonds
 var together: SimTogether
 var talk: SimTalk
 var crime: SimCrime
+var trips: SimTrips
 var ai: SimAI
 var trade: SimTrade
 var traders: SimTraders
@@ -103,6 +104,7 @@ func _init(seed: int, p_balance: Dictionary, p_map: Dictionary, p_people: Dictio
 	_spawn_enterprises()
 	traders = SimTraders.new(self, p_traders)
 	contracts = SimContracts.new(self, balance["contracts"])
+	trips = SimTrips.new(self, p_traders["trips"])
 	ai.new_day()   # rody AI od razu rozdzielają role (kramarz, nadzorca, praca)
 	for p in family.living():
 		p.set_meta("stage", family.stage_of(p))
@@ -755,6 +757,27 @@ func _finish_site(site_id: String) -> void:
 	chronicle.add(clock.now(), "built", "Zbudowany: %s." % b.name, [], int(site["lineage"]))
 
 
+# Wyprawa do miasta (U3): z towarem z własnego warsztatu (albo domu).
+func send_on_trip(agent_id: int, town_id: String) -> bool:
+	var a := agent_by_id(agent_id)
+	if a == null or is_independent(a):
+		return false
+	var h := household_of(a)
+	var town: SimTown = traders.towns.get(town_id)
+	if town == null:
+		return false
+	var from: SimBuilding = home_of(a)
+	for type in ["workshop", "sawmill"]:
+		var b := enterprise_building(h.id, type)
+		if b != null and not trips.cargo_plan(town, b).is_empty():
+			from = b
+			break
+	if not trips.start(a, town_id, from):
+		return false
+	note("%s wyrusza na wyprawę do: %s." % [person_of(a).name, town.name], "info", a.position)
+	return true
+
+
 # Gracz jako pracodawca (L4): oferta pracy w swoim warsztacie (ile osób, za ile).
 func post_player_offer(bid: String, job: String, slots: int, wage: float) -> void:
 	contracts.post(household.id, bid, job, maxi(slots, 0), maxf(wage, 0.0))
@@ -897,6 +920,7 @@ func _step(dt: float) -> void:
 				if a.jail_days <= 0.0:
 					release_from_jail(a)
 	traders.tick()
+	trips.tick()
 	together.sample(dt)
 	talk.sample(dt)
 

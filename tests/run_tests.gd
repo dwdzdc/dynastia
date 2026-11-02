@@ -95,6 +95,7 @@ func _run_all() -> void:
 	_test_ai_founds_enterprise()
 	_test_land_owners()
 	_test_towns()
+	_test_trip_to_town()
 	_test_theft_process()
 	_test_world_deterministic()
 	_test_world_30_days_autonomous()
@@ -1714,6 +1715,29 @@ func _test_towns() -> void:
 	var planks: int = town.amount("plank")
 	w.traders.gone(a, "rzeczyca")
 	check("bought goods and the purse go back to the town", town.amount("plank") >= planks + 3 and is_zero_approx(w.person_of(a).purse))
+
+
+# U3: wyprawa do miasta — towar, którego miastu brakuje, sprzedany po jego cenie,
+# za utarg zakupy dla domu; po drodze może być napad; obieg pieniędzy zamknięty.
+func _test_trip_to_town() -> void:
+	var w = _new_world()
+	var m0: float = w.money_total()
+	var piotr = _named(w.family, "Piotr")
+	var a = w.agent_by_id(piotr.agent_id)
+	var mill = w.building("sawmill")
+	mill.add("plank", 15)
+	var town = w.traders.towns["rzeczyca"]
+	for d in 4:
+		town.new_day()
+	check("trip starts with planks the town lacks", w.send_on_trip(a.id, "rzeczyca") and mill.amount("plank") < 15)
+	a.position = Vector2(94, 22)
+	var purse0: float = piotr.purse
+	w.trips.leave(a, "rzeczyca")
+	check("away in town: goods sold at the town's price", a.status == "away" and piotr.purse > purse0 - 0.001)
+	w.clock.set_time(w.clock.day_index() + 1, 0.5)
+	w.trips.tick()
+	check("back on the map after the road", a.status == "active" and not w.trips.on_trip(a))
+	check("money of the world is conserved by the trip", absf(w.money_total() - m0) < 0.01)
 
 
 func _test_theft_process() -> void:
