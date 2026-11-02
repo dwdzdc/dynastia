@@ -30,10 +30,13 @@ var chronicle: SimChronicle
 var buildings: Dictionary = {}   # id -> SimBuilding
 var trees: Array = []            # SimTree
 var fields: Array = []           # SimField (L1)
+var sites: Dictionary = {}       # plac budowy (O2): id -> { b, kind, lineage, household, work }
+var _next_site := 1
 var agents: Array = []           # SimAgent (także zmarli — status "dead")
 var chore_claims: Dictionary = {}  # "food:<gosp.>"/"firewood:<gosp.>" -> agent id
 var stats: Dictionary = {}
 
+const SITE_CLEARANCE := 6.0   # plac budowy nie może stać bliżej innego budynku
 const FOREST_JOBS := ["woodcutter", "forager"]   # co można robić w lesie (PPM na las)
 const HOUSE_TYPES := ["home", "decor_house", "decor_town", "manor"]  # budynki, w których można mieszkać
 const START_AFTER_WAKE := 0.02           # gra startuje chwilę po pobudce (część doby)
@@ -364,6 +367,8 @@ func _work_options(a: SimAgent, b: SimBuilding) -> Array:
 			out.append({ "label": "Przydziel: %s" % SimJobs.JOB_LABELS.get(r["job"], r["job"]), "job": String(r["job"]), "place": "", "ok": true })
 	if trade.stalls.has(bid):
 		out.append({ "label": "Przydziel: %s" % SimJobs.JOB_LABELS["stallkeeper"], "job": "stallkeeper", "place": "", "ok": true })
+	if sites.has(bid):
+		out.append({ "label": "Przydziel: %s" % SimJobs.JOB_LABELS["builder"], "job": "builder", "place": "", "ok": true })
 	if b.type in ["market", "stall"] or b.id == a.home_id:
 		out.append({ "label": "Przydziel: %s" % SimJobs.JOB_LABELS["carrier"], "job": "carrier", "place": "", "ok": true })
 	if b.id == a.home_id:
@@ -403,6 +408,8 @@ func house_action(action: String, agent_id: int, bid: String) -> bool:
 
 # Cudze miejsce: budynek należy do innego rodu albo osoby spoza rodu gracza.
 func is_foreign(b: SimBuilding) -> bool:
+	if sites.has(b.id):
+		return int(sites[b.id]["household"]) != household.id
 	if trade.stalls.has(b.id):
 		return trade.stalls[b.id].owner != household.id
 	match b.owner_kind:
@@ -525,6 +532,74 @@ func leave_home() -> void:
 	var b: SimBuilding = buildings.get(household.home_id)
 	move_household(household, null)
 	note("Rodzina opuszcza dom%s. Śpicie pod gołym niebem." % ((": " + b.name) if b != null else ""), "warn", null)
+
+
+# --- Budowa (O2) ---
+
+# Zlecenie budowy domu w wybranym miejscu: powstaje plac budowy, na który trzeba
+# donieść deski i na którym ktoś musi pracować; ród wystawia też ofertę dla budowlańców.
+func commission_house(at: Vector2) -> String:
+	var cfg: Dictionary = balance["construction"]["house"]
+	for b: SimBuilding in buildings.values():
+		if b.position.distance_to(at) < SITE_CLEARANCE:
+			note("Za blisko innego budynku — wybierz inne miejsce.", "warn", null)
+			return ""
+	var id := "site_%d" % _next_site
+	_next_site += 1
+	var b := SimBuilding.new(id, "Plac budowy", "site", at, { "plank": int(cfg["planks"]) })
+	buildings[id] = b
+	sites[id] = { "b": b, "kind": "house", "lineage": family.player_lineage_id, "household": household.id, "work": 0.0 }
+	post_player_offer(id, "builder", int(balance["construction"]["builders"]), float(balance["jobs"]["laborer_wage_day"]))
+	note("Plac budowy wytyczony. Potrzeba %d desek i pracy — przydziel budowlańca (PPM na plac) albo poczekaj na najętych." % int(cfg["planks"]), "info", b.door())
+	return id
+
+
+func site_cfg(site: Dictionary) -> Dictionary:
+	return balance["construction"][String(site["kind"])]
+
+
+# Ile pracy wolno już wykonać: tyle, na ile starcza doniesionych desek.
+func site_work_allowed(site: Dictionary) -> float:
+	var cfg := site_cfg(site)
+	var b: SimBuilding = site["b"]
+	return float(cfg["work"]) * float(b.amount("plank")) / float(cfg["planks"])
+
+
+func build_work(site_id: String, secs: float) -> void:
+	var site: Dictionary = sites.get(site_id, {})
+	if site.is_empty():
+		return
+	site["work"] = minf(float(site["work"]) + secs, site_work_allowed(site))
+	if float(site["work"]) >= float(site_cfg(site)["work"]) - 0.001:
+		_finish_site(site_id)
+
+
+func _finish_site(site_id: String) -> void:
+	var site: Dictionary = sites[site_id]
+	var cfg := site_cfg(site)
+	var b: SimBuilding = site["b"]
+	sites.erase(site_id)
+	b.type = String(cfg["type"])
+	b.name = String(cfg["name"])
+	b.stock = {}
+	b.capacity = (balance["storage"]["home"] as Dictionary).duplicate()
+	for g in b.capacity:
+		b.stock[g] = 0
+	b.owner_kind = "lineage"
+	b.owner_id = int(site["lineage"])
+	b.rent_per_day = float(balance["economy"]["rent_per_day"].get(b.type, 0.0))
+	contracts.post(int(site["household"]), site_id, "builder", 0, 0.0)
+	for c: Dictionary in contracts.list.duplicate():
+		if c["place"] == site_id:
+			contracts.quit(family.persons[int(c["worker"])], "")
+	for a: SimAgent in agents:
+		if a.workplace == site_id or (a.job == "builder" and household_of(a).id == int(site["household"])):
+			a.workplace = ""
+			a.job = "none"
+			jobs.replan(a)
+	var l: SimLineage = family.lineages.get(int(site["lineage"]))
+	note("Dom gotowy! %s należy do rodu %s. Można się wprowadzić albo kogoś wyprowadzić na swoje." % [b.name, l.name if l != null else "?"], "good", b.door())
+	chronicle.add(clock.now(), "built", "Zbudowany własny dom (%s)." % b.name, [], int(site["lineage"]))
 
 
 # Stragan przy domu gracza (M1): deski z tartaku rodu.

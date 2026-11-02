@@ -26,6 +26,7 @@ const CROP_YOUNG := Color(0.38, 0.6, 0.22)
 const CROP_RIPE := Color(0.88, 0.74, 0.3)
 const CROP_MAX_H := 0.9                      # wysokość dojrzałego zboża
 const SHEAF := Color(0.85, 0.7, 0.32)
+const SITE_WALL_H := 2.4                    # wysokość ścian gotowego domu na placu budowy
 const MARKET_SQUARE := Vector3(13.0, 0.06, 9.0)
 const AWNINGS := [Color(0.75, 0.2, 0.15), Color(0.2, 0.45, 0.7), Color(0.85, 0.7, 0.2), Color(0.35, 0.6, 0.3), Color(0.6, 0.35, 0.6)]
 const GOOD_COLORS := { "food": Color(0.85, 0.5, 0.2), "log": Color(0.52, 0.35, 0.19), "plank": Color(0.86, 0.68, 0.42), "chair": Color(0.45, 0.3, 0.18) }
@@ -40,6 +41,8 @@ var _floor: MeshInstance3D
 var _tufts: Array = []
 var _fields: Dictionary = {}       # field id -> { cells, heap }
 var _stalls: Dictionary = {}       # stall id -> { node, awning, goods, last }
+var _bnodes: Dictionary = {}       # building id -> { node, type } (budynki mogą powstać w trakcie gry, O2)
+var _site_walls: Dictionary = {}   # site id -> MeshInstance3D (ściany rosną z postępem)
 const SEASON_GRASS := {
 	"spring": Color(0.33, 0.45, 0.22), "summer": Color(0.4, 0.46, 0.21),
 	"autumn": Color(0.47, 0.41, 0.22), "winter": Color(0.84, 0.86, 0.9),
@@ -136,6 +139,32 @@ func _stall(st: SimStall) -> Dictionary:
 	return { "node": s, "awning": aw, "goods": goods, "last": "" }
 
 
+# Nowe place budowy i domy, które z nich wyrosły (O2).
+func _refresh_buildings() -> void:
+	for id in world.buildings:
+		var b: SimBuilding = world.buildings[id]
+		if b.type == "stall":
+			continue
+		var d: Dictionary = _bnodes.get(id, {})
+		if d.is_empty() or d["type"] != b.type:
+			if not d.is_empty():
+				(d["node"] as Node3D).queue_free()
+				_site_walls.erase(id)
+				for k in _piles.keys():
+					if String(k).begins_with(id + ":"):
+						_piles.erase(k)
+			_building(b)
+	for id in _site_walls:
+		var site: Dictionary = world.sites.get(id, {})
+		if site.is_empty():
+			continue
+		var frac := float(site["work"]) / float(world.site_cfg(site)["work"])
+		var h := maxf(0.01, SITE_WALL_H * frac)
+		var wl: MeshInstance3D = _site_walls[id]
+		wl.scale = Vector3(1, h, 1)
+		wl.position.y = h * 0.5
+
+
 func _refresh_field(f: SimField) -> void:
 	var d: Dictionary = _fields[f.id]
 	for i in f.cells.size():
@@ -226,7 +255,18 @@ func _add(parent: Node3D, mi: MeshInstance3D, pos: Vector3, rot_y := 0.0) -> Mes
 
 func _building(b: SimBuilding) -> void:
 	var n := _at(b)
+	_bnodes[b.id] = { "node": n, "type": b.type }
 	match b.type:
+		"site":
+			# Plac budowy: deski na ziemi, narożne słupy, ściany rosnące z postępem.
+			_add(n, Gfx3D.box(Vector3(5.0, 0.08, 4.0), DIRT), Vector3(0, 0.04, 0))
+			for x in [-2.3, 2.3]:
+				for z in [-1.8, 1.8]:
+					_add(n, Gfx3D.cylinder(0.12, 2.6, WOOD_DARK), Vector3(x, 1.3, z))
+			var walls := _add(n, Gfx3D.box(Vector3(4.6, 1.0, 3.6), WOOD), Vector3(0, 0.0, 0))
+			walls.scale = Vector3(1, 0.01, 1)
+			_site_walls[b.id] = walls
+			_pile_slot(b, "plank", n, Vector3(3.4, 0, 1.0))
 		"home":
 			_house(n, Vector3(5.0, 2.6, 4.0), WOOD, THATCH, true)
 			_pile_slot(b, "log", n, Vector3(3.4, 0, 0.6))
@@ -384,6 +424,7 @@ func refresh(delta: float, selected_id: int, night: float) -> void:
 	for f: SimField in world.fields:
 		_refresh_field(f)
 	_refresh_stalls()
+	_refresh_buildings()
 	var regrow: float = world.regrow_total()
 	for t: SimTree in world.trees:
 		var g: float = t.growth(regrow)

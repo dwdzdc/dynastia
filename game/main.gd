@@ -17,6 +17,7 @@ var selected_id := -1
 var selected_building := ""
 var hover_id := -1
 
+var placing := ""            # tryb wskazywania miejsca (np. "house" — zlecenie budowy)
 var cam_target := Vector3.ZERO
 var follow_cam := false         # kamera biegnie za zaznaczoną osobą (F)
 var cam_size := 42.0
@@ -297,6 +298,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_F3:
 				hud.debug = not hud.debug
 			KEY_ESCAPE:
+				placing = ""
 				follow_cam = false
 				selected_id = -1
 				selected_building = ""
@@ -318,6 +320,11 @@ func _select_next() -> void:
 
 func _on_left_click(pos: Vector2) -> void:
 	hud._help.visible = false
+	if placing != "":
+		var g := _ground_at(pos)
+		if placing == "house" and world.commission_house(Vector2(g.x, g.z)) != "":
+			placing = ""
+		return
 	var hit := _agent_under_mouse()
 	if hit >= 0:
 		select_agent(hit)

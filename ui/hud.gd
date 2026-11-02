@@ -683,6 +683,16 @@ func _build_building_info(b: SimBuilding) -> void:
 			_info_box.add_child(hint)
 		"stall":
 			_build_stall_info(world.trade.stalls.get(b.id))
+		"site":
+			_dyn(func():
+				var site: Dictionary = world.sites.get(b.id, {})
+				if site.is_empty():
+					return "Budowa skończona."
+				var cfg: Dictionary = world.site_cfg(site)
+				return "Budowa domu: %d%%\nDeski: %d / %d (bez desek praca staje)\nBudują: %s" % [
+					int(100.0 * float(site["work"]) / float(cfg["work"])), b.amount("plank"), int(cfg["planks"]),
+					", ".join(world.agents.filter(func(x): return x.activity == "build" and x.position.distance_to(b.position) < 4.0).map(func(x): return world.person_of(x).name))], 17)
+			_build_offers(b)
 		"manor":
 			_dyn(func(): return "Pola dworu: %s" % ", ".join(world.fields.filter(func(f): return f.owner_building == b.id).map(
 				func(f): return "%d/%d zagonów zasianych" % [f.count("sown") + f.count("ripe"), f.cells.size()])), 16, DIM)
@@ -786,6 +796,7 @@ func _build_house_actions(b: SimBuilding) -> void:
 		_info_box.add_child(_button("Kup ten dom (%d zł)" % int(world.house_price(b)), func(): world.buy_house(b.id), 16))
 	if b.id == hh.home_id:
 		_info_box.add_child(_button("Opuść dom (pod gołe niebo)", func(): world.leave_home(), 16))
+		_info_box.add_child(_button("Zleć budowę domu (kliknij miejsce na mapie, Esc — anuluj)", func(): main.placing = "house", 16))
 	var tip := _label("Osobę wyprowadzisz albo wyrzucisz: zaznacz ją i PPM na dom.", 14, DIM)
 	tip.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	tip.custom_minimum_size.x = 400
@@ -985,6 +996,8 @@ func _text(pos: Vector2, s: String, size: int, col: Color, center := true) -> vo
 
 func _draw_overlay() -> void:
 	var zoom_ok: bool = main.cam_size < 60.0
+	if main.placing == "house":
+		_text(get_viewport().get_mouse_position() + Vector2(0, -24), "Kliknij, gdzie stanie dom (Esc — anuluj)", 17, Color(1, 0.9, 0.5))
 	# Etykiety budynków z zapasami.
 	for id in world.buildings:
 		var b: SimBuilding = world.buildings[id]

@@ -358,6 +358,7 @@
     "default_job": "laborer",
     "wealthy_cash_per_adult": 60.0
   },
+  "construction": {"house": {"type": "home", "name": "Nowy dom", "planks": 30, "work": 900.0, "build_seconds": 30.0, "carry_planks": 4}, "builders": 2},
   "housing": {"price": {"home": 220.0, "decor_house": 150.0, "decor_town": 320.0}, "rent_upfront_days": 2},
   "social": {"tavern_price": 1.0, "tavern_chance": 0.3, "tavern_seconds": 70.0, "festival_every": 5, "festival_day": 4, "festival_spread": 5.0},
   "romance": {"eye_chance": 0.08, "eye_per_liking": 0.004, "seek_love": 6.0, "gift_love": 14.0, "gift_cost": 2.0, "propose_love": 22.0, "standing_building": 60.0, "standing_opinion": 3.0, "mesalliance_gap": 250.0, "consent_love_scale": 40.0, "consent_min": 0.05, "consent_max": 0.95},

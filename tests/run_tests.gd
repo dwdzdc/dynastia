@@ -84,6 +84,7 @@ func _run_all() -> void:
 	_test_ai_visible_by_day()
 	_test_overseer()
 	_test_housing_orders()
+	_test_construction()
 	_test_world_deterministic()
 	_test_world_30_days_autonomous()
 	_test_economy_chain_produces_income()
@@ -1434,6 +1435,36 @@ func _test_housing_orders() -> void:
 	var home = w.home()
 	check("buying a house makes it the lineage's, no more rent", w.buy_house(home.id) and w.owns(h, home))
 	check("player rents a house by order", w.rent_house(home.id) and h.home_id == home.id)
+
+
+# O2: zlecona budowa powstaje z doniesionych desek i pracy ludzi; bez desek praca staje;
+# gotowy dom należy do rodu, który go zlecił.
+func _test_construction() -> void:
+	var w = _new_world()
+	check("too close to another building: no site", w.commission_house(w.home().position + Vector2(1, 1)) == "")
+	var sid: String = w.commission_house(Vector2(40, 60))
+	check("site is placed and builders are wanted", sid != "" and not w.contracts.find_offer_at(sid, "builder").is_empty())
+	var site: Dictionary = w.sites[sid]
+	var b = site["b"]
+	w.build_work(sid, 99999.0)
+	check("without planks no work gets done", is_zero_approx(float(site["work"])))
+	var cfg: Dictionary = w.site_cfg(site)
+	b.add("plank", int(cfg["planks"]) / 2)
+	w.build_work(sid, 99999.0)
+	check("half the planks allow half the work", absf(float(site["work"]) - float(cfg["work"]) * 0.5) < 1.0)
+	var piotr = _named(w.family, "Piotr")
+	var a = w.agent_by_id(piotr.agent_id)
+	w.assign_job(a.id, "builder", "")
+	a.steps.clear()
+	w.jobs._plan_builder(a)
+	w.building("sawmill").add("plank", 10)
+	a.steps.clear()
+	w.jobs._plan_builder(a)
+	check("builder fetches planks when the site runs out", a.steps.any(func(s): return s["t"] == "do" and s["fn"] == "pickup"))
+	b.add("plank", int(cfg["planks"]))
+	w.build_work(sid, 99999.0)
+	check("finished house belongs to the lineage that commissioned it", not w.sites.has(sid) and b.type == "home"
+		and b.owner_kind == "lineage" and b.owner_id == w.family.player_lineage_id and w.is_free_house(b))
 
 
 func _state_sig(w) -> String:

@@ -16,17 +16,19 @@ const JOB_LABELS := {
 	"forager": "zbieracz (las)",
 	"overseer": "nadzorca (pilnuje najętych)",
 	"stallkeeper": "kramarz (za ladą)",
+	"builder": "budowlaniec",
 	"thief": "złodziej (targ)",
 }
 
 var w: SimWorld
 var _cfg: Dictionary
 var recipes: Dictionary          # data/recipes.json (S13): produkcja w budynkach jako dane
-var work_acts: Array = ["chop", "forage", "labor"]  # czynności, które są pracą (+ z receptur)
+var work_acts: Array = ["chop", "forage", "labor", "build"]  # czynności, które są pracą (+ z receptur)
 
-const BASE_WORK_ACTS := ["chop", "forage", "labor"]
+const BASE_WORK_ACTS := ["chop", "forage", "labor", "build"]
 const OVERSEE_OFFSET := Vector2(1.2, 1.2)     # nadzorca staje obok pilnowanego
 const OVERSEE_WAITS := 4.0                    # jak długo stoi przy jednym miejscu
+const BUILD_RADIUS := 2.2                     # budowlańcy krążą wokół placu
 const LOVE_OFFSET := Vector2(1.5, 0.8)        # zakochany staje obok tej drugiej osoby
 const POOR_MEALS := 4.0                       # bieda: w skrzyni mniej niż na tyle posiłków
 const FIREWOOD_TRIP := 2                      # ile kłód opału niesie się na raz
@@ -441,6 +443,8 @@ func _plan_work(a: SimAgent) -> void:
 			_plan_laborer(a)
 		"stallkeeper":
 			_plan_stallkeeper(a)
+		"builder":
+			_plan_builder(a)
 		"overseer":
 			_plan_oversee(a)
 		"forager":
@@ -767,6 +771,35 @@ func _restock(a: SimAgent, st: SimStall) -> bool:
 	return false
 
 
+# Budowlaniec (O2): pracuje na placu tyle, na ile starcza desek; gdy brak — sam
+# przynosi je z tartaku rodu, który zlecił budowę. Najęty — z umowy, swój — z przydziału.
+func _plan_builder(a: SimAgent) -> void:
+	var sid := a.workplace
+	if not w.sites.has(sid):
+		sid = ""
+		for k in w.sites:
+			if int(w.sites[k]["household"]) == _hh(a).id:
+				sid = k
+				break
+	if sid == "":
+		_free_time(a, "nie ma żadnej budowy")
+		return
+	var site: Dictionary = w.sites[sid]
+	var b: SimBuilding = site["b"]
+	var cfg := w.site_cfg(site)
+	if float(site["work"]) >= w.site_work_allowed(site) - 0.01:
+		var mill: SimBuilding = w.building("sawmill")
+		if b.space("plank") > 0 and mill.amount("plank") > 0:
+			_pickup_and_deliver(a, mill, "plank", b, "niesie deski na budowę", mini(int(cfg["carry_planks"]), b.space("plank")))
+			return
+		_free_time(a, "budowa czeka na deski")
+		return
+	var k := w.rng.next_float(0.0, TAU)
+	_walk(a, b.position + Vector2(cos(k), sin(k)) * BUILD_RADIUS, "idzie na budowę")
+	_act(a, "build", _dur(a, "build", float(cfg["build_seconds"])), "buduje dom (%d%%)" % int(100.0 * float(site["work"]) / float(cfg["work"])))
+	_do(a, "build_work", { "site": sid, "secs": float(cfg["build_seconds"]) })
+
+
 # Kramarz (M2): staje za ladą, rozkłada towar, sprzedaje i skupuje; na koniec dnia zwija.
 func _plan_stallkeeper(a: SimAgent) -> void:
 	var st := w.trade.stall_of_keeper(a)
@@ -992,6 +1025,9 @@ func apply(a: SimAgent, step: Dictionary) -> bool:
 			return _fx_pickup(a, step["arg"])
 		"return_coins":
 			_return_coins(a)
+			return true
+		"build_work":
+			w.build_work(String(step["arg"]["site"]), float(step["arg"]["secs"]))
 			return true
 		"tavern_pay":
 			var tp := w.person_of(a)
