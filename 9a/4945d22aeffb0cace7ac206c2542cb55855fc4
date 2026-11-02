@@ -1,0 +1,31 @@
+sim/bonds.gd
+  s_01663f7cfcc9df::t_1acd9eff199f5a 10,44-45,58
+data/memories.json
+  s_01663f7cfcc9df::t_1acd9eff199f5a 26-35
+progress.md
+  ai_agent 72
+sim/world.gd
+  s_01663f7cfcc9df::t_1acd9eff199f5a 20,68,293,548
+sim/together.gd.uid
+  s_01663f7cfcc9df::t_1acd9eff199f5a 1
+sim/together.gd
+  s_01663f7cfcc9df::t_1acd9eff199f5a 1-60
+tests/run_tests.gd
+  s_01663f7cfcc9df::t_1acd9eff199f5a 54,400-434
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "9a4945d22aeffb0cace7ac206c2542cb55855fc4",
+  "prompts": {},
+  "sessions": {
+    "s_01663f7cfcc9df": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0628b2b4-7b30-464d-a1f4-7ea1e2566c94",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Dawid Dziedzic <24682682+dwdzdc@users.noreply.github.com>"
+    }
+  }
+}
