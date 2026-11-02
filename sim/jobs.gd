@@ -12,7 +12,7 @@ const JOB_LABELS := {
 	"sawyer": "tracz",
 	"carpenter": "stolarz",
 	"carrier": "tragarz",
-	"laborer": "dniówka w dworze",
+	"laborer": "robotnik w polu",
 	"forager": "zbieracz (las)",
 	"thief": "złodziej (targ)",
 }

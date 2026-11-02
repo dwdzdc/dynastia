@@ -63,6 +63,20 @@ func _shoot() -> void:
 	await _frames(20)
 	_save("07_market.png")
 	game.selected_building = ""
+	# Menu przydziału (PPM na dwór z zaznaczoną osobą).
+	var piotr = w.family.persons.values().filter(func(p): return p.name == "Piotr")[0]
+	game.select_agent(piotr.agent_id)
+	game.cam_target = Vector3(70, 0, 18)
+	await _frames(10)
+	game._on_right_click(game.camera.unproject_position(Vector3(81, 0, 16)), false)
+	await _frames(20)
+	_save("08_assign_menu.png")
+	game.hud._menu.hide()
+	game.selected_id = -1
+	game.selected_building = "sawmill"
+	await _frames(15)
+	_save("09_sawmill_offers.png")
+	game.selected_building = ""
 	# Noc i zima.
 	game.world.clock.set_time(16, 0.9)
 	await _frames(30)

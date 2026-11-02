@@ -33,6 +33,7 @@ var agents: Array = []           # SimAgent (także zmarli — status "dead")
 var chore_claims: Dictionary = {}  # "food:<gosp.>"/"firewood:<gosp.>" -> agent id
 var stats: Dictionary = {}
 
+const FOREST_JOBS := ["woodcutter", "forager"]   # co można robić w lesie (PPM na las)
 const HOUSE_TYPES := ["home", "decor_house", "decor_town", "manor"]  # budynki, w których można mieszkać
 const START_AFTER_WAKE := 0.02           # gra startuje chwilę po pobudce (część doby)
 const TREE_PLACE_TRIES := 4000            # limit prób rozmieszczenia drzew
@@ -295,6 +296,82 @@ func set_job(agent_id: int, job: String) -> void:
 		contracts.quit(p, "")
 	a.job = job
 	jobs.replan(a)
+
+
+# Przydział jak w Cultures (S21, L4): zaznaczona osoba + PPM na miejsce. Zwraca opcje
+# { label, job, place, ok }: na swoich miejscach zawody, które się tam robi; na cudzych
+# tylko wakaty z ofert (z płacą), a bez wakatu — opcja wyszarzona z powodem.
+# `target`: id budynku, "forest" albo "field:<id>".
+func job_options(agent_id: int, target: String) -> Array:
+	var a := agent_by_id(agent_id)
+	if a == null or is_independent(a) or a.is_child:
+		return []
+	var out: Array = []
+	if target == "forest":
+		for j in FOREST_JOBS:
+			out.append({ "label": "Przydziel: %s" % SimJobs.JOB_LABELS[j], "job": j, "place": "", "ok": true })
+		return out
+	var bid := target
+	if target.begins_with("field:"):
+		var f := field_by_id(target.substr(6))
+		if f == null:
+			return []
+		bid = f.owner_building
+	var b: SimBuilding = buildings.get(bid)
+	if b == null:
+		return []
+	if is_foreign(b):
+		for o: Dictionary in contracts.offers:
+			if o["place"] != bid or int(o["slots"]) <= 0:
+				continue
+			var free := contracts.free_slots(o)
+			out.append({ "label": "Najmij się: %s — %d zł/dzień (wolne %d/%d)" % [SimJobs.JOB_LABELS.get(o["job"], o["job"]),
+				int(o["wage"]), maxi(free, 0), int(o["slots"])], "job": o["job"], "place": bid, "ok": free > 0 })
+		if out.is_empty():
+			out.append({ "label": "%s: brak wakatów" % b.name, "job": "", "place": bid, "ok": false })
+		return out
+	for r: Dictionary in jobs.recipes.values():
+		if String(r["building"]) == bid:
+			out.append({ "label": "Przydziel: %s" % SimJobs.JOB_LABELS.get(r["job"], r["job"]), "job": String(r["job"]), "place": "", "ok": true })
+	if b.type == "market":
+		out.append({ "label": "Przydziel: %s" % SimJobs.JOB_LABELS["carrier"], "job": "carrier", "place": "", "ok": true })
+	if b.id == a.home_id:
+		out.append({ "label": "Bez przydziału (domowe obowiązki)", "job": "none", "place": "", "ok": true })
+	return out
+
+
+# Cudze miejsce: budynek należy do innego rodu albo osoby spoza rodu gracza.
+func is_foreign(b: SimBuilding) -> bool:
+	match b.owner_kind:
+		"lineage":
+			return b.owner_id != family.player_lineage_id and not owns(household, b)
+		"person":
+			var p: SimPerson = family.persons.get(b.owner_id)
+			return p == null or not family.is_ours(p)
+	return false
+
+
+# Wybór z menu PPM: swoje miejsce — zwykły przydział; cudze — umowa z wakatu.
+func assign_job(agent_id: int, job: String, place: String) -> bool:
+	var a := agent_by_id(agent_id)
+	if a == null or is_independent(a) or job == "":
+		return false
+	if place == "":
+		set_job(agent_id, job)
+		return true
+	var o := contracts.find_offer_at(place, job)
+	if o.is_empty() or contracts.free_slots(o) <= 0:
+		return false
+	set_job(agent_id, job)
+	contracts.hire(o, person_of(a))
+	jobs.replan(a)
+	note("%s najmuje się: %s (%d zł/dzień)." % [person_of(a).name, SimJobs.JOB_LABELS.get(job, job), int(o["wage"])], "info", a.position)
+	return true
+
+
+# Gracz jako pracodawca (L4): oferta pracy w swoim warsztacie (ile osób, za ile).
+func post_player_offer(bid: String, job: String, slots: int, wage: float) -> void:
+	contracts.post(household.id, bid, job, maxi(slots, 0), maxf(wage, 0.0))
 
 
 # Przydział wbrew woli (D4) zostawia wspomnienie o tym, kto rządzi rodem (root).

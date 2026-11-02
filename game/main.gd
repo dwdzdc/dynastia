@@ -331,13 +331,43 @@ func _on_left_click(pos: Vector2) -> void:
 	selected_building = ""
 
 
-# PPM: rozkaz ręczny (zastępuje kolejkę), Shift+PPM: dopisz do kolejki.
+# PPM: na miejscu pracy menu przydziału jak w Cultures (S21); poza tym rozkaz ręczny
+# (zastępuje kolejkę). Shift+PPM: zawsze rozkaz dopisany do kolejki.
 func _on_right_click(pos: Vector2, append: bool) -> void:
 	if selected_id < 0:
 		return
 	var g := _ground_at(pos)
-	var t: SimTree = view.tree_at(Vector2(g.x, g.z), TREE_PICK_RADIUS)
+	var at := Vector2(g.x, g.z)
+	var t: SimTree = view.tree_at(at, TREE_PICK_RADIUS)
+	var opts: Array = [] if append else world.job_options(selected_id, _place_at(at, t != null))
+	if opts.is_empty():
+		if t != null:
+			world.manual_chop(selected_id, t.id, append)
+		else:
+			world.manual_move(selected_id, at, append)
+		return
+	var aid := selected_id
+	var items: Array = []
+	for o: Dictionary in opts:
+		var job := String(o["job"])
+		var place := String(o["place"])
+		items.append({ "label": o["label"], "ok": o["ok"], "fn": func(): world.assign_job(aid, job, place) })
 	if t != null:
-		world.manual_chop(selected_id, t.id, append)
-	else:
-		world.manual_move(selected_id, Vector2(g.x, g.z), append)
+		var tid := t.id
+		items.append({ "label": "Zetnij to drzewo", "ok": true, "fn": func(): world.manual_chop(aid, tid, false) })
+	items.append({ "label": "Idź tutaj", "ok": true, "fn": func(): world.manual_move(aid, at, false) })
+	hud.show_menu(pos, items)
+
+
+# Co jest pod kursorem jako miejsce pracy: budynek, pole ("field:<id>") albo las.
+func _place_at(at: Vector2, on_tree: bool) -> String:
+	var b := _building_at(Vector3(at.x, 0, at.y))
+	if b != "":
+		return b
+	for f: SimField in world.fields:
+		if f.rect.has_point(at):
+			return "field:" + f.id
+	var fr: Dictionary = world.map["forest"]
+	if on_tree or Rect2(float(fr["x"]), float(fr["y"]), float(fr["w"]), float(fr["h"])).has_point(at):
+		return "forest"
+	return ""

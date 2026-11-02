@@ -79,6 +79,7 @@ func _run_all() -> void:
 	_test_traveling_traders()
 	_test_estate_pays_wages()
 	_test_field_work()
+	_test_assign_by_place()
 	_test_world_deterministic()
 	_test_world_30_days_autonomous()
 	_test_economy_chain_produces_income()
@@ -1231,6 +1232,35 @@ func _test_field_work() -> void:
 	a.steps.clear()
 	w.jobs._plan_laborer(a)
 	check("no field work: laborer says so instead of vanishing", String(a.steps[a.steps.size() - 1]["why"]).contains("nie ma dziś roboty"))
+
+
+# L4 (S21): przydział przez miejsce — swoje miejsca dają zawody, cudze tylko wakaty;
+# gracz sam wystawia oferty, a za niską stawkę nikt nie przyjdzie.
+func _test_assign_by_place() -> void:
+	var w = _new_world()
+	var piotr = _named(w.family, "Piotr")
+	var a = w.agent_by_id(piotr.agent_id)
+	var jobs_of := func(opts: Array) -> Array: return opts.map(func(o): return o["job"])
+	check("forest offers woodcutter and forager", jobs_of.call(w.job_options(a.id, "forest")).has("woodcutter"))
+	check("own sawmill offers sawyer", jobs_of.call(w.job_options(a.id, "sawmill")) == ["sawyer"])
+	var manor_opts: Array = w.job_options(a.id, "field:" + w.fields[0].id)
+	check("foreign field shows the vacancy with wage", manor_opts.size() == 1 and manor_opts[0]["job"] == "laborer"
+		and manor_opts[0]["place"] == "manor" and String(manor_opts[0]["label"]).contains("zł"))
+	check("taking a vacancy makes a contract", w.assign_job(a.id, "laborer", "manor") and w.contracts.of_worker(piotr.id)["place"] == "manor")
+	var o: Dictionary = w.contracts.find_offer_at("manor", "laborer")
+	o["slots"] = w.contracts.taken(o)
+	var zofia = _named(w.family, "Zofia")
+	check("no free slot: no contract", not w.assign_job(zofia.agent_id, "laborer", "manor"))
+	var stranger: SimPerson = null
+	for p in w.family.all_living():
+		if not w.family.is_ours(p) and w.family.stage_of(p) == "adult" and w.contracts.of_worker(p.id).is_empty():
+			stranger = p
+			break
+	w.post_player_offer("sawmill", "sawyer", 1, float(w.balance["contracts"]["min_wage"]) - 1.0)
+	check("too low wage attracts nobody", w.contracts.best_offer_for(stranger, "sawyer").is_empty())
+	w.post_player_offer("sawmill", "sawyer", 1, 30.0)
+	var best: Dictionary = w.contracts.best_offer_for(stranger)
+	check("good wage in the player's sawmill attracts a stranger", best.get("place", "") == "sawmill")
 
 
 func _state_sig(w) -> String:

@@ -21,13 +21,13 @@ const JOB_HINTS := {
 	"carpenter": "w stolarni robi krzesła z desek (jakość = umiejętność)",
 	"carrier": "kupuje jedzenie, nosi opał, wozi deski i krzesła",
 	"forager": "zbiera jedzenie w lesie (za darmo, mało; zimą prawie nic)",
-	"laborer": "dniówka w dworze: pewny grosz, bez rozwoju",
+	"laborer": "robotnik w polu u kogoś: najlepsza oferta, płaca do ręki po robocie",
 	"thief": "kradnie na targu: szybki grosz, ale złapany idzie do aresztu, grzywna i wstyd",
 	"none": "pomaga w domu: zakupy i opał, gdy trzeba",
 }
 const JOB_BUTTONS := {
 	"woodcutter": "Drwal", "sawyer": "Tracz", "carpenter": "Stolarz", "carrier": "Tragarz",
-	"forager": "Zbieracz", "laborer": "Dniówka", "thief": "Złodziej", "none": "Bez przydziału",
+	"forager": "Zbieracz", "laborer": "Robotnik", "thief": "Złodziej", "none": "Bez przydziału",
 }
 const PERSON_TABS := [["now", "Teraz"], ["memories", "Wspomnienia"], ["prefs", "Preferencje"], ["traits", "Cechy i charakter"]]
 const MEMORIES_SHORT := 8          # ile wspomnień widać przed „pokaż więcej”
@@ -48,6 +48,8 @@ var _top_speed: Array = []
 var _top_res: RichTextLabel
 var _family_title: Label
 var _family_panel: PanelContainer
+var _menu: PopupMenu
+var _menu_fns: Array = []
 var _family_box: VBoxContainer
 var _family_sig := ""
 var _family_rows: Dictionary = {}   # agent id -> Button
@@ -219,6 +221,25 @@ func _build_family() -> void:
 	_family_box = VBoxContainer.new()
 	_family_box.add_theme_constant_override("separation", 4)
 	v.add_child(_family_box)
+
+
+# Menu kontekstowe PPM (przydział jak w Cultures): pozycje { label, ok, fn }.
+func show_menu(pos: Vector2, items: Array) -> void:
+	if _menu == null:
+		_menu = PopupMenu.new()
+		_menu.add_theme_font_size_override("font_size", 18)
+		_menu.id_pressed.connect(func(id: int): _menu_fns[id].call())
+		add_child(_menu)
+	_menu.clear()
+	_menu_fns = []
+	for i in items.size():
+		var it: Dictionary = items[i]
+		_menu.add_item(String(it["label"]), i)
+		_menu.set_item_disabled(i, not bool(it["ok"]))
+		_menu_fns.append(it["fn"])
+	_menu.position = Vector2i(pos)
+	_menu.reset_size()
+	_menu.popup()
 
 
 func toggle_family() -> void:
@@ -616,6 +637,8 @@ func _build_building_info(b: SimBuilding) -> void:
 	var hh := world.household
 	if b.type in SimWorld.HOUSE_TYPES:
 		_dyn(func(): return _owner_text(b), 16, DIM)
+	if b.type in ["sawmill", "workshop", "manor"]:
+		_build_offers(b)
 	match b.type:
 		"home", "decor_house":
 			_dyn(func(): return "Spiżarnia: %d / %d posiłków\nOpał: %d / %d kłód (zużycie: %s/dzień)" % [
@@ -657,8 +680,8 @@ func _build_building_info(b: SimBuilding) -> void:
 			_info_box.add_child(sell)
 			_info_updaters.append(func(): sell.text = "Sprzedawaj deski: " + ("TAK" if hh.sell_planks else "NIE (tylko do stolarni)"))
 		"manor":
-			_dyn(func(): return "Dniówka: %d zł za dzień pracy na osobę.\nPewny grosz, ale bez rozwoju i bez reputacji.\nPracuje tu: %d" % [
-				int(world.balance["jobs"]["laborer_wage_day"]), _count_job("laborer")], 17)
+			_dyn(func(): return "Pola dworu: %s" % ", ".join(world.fields.filter(func(f): return f.owner_building == b.id).map(
+				func(f): return "%d/%d zagonów zasianych" % [f.count("sown") + f.count("ripe"), f.cells.size()])), 16, DIM)
 		"jail":
 			_dyn(func():
 				var names: Array = []
@@ -668,6 +691,35 @@ func _build_building_info(b: SimBuilding) -> void:
 				return "W areszcie: " + (", ".join(names) if not names.is_empty() else "nikt z rodu"), 17)
 		_:
 			_info_box.add_child(_label("Chata sąsiadów. Stąd przychodzą kandydaci do ożenku.", 17, DIM))
+
+
+# Wakaty w budynku (L3, L4): kto najmuje, do czego, za ile i ile miejsc wolnych.
+# W swoim warsztacie gracz sam ustala, ilu ludzi chce i za ile.
+func _build_offers(b: SimBuilding) -> void:
+	_dyn(func():
+		var lines: Array = []
+		for o: Dictionary in world.contracts.offers:
+			if o["place"] == b.id and int(o["slots"]) > 0:
+				lines.append("%s: %d zł/dzień · zajęte %d/%d" % [SimJobs.JOB_LABELS.get(o["job"], o["job"]), int(o["wage"]),
+					world.contracts.taken(o), int(o["slots"])])
+		return ("Wakaty:\n  " + "\n  ".join(lines)) if not lines.is_empty() else "Wakaty: brak", 16, DIM)
+	if world.is_foreign(b):
+		_info_box.add_child(_label("Zaznacz swoją osobę i kliknij PPM na budynek, żeby się najęła.", 15, DIM))
+		return
+	for r: Dictionary in world.jobs.recipes.values():
+		if String(r["building"]) != b.id:
+			continue
+		var job := String(r["job"])
+		var bid := b.id
+		var get_o := func() -> Dictionary: return world.contracts.find_offer(world.household.id, bid, job)
+		var default_wage := float(world.balance["jobs"]["laborer_wage_day"])
+		_info_box.add_child(_label("Najmij obcych: %s" % SimJobs.JOB_LABELS.get(job, job), 16))
+		_stepper("Ile osób", func(): return int(get_o.call().get("slots", 0)), func(d):
+			var o: Dictionary = get_o.call()
+			world.post_player_offer(bid, job, int(o.get("slots", 0)) + signi(d), float(o.get("wage", default_wage))))
+		_stepper("Stawka (zł)", func(): return int(get_o.call().get("wage", default_wage)), func(d):
+			var o: Dictionary = get_o.call()
+			world.post_player_offer(bid, job, int(o.get("slots", 0)), float(o.get("wage", default_wage)) + signi(d)))
 
 
 func _owner_text(b: SimBuilding) -> String:

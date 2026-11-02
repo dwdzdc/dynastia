@@ -41,6 +41,14 @@ func find_offer(employer: int, place: String, job: String) -> Dictionary:
 	return {}
 
 
+# Oferta w miejscu na dany zawód (dowolnego pracodawcy; jedna na miejsce).
+func find_offer_at(place: String, job: String) -> Dictionary:
+	for o: Dictionary in offers:
+		if o["place"] == place and o["job"] == job and int(o["slots"]) > 0:
+			return o
+	return {}
+
+
 func taken(o: Dictionary) -> int:
 	var n := 0
 	for c: Dictionary in list:
