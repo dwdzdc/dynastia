@@ -42,7 +42,7 @@ Małżonek wżeniony. Kontrola ograniczona więzią, własne cele; nie może by�
 
 **worker** (status):
 Członek przypisany do miejsca pracy — gracz wyznacza miejsce, resztę robi sam.
-_Avoid_: nie mylić z `occupation` ani z rolą `carrier` (nosiciel).
+_Avoid_: nie mylić z `occupation` ani z rolą `carrier` (tragarz).
 
 **independent**:
 Poza rdzeniem; sterowany przez AI.
@@ -96,14 +96,14 @@ _Avoid_: budżet, punkty uwagi (jej nie wydajesz — o nią dbasz).
 ## Praca i plan dnia (MVP)
 
 **job** (przydział):
-Stała rola osoby nadana przez gracza (drwal, tracz, stolarz, nosiciel, zbieracz, dniówka, złodziej, bez przydziału). Wypełnia blok pracy w harmonogramie; reszta dnia to potrzeby i obowiązki.
+Stała rola osoby nadana przez gracza (drwal, tracz, stolarz, tragarz, zbieracz, dniówka, złodziej, bez przydziału). Wypełnia blok pracy w harmonogramie; reszta dnia to potrzeby i obowiązki.
 _Avoid_: occupation (to fakt biograficzny), worker (status względem rdzenia).
 
 **plan**:
 Krótka kolejka kroków agenta (`walk` / `act` / `do`) zbudowana z przydziału, potrzeb i bloku dnia; przeliczana, gdy się skończy albo zmieni się sytuacja. Ostatni krok zawsze ma `idle_reason`.
 
 **chore** (obowiązek domowy):
-Zakup jedzenia i donoszenie opału, gdy zapas w chacie spada poniżej celu; robi to nosiciel, osoba bez przydziału albo każdy dorosły po pracy. Jedna osoba na raz (rezerwacja).
+Zakup jedzenia i donoszenie opału, gdy zapas w chacie spada poniżej celu; robi to tragarz, osoba bez przydziału albo każdy dorosły po pracy. Jedna osoba na raz (rezerwacja).
 
 **scenario** (scenariusz):
 Zestaw danych startowych: mapa, rodzina, reguły (czynsz, odległość od targu). MVP ma jeden („drwale pod wsią"); kolejne, np. „sami na odludziu", mają być nowymi plikami danych.

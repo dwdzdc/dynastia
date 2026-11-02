@@ -50,3 +50,22 @@ Mechaniki z iteracji 2 rozstrzygały wynik funkcją zamiast procesem w świecie:
 ## Odłożone
 
 - Gracz jako córka, która wychodzi za mąż do innego rodu (root w obcym rodzie, podgrupa) — „troche shady”, na razie nie.
+
+## Ustalenia z rozmowy o planie iteracji 2b (02.11.2026)
+
+**Pieniądze mają miejsce.** Kwota leży w skrzyni (zapas budynku) albo w sakwie osoby; przenosi ją tylko osoba czynnością na miejscu. Członkowie rodu mogą brać ze skrzyni zapas „na okazję” (idą z tartaku na targ, trafia się coś potrzebnego — mają czym zapłacić). Pełna sakwa sama w sobie nie znaczy oddalania się; sygnałem dryfu jest to, że ktoś nie oddaje, chowa albo wydaje na siebie.
+
+**Wypłatę wręcza człowiek.** Pracodawca albo ktoś z jego ludzi (płatnik) przychodzi z sakwą i płaci pracownikom. Nie ma przelewu z powietrza.
+
+**Dwór to nie klasa.** Ród dworski to taki sam ród jak każdy inny, tylko z założonymi przedsięwzięciami i majątkiem. Wilkowie z pracownikami i pieniędzmi mogą postawić własny dwór; do tego może dążyć gracz i każdy ród AI. Żadnych ról rodów w danych, które zmieniają zachowanie („gentry”, „merchant”): zachowanie wynika z majątku i przedsięwzięć.
+
+**Zatrudnianie to oferta, nie gwarancja.** Gracz sam ustala, ile osób chce zatrudnić i za ile. Ludzie AI idą tam, gdzie płacą lepiej (i gdzie lubią pracodawcę); za niską stawkę nikt nie przyjdzie.
+
+**Czas wolny rodu z majątkiem.** Kto nie musi pracować rękami, może: nadzorować pracowników (jeden nadzorca ogarnia więcej ludzi, mniej się migają), prowadzić księgę, bywać (imprezy, flirty, zabawa), uczyć się, rozkręcać nowy interes, prowadzić badania.
+
+**Stragan.** Bez sprzedawcy nie sprzedaje. Niezwinięty na noc i niepilnowany jest łatwym łupem (towar, który na nim został).
+
+## Na później (z tej rozmowy)
+
+- **Księgowość jako miejsce pracy.** Ktoś z rodu albo pracownik prowadzi księgę przychodów i rozchodów; tylko z niej gracz widzi, ile na co idzie i czy ktoś nie chowa. Bez księgowego gracz zna tylko stan skrzyni.
+- **Wózki, plecaki, potem auta** jako towar: więcej niesionego na raz. Kolejny łańcuch gospodarki.

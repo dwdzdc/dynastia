@@ -15,7 +15,7 @@ Decyzje architektoniczne są w `docs/adr/`, terminy w `GLOSSARY.md`.
 
 ## Gdzie jesteśmy
 
-Iteracja 1 (dynamika rodu) jest zrobiona i przetestowana przez autora. Następna jest **Iteracja 2 — społeczeństwo** (`progress.md`): zrobione F1–F4, G1–G5, H1–H3 i H7a; reszta wstrzymana po playteście. **Następna jest Iteracja 2b — wieś, która żyje** (`docs/design/living-village.md`, `progress.md`): najpierw zaproponuj autorowi decyzje szkieletowe i punkty (autor chce, żeby Claude je rozpisał), nic nie implementuj przed zatwierdzeniem. Testy trwają ok. 2 min (kilkudziesięciu agentów).
+Iteracja 1 (dynamika rodu) jest zrobiona i przetestowana przez autora. Następna jest **Iteracja 2 — społeczeństwo** (`progress.md`): zrobione F1–F4, G1–G5, H1–H3 i H7a; reszta wstrzymana po playteście. **Bieżąca jest Iteracja 2b — wieś, która żyje** (`docs/design/living-village.md`, plan i decyzje S14–S20 w `progress.md`, zatwierdzone): punkty od K0 po kolei. Testy trwają ok. 2 min (kilkudziesięciu agentów).
 
 ## Jak pracujemy
 

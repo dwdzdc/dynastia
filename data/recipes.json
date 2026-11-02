@@ -3,13 +3,13 @@
     "job": "sawyer", "building": "sawmill", "act": "saw", "skill": "saw", "seconds": 40.0,
     "inputs": {"log": 1}, "outputs": {"plank": 2}, "spot": [1.6, 0.4],
     "doing": "tnie kłody na deski", "accident_where": "przy pile",
-    "wait_input": "czeka na kłody — potrzebny drwal", "full": "skład desek pełny — potrzebny nosiciel"
+    "wait_input": "czeka na kłody — potrzebny drwal", "full": "skład desek pełny — potrzebny tragarz"
   },
   "craft": {
     "job": "carpenter", "building": "workshop", "act": "craft", "skill": "craft", "seconds": 130.0,
     "inputs": {"plank": 2}, "outputs": {"chair": 1}, "spot": [-1.6, 0.4],
     "doing": "robi krzesło", "accident_where": "w stolarni",
-    "wait_input": "czeka na deski — potrzebny nosiciel", "full": "skład krzeseł pełny — potrzebny nosiciel",
+    "wait_input": "czeka na deski — potrzebny tragarz", "full": "skład krzeseł pełny — potrzebny tragarz",
     "quality": {"base": 0.15, "per_skill": 0.07, "jitter": [-0.1, 0.15], "min": 0.05, "max": 1.0}
   }
 }

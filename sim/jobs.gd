@@ -1,5 +1,5 @@
 # SimJobs — planowanie i wykonanie pracy agentów: harmonogram dnia, przydziały
-# (drwal, tracz, stolarz, nosiciel, dniówka), obowiązki domowe i logistyka towarów.
+# (drwal, tracz, stolarz, tragarz, dniówka), obowiązki domowe i logistyka towarów.
 # Każda ścieżka planu kończy się krokiem z widocznym powodem (idle_reason) — żaden
 # agent nie stoi bez wyjaśnienia (intro §6).
 class_name SimJobs
@@ -11,7 +11,7 @@ const JOB_LABELS := {
 	"woodcutter": "drwal",
 	"sawyer": "tracz",
 	"carpenter": "stolarz",
-	"carrier": "nosiciel",
+	"carrier": "tragarz",
 	"laborer": "dniówka w dworze",
 	"forager": "zbieracz (las)",
 	"thief": "złodziej (targ)",
@@ -383,8 +383,8 @@ func _plan_work(a: SimAgent) -> void:
 			_plan_woodcutter(a)
 		"carrier":
 			if not _plan_carrier(a):
-				_walk(a, (_home(a).door() if _home(a) != null else _homeless_spot(a)) + Vector2(1.5, 1.0), "nosiciel — nic do noszenia")
-				_wait(a, "nosiciel — nic do noszenia")
+				_walk(a, (_home(a).door() if _home(a) != null else _homeless_spot(a)) + Vector2(1.5, 1.0), "tragarz — nic do noszenia")
+				_wait(a, "tragarz — nic do noszenia")
 		"laborer":
 			_plan_laborer(a)
 		"forager":

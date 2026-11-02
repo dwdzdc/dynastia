@@ -141,7 +141,7 @@ func buy_price(v: Dictionary, good: String, quality: float = 0.0) -> float:
 	return float(b["price"])
 
 
-# Ile sztuk tego towaru kupią wszystkie stojące wozy (do decyzji nosiciela).
+# Ile sztuk tego towaru kupią wszystkie stojące wozy (do decyzji tragarza).
 func wants(good: String) -> int:
 	var n := 0
 	for v: Dictionary in visits:

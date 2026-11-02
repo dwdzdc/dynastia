@@ -16,14 +16,14 @@ Wizja: `docs/design/vision.md` (najwyższe źródło prawdy), model rodu: `docs/
 
 Zamiast domykać etapy po kolei, zrobiony jest jeden spójny przekrój przez etapy 3–9 w uproszczonej formie, żeby dało się grać. Poprzednia implementacja etapu 2 (anonimowi agenci, licznik drewna, nieczytelny render) została zastąpiona.
 
-Pętla gry: ród Wilków (6 osób, 3 pokolenia) w chacie pod lasem. Co 5 dni czynsz; trzeba karmić rodzinę, zimą palić w piecu. Pieniądze z drewna (drwal → tartak → tracz → deski → nosiciel → targ), z krzeseł (stolarz; jakość = umiejętność, buduje reputację), z dniówki w dworze albo z kradzieży. Bieda prowadzi do długu, dług do aresztu; głód, zimno i choroby zabijają. Ślub, dzieci, starzenie, śmierć, sukcesja głowy rodu, koniec gry przy wygaśnięciu krwi.
+Pętla gry: ród Wilków (6 osób, 3 pokolenia) w chacie pod lasem. Co 5 dni czynsz; trzeba karmić rodzinę, zimą palić w piecu. Pieniądze z drewna (drwal → tartak → tracz → deski → tragarz → targ), z krzeseł (stolarz; jakość = umiejętność, buduje reputację), z dniówki w dworze albo z kradzieży. Bieda prowadzi do długu, dług do aresztu; głód, zimno i choroby zabijają. Ślub, dzieci, starzenie, śmierć, sukcesja głowy rodu, koniec gry przy wygaśnięciu krwi.
 
 ### Zrobione
 
 - [x] Czas: doba/sezon/rok, światło per sezon (praca po ciemku wolniejsza i groźniejsza), prędkości 1/2/4/8×, pauza; teren zmienia kolor z sezonem (zima = śnieg).
 - [x] Osada (`sim/building.gd`, `sim/tree.gd`): budynki z zapasami i pojemnością, drzewa z rezerwacją i odrostem, chata/tartak/stolarnia/targ/dwór/areszt.
 - [x] Agenci (`sim/agent.gd`, `sim/jobs.gd`): przydział pracy, plan krokowy, harmonogram (sen/praca/wolne), potrzeby (jedzenie, sen), obowiązki domowe, `idle_reason` zawsze ustawiony, alarm „!" przy problemie (ADR-0007).
-- [x] Łańcuch drewno → deski → targ i deski → krzesła → targ; nosiciel jako rola; wąskie gardła widoczne jako czekanie z powodem.
+- [x] Łańcuch drewno → deski → targ i deski → krzesła → targ; tragarz jako rola; wąskie gardła widoczne jako czekanie z powodem.
 - [x] Ekonomia (`sim/household.gd`): gotówka, czynsz co K dni, dług z odsetkami, areszt za długi, ceny z nasyceniem dziennym (mały rynek), reputacja stolarska, zakup jedzenia i opału.
 - [x] Survival: głód, zimno bez opału, choroby (zima/zimno/głód zwiększają szansę), zbieractwo w lesie jako darmowe jedzenie (zimą prawie nic).
 - [x] Ród (`sim/family.gd`, `sim/person.gd`): wiek i etapy życia, traity z danych (wpływ na pracę, zdrowie, wypadki, jakość), dziedziczenie traitów, drzewo (rodzice, historia małżeństw), ślub z kandydatem materializowanym deterministycznie na żądanie, ciąża i poród z ryzykiem, śmierć ze starości, sukcesja (potomkowie zmarłego, dorośli, starsi; małżonek nigdy), koniec gry przy wygaśnięciu krwi.
@@ -97,18 +97,68 @@ Pętla gry: ród Wilków (6 osób, 3 pokolenia) w chacie pod lasem. Co 5 dni czy
 - [x] E3 Podgląd kroniki (osobny panel, klawisz) → zrzut ekranu.
 - [x] E4 Tryb debug (F3): ukryte liczby (więzi, siła) widoczne dla dewelopera → zrzut ekranu.
 
-## Iteracja 2b — wieś, która żyje (NASTĘPNA, przed resztą iteracji 2)
+## Iteracja 2b — wieś, która żyje (BIEŻĄCA, przed resztą iteracji 2)
 
-Źródło: `docs/design/living-village.md` (playtest 02.11.2026). Reszta iteracji 2 (H4–H6, H7, I, J) wstrzymana; pole i budowa wejdą tu jako miejsca pracy. Zasada: każdy skutek wynika z procesu w świecie, każdy punkt ma w weryfikacji „co gracz zobaczy”.
+Źródło: `docs/design/living-village.md` (playtest i rozmowa 02.11.2026). Reszta iteracji 2 wstrzymana; H4 (pole) i H7 (praca u kogoś) wchodzą tu jako L, I1/I2 jako O2. Zasada: każdy skutek wynika z procesu w świecie, każdy punkt ma w weryfikacji „co gracz zobaczy”.
 
-Zakres (do rozpisania na decyzje szkieletowe i punkty, potem zatwierdzenie autora):
-- [ ] Widoczna praca: pola dworu na mapie, zatrudnienie jako umowa na konkretną robotę w konkretnym miejscu (w tym najem ludzi do własnego tartaku); koniec „dniówki w dworze” jako znikania.
-- [ ] Skarbiec rodu (skrzynia w domu) i sakwy fizycznie: monety brane do sakwy przed zakupem, sens sakwy (wydatki osobiste, sygnał dryfu).
-- [ ] Handel jako miejsce: stragan jako budynek (także przy domu), targ jako plac straganów, kupujący chodzą między straganami, ceny gracza jako granice (min. sprzedaży, maks. kupna), kupiec jako zawód (hurt → detal); kupcy wędrowni widocznymi drogami.
-- [ ] Spotkania i rozmowy jako jedyne źródło więzi spoza domu; romans jako proces; bez przycisku „szukaj żony”; zgoda rodu przy mezaliansie; pozycja społeczna z majątku i opinii.
-- [ ] Bezpośrednie rozkazy mieszkaniowe (wynajmij, kup, zleć budowę, wyprowadź się, wyrzuć), bez automatu dla gracza.
-- [ ] Kradzież jako proces ze świadkami zamiast rzutu kością.
-- [ ] „Nosiciel” → „tragarz”.
+### Decyzje szkieletowe (zatwierdzone przez autora 02.11.2026)
+
+- **S14. Pieniądze mają miejsce.** Kwota (liczba) leży w skrzyni (zapas `coin` budynku) albo w sakwie (`Person.purse`). Przenosi ją tylko osoba czynnością na miejscu. `Household.cash` to podgląd skrzyni domu. Członkowie biorą zapas „na okazję”; pełna sakwa nie jest sama w sobie dryfem.
+- **S15. Umowa o pracę.** `SimContract { pracodawca (gospodarstwo), pracownik, miejsce, czynność, stawka/dobę, do_dnia }`. Pracodawca wystawia oferty (ile osób, za ile); AI wybiera najlepszą (stawka, droga, więź), za niską nikt nie przyjdzie. Wypłatę wręcza płatnik z gospodarstwa pracodawcy z sakwy na miejscu pracy; niezapłacony pamięta i odchodzi.
+- **S16. Stragan z ladą.** Budynek z właścicielem, zapasem i cennikiem; sprzedaje tylko z kimś za ladą; niezwinięty na noc kusi złodziei. Targ = plac z miejscami na stragany. Transakcja `trade(kupujący, sprzedawca, stragan, towar, ilość)` tylko przy obu osobach na miejscu; cena z targowania między granicami (gracz ustawia min. sprzedaży i maks. kupna, AI liczy z potrzeb i kasy). `SimMarket` i zawór znikają; kupiec to ród, który skupuje hurtem i sprzedaje w detalu tą samą transakcją.
+- **S17. Rozmowa** (`talk`) jako jedyne źródło więzi spoza domu i wspólnej pracy: dwie osoby w miejscu publicznym, stoją, dymek, wspomnienie.
+- **S18. Romans** jako osobny kanał w `SimBonds` (`love:<id>`). Etapy z wartości i wspomnień: wpadł w oko → szuka okazji → zaloty → zgoda rodów → ślub. Znikają `seeking_spouse` i `marry_chance_per_day`.
+- **S19. Pozycja społeczna** liczona (majątek w skrzyniach i budynkach + opinia innych), nie przechowywana.
+- **S20. Brak klas rodów.** Dwór to budynek i przedsięwzięcie, nie rola. Zachowanie AI wynika z majątku i przedsięwzięć; znikają role zmieniające zachowanie (`gentry`, `merchant`, `idle_roles`). Każdy ród, także gracza, może dorobić się dworu.
+
+### Faza K — skarbiec i sakwy
+
+- [x] K0 „Nosiciel” → „tragarz” w danych, UI i dokumentach → grep pusty.
+- [ ] K1 Skrzynia (S14): kasa gospodarstwa jako `coin` w domu → test: suma pieniędzy w świecie stała; gracz widzi monety na etykiecie domu.
+- [ ] K2 Zakup przez sakwę: brak w sakwie → najpierw dom i skrzynia, płaci z sakwy, reszta zostaje na okazję albo wraca → test: bez pieniędzy w sakwie i bez wizyty w domu nie kupi; gracz widzi, jak ktoś zagląda do chaty przed targiem.
+- [ ] K3 Zarobek do sakwy, oddanie do skrzyni to czynność w domu; ile oddaje i ile wydaje na siebie zależy od siły (D1 w świecie) → test: oddalający się oddaje mniej, zadbany oddaje mimo pełnej sakwy.
+
+### Faza L — widoczna praca
+
+- [ ] L1 Pola (`SimField`): działki na mapie z właścicielem, cykl pór roku → test: plon tylko w sezonie; pola zmieniają wygląd.
+- [ ] L2 Robota polowa krokowa (orka, siew, żniwa na konkretnej działce), plon noszony do spichrza → gracz widzi ludzi na polu i tragarzy ze zbiorem.
+- [ ] L3 Umowy (S15): oferty pracy, wybór AI według stawki, płatnik wręcza wypłatę; koniec `_labor` „w środku dworu” → test: płaca przechodzi z ręki do ręki, za mało płacisz — nikt nie przychodzi, niezapłacony pamięta.
+- [ ] L4 Gracz wystawia oferty (ile osób, stawka) do własnego tartaku/pola → test + zrzut.
+- [ ] L5 AI bez klas (S20): ród z majątkiem zatrudnia zamiast robić sam, reszta wybiera między ofertami, lasem, warsztatem i straganem → test: w godzinach pracy dorośli AI są poza domem; zero `idle_roles`.
+- [ ] L6 Nadzór: członek rodu przy miejscu pracy jako nadzorca, pracownicy mniej się migają, jeden nadzorca na N ludzi (w danych) → test.
+
+### Faza M — handel
+
+- [ ] M1 Stragan (S16) jako budynek, także przy domu (z desek) → zrzut.
+- [ ] M2 Przydział „za ladą”, zwijanie na noc → bez sprzedawcy nie ma sprzedaży.
+- [ ] M3 Granice cen gracza (panel gospodarstwa), AI liczy swoje → test.
+- [ ] M4 Kupujący obchodzą stragany (cena, odległość, więź) i się targują → test: tańszy wygrywa, przy równej cenie lubiany, bez porozumienia brak transakcji; gracz widzi ludzi przy ladzie i dymek z ceną.
+- [ ] M5 Kupiec hurt → detal zamiast `SimMarket` → test: zarabia tylko, gdy marża pokrywa drogę.
+- [ ] M6 Brak zbytu widoczny (towar zalega, „nikt nie kupuje”) → sonda.
+- [ ] M7 Wozy wędrowne jadą drogą od krawędzi mapy i stają na targu jako stragan.
+
+### Faza N — spotkania i romans
+
+- [ ] N1 Rozmowa (S17) → test: obcy z targu się poznają, bez spotkań więź spoza domu nie rośnie.
+- [ ] N2 Miejsca i czas wolny: karczma wieczorem (wydatek z sakwy), święto na placu co N dób; wolni od pracy członkowie rodu bywają.
+- [ ] N3 Wpadnięcie w oko (S18): zakochany spędza wolny czas tam, gdzie bywa druga osoba.
+- [ ] N4 Zaloty: wzajemność, prezent z sakwy → próg w obie strony uruchamia rozmowę rodzin.
+- [ ] N5 Zgoda rodów i mezalians (S19); gracz dostaje okno tylko na tym etapie → test: mezalians trudny, ale możliwy.
+
+### Faza O — mieszkanie
+
+- [ ] O1 Rozkazy: wynajmij, kup, wyprowadź, wyrzuć, odejdź; koniec `free_house()` dla gracza → test + zrzut panelu domu.
+- [ ] O2 Plac budowy i zlecenie domu (dawne I1/I2), budowlańcy na umowie z L3.
+
+### Faza P — kradzież
+
+- [ ] P1 Proces: upatrzenie celu (stragan, niezwinięty towar, sakwa w tłumie), obserwacja, moment bez patrzących.
+- [ ] P2 Świadkowie (znajomy może przemilczeć), donos do strażnika, strażnik idzie aresztować → test.
+
+### Faza Q — interfejs i balans
+
+- [ ] Q1 Panele: dom (skrzynia, mieszkańcy), stragan, osoba (sakwa, umowa) → zrzuty.
+- [ ] Q2 Sonda wsi na 60 dób: brak zakleszczeń, pieniądze krążą, rody AI przeżywają, ludzie widocznie pracują.
 
 ## Iteracja 2 — społeczeństwo (wstrzymana w połowie)
 
@@ -182,6 +232,8 @@ Zegar pór dnia zamiast godzin (tarcza jak w Don't Starve: poranek, dzień, zmie
 7. [ ] Scenariusz „odludzie”, mapa proceduralna, wybór epoki/miejsca/rodziny na starcie.
 8. [ ] LOD i rody w tle, materializacja osób spoza okolicy.
 9. [ ] Epoki jako dane i zmiana epoki w trakcie gry (nauka).
+10. [ ] Księgowość jako miejsce pracy: księga przychodów i rozchodów, bez niej gracz zna tylko stan skrzyni (`living-village.md`).
+11. [ ] Wózki, plecaki, potem auta jako towar zwiększający udźwig.
 
 ## Uwagi autora do wdrożenia (02.11.2026)
 

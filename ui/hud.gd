@@ -26,7 +26,7 @@ const JOB_HINTS := {
 	"none": "pomaga w domu: zakupy i opał, gdy trzeba",
 }
 const JOB_BUTTONS := {
-	"woodcutter": "Drwal", "sawyer": "Tracz", "carpenter": "Stolarz", "carrier": "Nosiciel",
+	"woodcutter": "Drwal", "sawyer": "Tracz", "carpenter": "Stolarz", "carrier": "Tragarz",
 	"forager": "Zbieracz", "laborer": "Dniówka", "thief": "Złodziej", "none": "Bez przydziału",
 }
 const PERSON_TABS := [["now", "Teraz"], ["memories", "Wspomnienia"], ["prefs", "Preferencje"], ["traits", "Cechy i charakter"]]
@@ -610,7 +610,7 @@ func _build_building_info(b: SimBuilding) -> void:
 			_dyn(func(): return "Czynsz: %d zł dziennie. Dług ponad %d zł przez %d dni = eksmisja; ponad %d zł = areszt." % [
 				int(b.rent_per_day), int(world.balance["economy"]["evict_debt"]), int(world.balance["economy"]["evict_days"]), int(hh.debt_limit)], 16, DIM)
 			_info_box.add_child(HSeparator.new())
-			var keep := _label("Ile trzymać w zapasie (nosiciele i domownicy dokupią / doniosą):", 16, DIM)
+			var keep := _label("Ile trzymać w zapasie (tragarze i domownicy dokupią / doniosą):", 16, DIM)
 			keep.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 			keep.custom_minimum_size.x = 400
 			_info_box.add_child(keep)
@@ -792,7 +792,7 @@ func _build_help() -> void:
 	add_child(_help)
 	var l := _label("""JAK GRAĆ
 Prowadzisz ród Wilków. Przetrwaj: płać czynsz co 5 dni, karm rodzinę, zimą pal w piecu.
-Pieniądze robisz na drewnie: drwal ścina → tracz tnie deski → nosiciel sprzedaje na targu.
+Pieniądze robisz na drewnie: drwal ścina → tracz tnie deski → tragarz sprzedaje na targu.
 Lepiej: stolarz robi z desek krzesła (więcej zarobku, rośnie reputacja). Pewny grosz: dniówka w dworze.
 Bez pieniędzy: zbieracz przyniesie jedzenie z lasu (zimą prawie nic).
 Ożeń dorosłych, by mieć dzieci — ród trwa, dopóki żyje ktoś z krwi Wilków (♛ = głowa rodu).
@@ -803,7 +803,7 @@ Przeciągnij LPM / ŚPM, WASD, dwa palce — przesuń kamerę       Kółko / sz
 Q / E — obrót kamery       SPACJA — pauza       1–4 — tempo       TAB — następna osoba       ESC — odznacz
 K — kronika rodu       F — kamera za zaznaczoną osobą       R — pokaż głowę rodu       F3 — debug
 
-KOLORY UBRAŃ: zielony drwal · pomarańczowy tracz · niebieski stolarz · żółty nosiciel
+KOLORY UBRAŃ: zielony drwal · pomarańczowy tracz · niebieski stolarz · żółty tragarz
 fioletowy zbieracz · szary dniówka · czarny złodziej · beżowy bez przydziału. Czerwony „!” = problem (kliknij, by zobaczyć jaki).""", 17)
 	_help.add_child(l)
 
