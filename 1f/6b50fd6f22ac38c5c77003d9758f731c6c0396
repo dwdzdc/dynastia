@@ -1,0 +1,31 @@
+sim/migration.gd.uid
+  s_bb6b65b605000f::t_7e1835ab6eb892 1
+sim/world.gd
+  s_bb6b65b605000f::t_7e1835ab6eb892 27,111,1340
+data/balance.json
+  s_bb6b65b605000f::t_7e1835ab6eb892 344
+tests/run_tests.gd
+  s_bb6b65b605000f::t_7e1835ab6eb892 102,1807-1833
+progress.md
+  ai_agent 218-219
+sim/family.gd
+  s_bb6b65b605000f::t_7e1835ab6eb892 578-580
+sim/migration.gd
+  s_bb6b65b605000f::t_d01202b3e91bb9 1-169
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "1f6b50fd6f22ac38c5c77003d9758f731c6c0396",
+  "prompts": {},
+  "sessions": {
+    "s_bb6b65b605000f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "8bc32a82-6b1e-41ef-8272-8f242d268239",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Dawid Dziedzic <24682682+dwdzdc@users.noreply.github.com>"
+    }
+  }
+}
