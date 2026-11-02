@@ -45,7 +45,7 @@ Mechaniki z iteracji 2 rozstrzygały wynik funkcją zamiast procesem w świecie:
 
 **Bezpośrednie rozkazy mieszkaniowe.** Gracz sam wynajmuje, kupuje, zleca budowę, wyprowadza się, może nawet wyrzucić kogoś z domu albo sam wyjść. Żadnego automatu wynajmującego dom za gracza (AI tylko dla rodów AI).
 
-**Drobne.** „Nosiciel” → „tragarz” (jak w Cultures).
+**Drobne.** „Nosiciel” → „tragarz” (jak w Cultures). Ubranie to cecha osoby, nie kolor zawodu; zawód widać po tym, co ktoś robi.
 
 ## Odłożone
 

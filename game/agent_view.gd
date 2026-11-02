@@ -1,20 +1,23 @@
-# AgentView — ludzik 3D: nogi, tułów (kolor = przydział pracy), głowa, włosy, ręce,
+# AgentView — ludzik 3D: nogi, tułów (kolor ubrania osoby), głowa, włosy, ręce,
 # niesiony towar i narzędzie. Proste animacje proceduralne: chód, rąbanie, piłowanie,
 # heblowanie, zbieranie, zabawa. Tylko czyta SimAgent/SimPerson.
 extends Node3D
 
 
-const JOB_COLORS := {
-	"none": Color(0.82, 0.78, 0.68),
-	"woodcutter": Color(0.22, 0.48, 0.2),
-	"sawyer": Color(0.78, 0.45, 0.16),
-	"carpenter": Color(0.22, 0.4, 0.78),
-	"carrier": Color(0.9, 0.74, 0.16),
-	"laborer": Color(0.5, 0.5, 0.55),
-	"forager": Color(0.58, 0.3, 0.62),
-	"thief": Color(0.16, 0.15, 0.17),
-	"child": Color(0.93, 0.88, 0.8),
-}
+# Ubranie to cecha osoby, nie zawodu: stały kolor z palety (po id osoby). Zawód widać
+# po tym, co ktoś robi i niesie.
+const CLOTH_COLORS := [
+	Color(0.55, 0.42, 0.3), Color(0.42, 0.45, 0.32), Color(0.62, 0.55, 0.42), Color(0.4, 0.33, 0.28),
+	Color(0.5, 0.36, 0.34), Color(0.36, 0.4, 0.44), Color(0.68, 0.62, 0.5), Color(0.46, 0.5, 0.4),
+	Color(0.58, 0.46, 0.36), Color(0.34, 0.3, 0.26),
+]
+const CHILD_CLOTH := Color(0.93, 0.88, 0.8)
+
+
+static func cloth_color(person_id: int) -> Color:
+	return CLOTH_COLORS[posmod(person_id, CLOTH_COLORS.size())]
+
+
 const SKIN := Color(0.93, 0.76, 0.6)
 const HAIR := [Color(0.25, 0.16, 0.08), Color(0.55, 0.36, 0.16), Color(0.85, 0.7, 0.38), Color(0.12, 0.1, 0.08), Color(0.6, 0.25, 0.1)]
 const GREY_HAIR := Color(0.82, 0.82, 0.8)
@@ -61,10 +64,10 @@ func setup(a: SimAgent, p: SimPerson) -> void:
 
 	_leg_l = _limb(Vector3(-0.12, 0.72, 0), 0.09, 0.72, Color(0.3, 0.24, 0.18))
 	_leg_r = _limb(Vector3(0.12, 0.72, 0), 0.09, 0.72, Color(0.3, 0.24, 0.18))
-	_torso = Gfx3D.capsule(0.24, 0.85, JOB_COLORS["none"])
+	_torso = Gfx3D.capsule(0.24, 0.85, CLOTH_COLORS[0])
 	_torso.position = Vector3(0, 1.08, 0)
 	_pivot.add_child(_torso)
-	_skirt = Gfx3D.cylinder(0.36, 0.6, JOB_COLORS["none"], 0.2, 10)
+	_skirt = Gfx3D.cylinder(0.36, 0.6, CLOTH_COLORS[0], 0.2, 10)
 	_skirt.position = Vector3(0, 0.62, 0)
 	_skirt.visible = p.sex == "f"
 	_pivot.add_child(_skirt)
@@ -139,7 +142,7 @@ func refresh(delta: float, stage: String, selected: bool, is_root: bool, band: C
 		"teen":
 			sc = 1.15
 	scale = Vector3.ONE * sc
-	var col: Color = JOB_COLORS["child"] if stage == "child" else JOB_COLORS.get(agent.job, JOB_COLORS["none"])
+	var col: Color = CHILD_CLOTH if stage == "child" else cloth_color(agent.person_id)
 	if agent.disabled():
 		col = col.lerp(Color(0.6, 0.6, 0.6), 0.6)
 	Gfx3D.set_color(_torso, col)

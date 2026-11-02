@@ -253,7 +253,7 @@ func _update_family() -> void:
 			col = WARN
 		b.add_theme_color_override("font_color", col)
 		b.add_theme_color_override("font_hover_color", col.lightened(0.2))
-		var job_col: Color = AgentView.JOB_COLORS["child"] if stage == "child" else AgentView.JOB_COLORS.get(a.job, Color.WHITE)
+		var job_col: Color = AgentView.CHILD_CLOTH if stage == "child" else AgentView.cloth_color(a.person_id)
 		var sb := _box(Color(0.2, 0.16, 0.12) if main.selected_id != a.id else Color(0.42, 0.32, 0.16), job_col, 4, 6)
 		sb.border_width_left = 8
 		b.add_theme_stylebox_override("normal", sb)
@@ -803,8 +803,8 @@ Przeciągnij LPM / ŚPM, WASD, dwa palce — przesuń kamerę       Kółko / sz
 Q / E — obrót kamery       SPACJA — pauza       1–4 — tempo       TAB — następna osoba       ESC — odznacz
 K — kronika rodu       F — kamera za zaznaczoną osobą       R — pokaż głowę rodu       F3 — debug
 
-KOLORY UBRAŃ: zielony drwal · pomarańczowy tracz · niebieski stolarz · żółty tragarz
-fioletowy zbieracz · szary dniówka · czarny złodziej · beżowy bez przydziału. Czerwony „!” = problem (kliknij, by zobaczyć jaki).""", 17)
+Zawód widać po tym, co ktoś robi i niesie; kliknij osobę, by zobaczyć przydział.
+Czerwony „!” = problem (kliknij, by zobaczyć jaki).""", 17)
 	_help.add_child(l)
 
 
