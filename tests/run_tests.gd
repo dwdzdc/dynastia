@@ -46,6 +46,7 @@ func _run_all() -> void:
 	_test_world_start_family()
 	_test_life_stages_in_days()
 	_test_pregnancy_lasts_data_days()
+	_test_traits_and_character_split()
 	_test_world_deterministic()
 	_test_world_30_days_autonomous()
 	_test_economy_chain_produces_income()
@@ -263,6 +264,32 @@ func _test_pregnancy_lasts_data_days() -> void:
 	f.new_day()
 	check("no birth before pregnancy_days", before_term)
 	check("birth exactly after pregnancy_days", f.persons.size() == n0 + 1)
+
+
+func _test_traits_and_character_split() -> void:
+	var w = _new_world()
+	var f = w.family
+	var people: Dictionary = w.people
+	var root = f.root()
+	check("start traits and character loaded separately", root.traits == ["silny"] and root.character == ["lojalny"])
+	var ok := true
+	for p in f.living():
+		for c in p.character:
+			if not people["character"].has(c) or people["traits"].has(c):
+				ok = false
+		for t in p.traits:
+			if not people["traits"].has(t):
+				ok = false
+	check("character keys never mix with traits", ok)
+	# Dziedziczenie: przy pewnej szansie dziecko bierze charakter rodziców, a sprzeczności odpadają.
+	people["inheritance"]["character"]["inherit_chance"] = 1.0
+	people["inheritance"]["character"]["random_chance"] = 0.0
+	people["inheritance"]["traits"]["inherit_chance"] = 1.0
+	people["inheritance"]["traits"]["random_chance"] = 0.0
+	var kid: Array = f._inherit("character", ["lojalny"], ["porywczy"])
+	check("character inherited from both parents", kid.has("lojalny") and kid.has("porywczy"))
+	var tr: Array = f._inherit("traits", ["pracowity"], ["leniwy", "kulawy"])
+	check("trait conflicts resolved from data, injuries not inherited", tr == ["pracowity"])
 
 
 func _state_sig(w) -> String:

@@ -329,6 +329,10 @@ func _build_person_info(a: SimAgent) -> void:
 		if p.traits.is_empty():
 			return "Cechy: brak szczególnych"
 		return "Cechy: " + ", ".join(p.traits.map(func(t): return fam.trait_label(t))), 17)
+	_dyn(func():
+		if p.character.is_empty():
+			return "Charakter: nic szczególnego"
+		return "Charakter: " + ", ".join(p.character.map(func(c): return fam.character_label(c))), 17)
 	var now := _dyn(func(): return "Teraz: " + (a.idle_reason if a.status == "active" else "w areszcie — " + a.idle_reason), 19)
 	_info_updaters.append(func(): now.add_theme_color_override("font_color", BAD if a.alert or a.status == "jailed" else GOOD))
 	_bar("Zdrowie", func(): return a.health, Color(0.4, 0.75, 0.35))

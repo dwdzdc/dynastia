@@ -258,7 +258,17 @@
     },
     "conceive_per_day": 0.23,
     "pregnancy_days": 3.0,
-    "start_age_jitter_days": 0.8
+    "start_age_jitter_days": 0.8,
+    "spouse_candidate": {
+      "trait_chance": 0.6,
+      "character_chance": 0.7,
+      "wedding_cost": 15.0,
+      "skill_max": {
+        "craft": 3.0,
+        "chop": 2.5,
+        "saw": 2.0
+      }
+    }
   },
   "crime": {
     "steal_seconds": 50.0,

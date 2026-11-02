@@ -6,24 +6,32 @@
   },
   "surnames": ["Nowak", "Kowal", "Bednarz", "Sowa", "Kmieć", "Wrona", "Mazur", "Baran", "Sikora", "Kos", "Duda", "Gil"],
   "traits": {
-    "silny": { "label": "silny", "work": { "chop": 1.25, "carry": 1.15 }, "health_regen": 1.1 },
-    "zreczny": { "label": "zręczny", "work": { "craft": 1.2, "saw": 1.15 }, "quality": 0.12, "accident": 0.7 },
-    "pracowity": { "label": "pracowity", "work": { "all": 1.12 } },
-    "leniwy": { "label": "leniwy", "work": { "all": 0.85 } },
-    "chorowity": { "label": "chorowity", "sick": 2.0, "health_regen": 0.7 },
-    "krzepki": { "label": "krzepki", "sick": 0.5, "health_regen": 1.3 },
-    "nieostrozny": { "label": "nieostrożny", "accident": 2.0, "work": { "all": 1.05 } },
-    "kulawy": { "label": "kulawy (uraz)", "speed": 0.7, "work": { "chop": 0.7, "carry": 0.7 } }
+    "silny": {"label": "silny", "work": {"chop": 1.25, "carry": 1.15}, "health_regen": 1.1},
+    "zreczny": {"label": "zręczny", "work": {"craft": 1.2, "saw": 1.15}, "quality": 0.12, "accident": 0.7},
+    "pracowity": {"label": "pracowity", "work": {"all": 1.12}},
+    "leniwy": {"label": "leniwy", "work": {"all": 0.85}},
+    "chorowity": {"label": "chorowity", "sick": 2.0, "health_regen": 0.7},
+    "krzepki": {"label": "krzepki", "sick": 0.5, "health_regen": 1.3},
+    "nieostrozny": {"label": "nieostrożny", "accident": 2.0, "work": {"all": 1.05}},
+    "kulawy": {"label": "kulawy (uraz)", "speed": 0.7, "work": {"chop": 0.7, "carry": 0.7}}
   },
-  "inheritable_traits": ["silny", "zreczny", "pracowity", "leniwy", "chorowity", "krzepki", "nieostrozny"],
-  "trait_inherit_chance": 0.35,
-  "trait_random_chance": 0.2,
+  "character": {
+    "lojalny": {"label": "lojalny"},
+    "porywczy": {"label": "porywczy"},
+    "pamietliwy": {"label": "pamiętliwy"},
+    "ambitny": {"label": "ambitny"},
+    "ciekawski": {"label": "ciekawski"}
+  },
+  "inheritance": {
+    "traits": {"pool": ["silny", "zreczny", "pracowity", "leniwy", "chorowity", "krzepki", "nieostrozny"], "inherit_chance": 0.35, "random_chance": 0.2, "conflicts": [["pracowity", "leniwy"], ["krzepki", "chorowity"]]},
+    "character": {"pool": ["lojalny", "porywczy", "pamietliwy", "ambitny", "ciekawski"], "inherit_chance": 0.3, "random_chance": 0.5, "conflicts": []}
+  },
   "start_family": [
-    { "key": "gran", "name": "Agnieszka", "sex": "f", "age_days": 60.5, "traits": ["krzepki"], "job": "none", "skills": { "craft": 3.0 } },
-    { "key": "father", "name": "Jan", "sex": "m", "age_days": 38.6, "traits": ["silny"], "job": "woodcutter", "mother": "gran", "root": true, "skills": { "chop": 4.0, "saw": 2.0 } },
-    { "key": "mother", "name": "Maria", "sex": "f", "age_days": 34.5, "traits": ["pracowity"], "job": "carrier", "spouse": "father", "attached": true, "surname": "Kmieć", "skills": { "craft": 1.0 } },
-    { "key": "son", "name": "Piotr", "sex": "m", "age_days": 17.0, "traits": ["zreczny"], "job": "sawyer", "mother": "mother", "father": "father", "skills": { "saw": 2.0, "chop": 1.0 } },
-    { "key": "daughter", "name": "Zofia", "sex": "f", "age_days": 14.0, "traits": [], "job": "none", "mother": "mother", "father": "father", "skills": {} },
-    { "key": "kid", "name": "Kuba", "sex": "m", "age_days": 7.0, "traits": ["nieostrozny"], "job": "none", "mother": "mother", "father": "father", "skills": {} }
+    {"key": "gran", "name": "Agnieszka", "sex": "f", "age_days": 60.5, "traits": ["krzepki"], "character": ["pamietliwy"], "job": "none", "skills": {"craft": 3.0}},
+    {"key": "father", "name": "Jan", "sex": "m", "age_days": 38.6, "traits": ["silny"], "character": ["lojalny"], "job": "woodcutter", "mother": "gran", "root": true, "skills": {"chop": 4.0, "saw": 2.0}},
+    {"key": "mother", "name": "Maria", "sex": "f", "age_days": 34.5, "traits": ["pracowity"], "character": ["ambitny"], "job": "carrier", "spouse": "father", "attached": true, "surname": "Kmieć", "skills": {"craft": 1.0}},
+    {"key": "son", "name": "Piotr", "sex": "m", "age_days": 17.0, "traits": ["zreczny"], "character": ["ciekawski", "ambitny"], "job": "sawyer", "mother": "mother", "father": "father", "skills": {"saw": 2.0, "chop": 1.0}},
+    {"key": "daughter", "name": "Zofia", "sex": "f", "age_days": 14.0, "traits": [], "character": ["porywczy"], "job": "none", "mother": "mother", "father": "father", "skills": {}},
+    {"key": "kid", "name": "Kuba", "sex": "m", "age_days": 7.0, "traits": ["nieostrozny"], "character": ["ciekawski"], "job": "none", "mother": "mother", "father": "father", "skills": {}}
   ]
 }

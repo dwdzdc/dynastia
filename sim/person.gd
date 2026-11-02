@@ -1,5 +1,5 @@
 # SimPerson — warstwa tożsamości nad ciałem (SimAgent): imię, płeć, wiek, krew,
-# drzewo genealogiczne, traity. Fakty drzewa (rodzice, małżeństwo) nie są kasowane —
+# drzewo genealogiczne, cechy i charakter. Fakty drzewa (rodzice, małżeństwo) nie są kasowane —
 # śmierć ustawia tylko death_day (intro §4.2).
 class_name SimPerson
 extends RefCounted
@@ -17,7 +17,8 @@ var father_id: int = -1
 var spouse_id: int = -1
 var blood: bool = false         # krew rodu (linia, którą czyta sukcesja i game over)
 var attached: bool = false      # wżeniony małżonek
-var traits: Array = []
+var traits: Array = []          # cechy ciała i talentu (silny, chorowity…), z wpływem na ciało
+var character: Array = []       # charakter (lojalny, porywczy…), wpływa na więzi i wolę
 var agent_id: int = -1
 var seeking_spouse: bool = false
 var pregnant_left: float = -1.0 # doby do porodu; <0 = nie w ciąży

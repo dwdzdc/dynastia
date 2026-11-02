@@ -8,6 +8,13 @@ Glosariusz domeny gry. Terminy kanoniczne są po angielsku (zgodnie z kodem i kl
 Osadzona istota ludzka — warstwa tożsamości (wiek, płeć, traity, skille, więzi, wiedza) nałożona na anonimowego agenta z symulacji ruchu.
 _Avoid_: agent (animowany byt bez tożsamości).
 
+**Trait** (cecha):
+Cecha ciała albo talentu (silny, chorowity, zręczny, kulawy). Działa na ciało: pracę, zdrowie, wypadki. Część jest dziedziczna, część nabyta (uraz).
+
+**Character** (charakter):
+Usposobienie (lojalny, porywczy, pamiętliwy, ambitny, ciekawski). Działa na więzi, pamięć i wolę, a nie na ciało. Dziedziczny według tych samych reguł co cechy, osobna pula.
+_Avoid_: trait (dla charakteru).
+
 **House**:
 Ród — nazwisko i przynależność prawno-społeczna; mogą do niego należeć osoby przez urodzenie, wżenienie albo adopcję, wg reguł epoki.
 _Avoid_: klan, "rodzina" (nieostre).

@@ -44,6 +44,7 @@ func setup_start() -> void:
 		p.surname = String(spec.get("surname", dynasty)) if spec.get("attached", false) else dynasty
 		p.birth_day = now - float(spec["age_days"]) - w.rng.next_float(0.0, float(_fam["start_age_jitter_days"]))
 		p.traits = (spec.get("traits", []) as Array).duplicate()
+		p.character = (spec.get("character", []) as Array).duplicate()
 		p.attached = bool(spec.get("attached", false))
 		p.blood = not p.attached
 		by_key[String(spec["key"])] = p
@@ -152,6 +153,10 @@ func stage_label(p: SimPerson) -> String:
 
 func trait_label(t: String) -> String:
 	return String(_people["traits"].get(t, {}).get("label", t))
+
+
+func character_label(c: String) -> String:
+	return String(_people["character"].get(c, {}).get("label", c))
 
 
 func relation_to_root(p: SimPerson) -> String:
@@ -300,7 +305,8 @@ func _give_birth(mother: SimPerson) -> void:
 	child.mother_id = mother.id
 	child.father_id = father.id if father != null else -1
 	child.blood = mother.blood or (father != null and father.blood)
-	child.traits = _inherit_traits(mother, father)
+	child.traits = _inherit("traits", mother.traits, father.traits if father else [])
+	child.character = _inherit("character", mother.character, father.character if father else [])
 	persons[child.id] = child
 	mother.children.append(child.id)
 	if father != null:
@@ -332,24 +338,22 @@ func _give_birth(mother: SimPerson) -> void:
 		w.kill(ma, "zmarła w połogu")
 
 
-func _inherit_traits(m: SimPerson, f: SimPerson) -> Array:
+# Dziedziczenie listy (cechy albo charakter) według people.json → inheritance[kind].
+# Sprzeczne pary [zostaje, odpada] rozstrzyga kolejność w danych.
+func _inherit(kind: String, from_mother: Array, from_father: Array) -> Array:
+	var cfg: Dictionary = _people["inheritance"][kind]
+	var pool: Array = cfg["pool"]
 	var out: Array = []
-	var pool: Array = _people["inheritable_traits"]
-	for parent in [m, f]:
-		if parent == null:
-			continue
-		for t in parent.traits:
-			if t in pool and not t in out and w.rng.chance(float(_people["trait_inherit_chance"])):
-				out.append(t)
-	if w.rng.chance(float(_people["trait_random_chance"])):
+	for t in from_mother + from_father:
+		if t in pool and not t in out and w.rng.chance(float(cfg["inherit_chance"])):
+			out.append(t)
+	if w.rng.chance(float(cfg["random_chance"])):
 		var t: String = w.rng.choice(pool)
 		if not t in out:
 			out.append(t)
-	# sprzeczne cechy
-	if "pracowity" in out and "leniwy" in out:
-		out.erase("leniwy")
-	if "chorowity" in out and "krzepki" in out:
-		out.erase("chorowity")
+	for pair: Array in cfg["conflicts"]:
+		if pair[0] in out and pair[1] in out:
+			out.erase(pair[1])
 	return out
 
 
@@ -384,10 +388,13 @@ func _roll_courtship(p: SimPerson) -> void:
 	var traits_txt := "brak szczególnych cech"
 	if not (cand["traits"] as Array).is_empty():
 		traits_txt = ", ".join((cand["traits"] as Array).map(func(t): return trait_label(t)))
+	var char_txt := "nic szczególnego"
+	if not (cand["character"] as Array).is_empty():
+		char_txt = ", ".join((cand["character"] as Array).map(func(c): return character_label(c)))
 	var who := "Panna" if cand["sex"] == "f" else "Kawaler"
 	w.events.ask("marriage", "Propozycja ślubu",
-		"%s %s %s (lat %d) z chaty sąsiadów chce poślubić %s.\nCechy: %s.\nWesele kosztuje %d zł (brakująca kwota pójdzie w dług)." % [
-			who, cand["name"], cand["surname"], int(years_label(float(cand["age_days"]))), p.name, traits_txt, int(cand["cost"])],
+		"%s %s %s (lat %d) z chaty sąsiadów chce poślubić %s.\nCechy: %s.\nCharakter: %s.\nWesele kosztuje %d zł (brakująca kwota pójdzie w dług)." % [
+			who, cand["name"], cand["surname"], int(years_label(float(cand["age_days"]))), p.name, traits_txt, char_txt, int(cand["cost"])],
 		[{ "label": "Zgoda na ślub", "value": "yes" }, { "label": "Odmowa", "value": "no" }],
 		{ "person": p.id, "cand": cand })
 
@@ -399,17 +406,25 @@ func _materialize_candidate(p: SimPerson) -> Dictionary:
 	var spread := float(_fam["spouse_age_spread_days"])
 	var age_days := clampf(days_lived(p) + rng.next_float(-spread, spread * 0.5),
 		life_day(_fam["marry_from"]), life_day(_fam["spouse_oldest"]))
+	var cc: Dictionary = _fam["spouse_candidate"]
 	var traits: Array = []
-	if rng.chance(0.6):
-		traits.append(rng.choice(_people["inheritable_traits"]))
+	if rng.chance(float(cc["trait_chance"])):
+		traits.append(rng.choice(_people["inheritance"]["traits"]["pool"]))
+	var character: Array = []
+	if rng.chance(float(cc["character_chance"])):
+		character.append(rng.choice(_people["inheritance"]["character"]["pool"]))
+	var skills := {}
+	for k in cc["skill_max"]:
+		skills[k] = rng.next_float(0.0, float(cc["skill_max"][k]))
 	return {
 		"name": String(rng.choice(_people["names"][sex])),
 		"surname": String(rng.choice(_people["surnames"])),
 		"sex": sex,
 		"age_days": age_days,
 		"traits": traits,
-		"cost": 15,
-		"skills": { "craft": rng.next_float(0.0, 3.0), "chop": rng.next_float(0.0, 2.5), "saw": rng.next_float(0.0, 2.0) },
+		"character": character,
+		"cost": float(cc["wedding_cost"]),
+		"skills": skills,
 	}
 
 
@@ -429,6 +444,7 @@ func resolve_marriage(data: Dictionary, accepted: bool) -> void:
 	s.sex = String(cand["sex"])
 	s.birth_day = w.clock.now() - float(cand["age_days"])
 	s.traits = (cand["traits"] as Array).duplicate()
+	s.character = (cand["character"] as Array).duplicate()
 	s.attached = true
 	s.spouse_id = p.id
 	p.spouse_id = s.id
