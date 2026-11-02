@@ -635,6 +635,7 @@ func _build_building_info(b: SimBuilding) -> void:
 	var hh := world.household
 	if b.type in SimWorld.HOUSE_TYPES:
 		_dyn(func(): return _owner_text(b), 16, DIM)
+		_build_house_actions(b)
 	if b.type in ["sawmill", "workshop", "manor"]:
 		_build_offers(b)
 	match b.type:
@@ -774,6 +775,21 @@ func _build_stall_info(st: SimStall) -> void:
 		own.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		own.custom_minimum_size.x = 400
 		_info_box.add_child(own)
+
+
+# Rozkazy mieszkaniowe (O1): bez automatu — gracz sam wynajmuje, kupuje, wychodzi.
+func _build_house_actions(b: SimBuilding) -> void:
+	var hh := world.household
+	if world.is_free_house(b):
+		_info_box.add_child(_button("Wynajmij dla rodziny (%d zł/dzień)" % int(b.rent_per_day), func(): world.rent_house(b.id), 16))
+	if world.house_price(b) > 0.0 and not world.owns(hh, b) and (world.is_free_house(b) or b.id == hh.home_id):
+		_info_box.add_child(_button("Kup ten dom (%d zł)" % int(world.house_price(b)), func(): world.buy_house(b.id), 16))
+	if b.id == hh.home_id:
+		_info_box.add_child(_button("Opuść dom (pod gołe niebo)", func(): world.leave_home(), 16))
+	var tip := _label("Osobę wyprowadzisz albo wyrzucisz: zaznacz ją i PPM na dom.", 14, DIM)
+	tip.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	tip.custom_minimum_size.x = 400
+	_info_box.add_child(tip)
 
 
 func _owner_text(b: SimBuilding) -> String:

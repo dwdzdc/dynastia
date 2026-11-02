@@ -349,9 +349,13 @@ func _on_right_click(pos: Vector2, append: bool) -> void:
 	var aid := selected_id
 	var items: Array = []
 	for o: Dictionary in opts:
-		var job := String(o["job"])
+		var job := String(o.get("job", ""))
 		var place := String(o["place"])
-		items.append({ "label": o["label"], "ok": o["ok"], "fn": func(): world.assign_job(aid, job, place) })
+		var action := String(o.get("action", ""))
+		if action != "":
+			items.append({ "label": o["label"], "ok": o["ok"], "fn": func(): world.house_action(action, aid, place) })
+		else:
+			items.append({ "label": o["label"], "ok": o["ok"], "fn": func(): world.assign_job(aid, job, place) })
 	if t != null:
 		var tid := t.id
 		items.append({ "label": "Zetnij to drzewo", "ok": true, "fn": func(): world.manual_chop(aid, tid, false) })

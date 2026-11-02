@@ -83,6 +83,7 @@ func _run_all() -> void:
 	_test_assign_by_place()
 	_test_ai_visible_by_day()
 	_test_overseer()
+	_test_housing_orders()
 	_test_world_deterministic()
 	_test_world_30_days_autonomous()
 	_test_economy_chain_produces_income()
@@ -838,7 +839,9 @@ func _test_rent_eviction_homeless() -> void:
 	w.household.cash = 100.0
 	w.buildings["n2"].type = "decor_house"
 	w._settle_rent(w.household)
-	check("with money the family rents a free house again", w.household.home_id != "" and a.home_id == w.household.home_id)
+	check("no automatic rehousing for the player (O1)", w.household.home_id == "")
+	var fh = w.free_house()
+	check("with money the family rents a free house by order", w.rent_house(fh.id) and a.home_id == w.household.home_id)
 
 
 func _test_recipe_from_data() -> void:
@@ -1405,6 +1408,32 @@ func _test_overseer() -> void:
 	check("overseer nearby: no shirking", w.jobs.willingness(a, "labor") > lazy and w.contracts.supervised(a))
 	boss.position = a.position + Vector2(50, 0)
 	check("overseer far away does not help", not w.contracts.supervised(a))
+
+
+# O1: mieszkanie to rozkazy gracza — wynajem, wyprowadzka na swoje, kupno, wyrzucenie;
+# bezdomnej rodziny gracza nikt sam nie wprowadza do domu.
+func _test_housing_orders() -> void:
+	var w = _new_world()
+	var h = w.household
+	var free = w.free_house()
+	check("there is a free house to rent", free != null and w.is_free_house(free))
+	var zofia = _named(w.family, "Zofia")
+	zofia.birth_day -= 4.0
+	zofia.purse = 50.0
+	check("an adult can move out into a rented house", w.rent_house(free.id, zofia.id) and zofia.household_id != h.id
+		and zofia.lineage_id == w.family.player_lineage_id and w.agent_by_id(zofia.agent_id).home_id == free.id)
+	check("household moved out takes her purse into her own chest", w.households[zofia.household_id].cash >= 50.0 - 0.001)
+	var piotr = _named(w.family, "Piotr")
+	check("throwing someone out leaves them homeless and resentful", w.throw_out(piotr.id)
+		and w.agent_by_id(piotr.agent_id).home_id == ""
+		and w.bonds.memories(piotr.id, SimBonds.person(w.family.root_id)).any(func(m): return m["kind"] == "thrown_out"))
+	w.leave_home()
+	h.cash = 999.0
+	w._settle_rent(h)
+	check("homeless player family is not rehoused automatically", h.home_id == "")
+	var home = w.home()
+	check("buying a house makes it the lineage's, no more rent", w.buy_house(home.id) and w.owns(h, home))
+	check("player rents a house by order", w.rent_house(home.id) and h.home_id == home.id)
 
 
 func _state_sig(w) -> String:

@@ -148,7 +148,7 @@ Pętla gry: ród Wilków (6 osób, 3 pokolenia) w chacie pod lasem. Co 5 dni czy
 
 ### Faza O — mieszkanie
 
-- [ ] O1 Rozkazy: wynajmij, kup, wyprowadź, wyrzuć, odejdź; koniec `free_house()` dla gracza → test + zrzut panelu domu.
+- [x] O1 Rozkazy: wynajmij, kup, wyprowadź, wyrzuć, odejdź; koniec `free_house()` dla gracza → test + zrzut panelu domu.
 - [ ] O2 Plac budowy i zlecenie domu (dawne I1/I2), budowlańcy na umowie z L3.
 
 ### Faza P — kradzież

@@ -339,6 +339,16 @@ func job_options(agent_id: int, target: String) -> Array:
 	var b: SimBuilding = buildings.get(bid)
 	if b == null:
 		return []
+	if is_free_house(b):
+		return _house_options(a, b)
+	if b.id == household.home_id:
+		return _house_options(a, b) + _work_options(a, b)
+	return _work_options(a, b)
+
+
+func _work_options(a: SimAgent, b: SimBuilding) -> Array:
+	var out: Array = []
+	var bid := b.id
 	if is_foreign(b):
 		for o: Dictionary in contracts.offers:
 			if o["place"] != bid or int(o["slots"]) <= 0:
@@ -359,6 +369,36 @@ func job_options(agent_id: int, target: String) -> Array:
 	if b.id == a.home_id:
 		out.append({ "label": "Bez przydziału (domowe obowiązki)", "job": "none", "place": "", "ok": true })
 	return out
+
+
+# Mieszkanie z PPM (O1): wolny dom — wynajem dla rodziny albo wyprowadzka tej osoby,
+# kupno; własny dom — wyrzucenie zaznaczonej osoby.
+func _house_options(a: SimAgent, b: SimBuilding) -> Array:
+	var p := person_of(a)
+	var out: Array = []
+	if is_free_house(b):
+		out.append({ "label": "Wynajmij dla rodziny: %s (%d zł/dzień)" % [b.name, int(b.rent_per_day)], "action": "rent", "place": b.id, "ok": true })
+		if p.household_id == household.id and family.stage_of(p) in ["adult", "elder"]:
+			out.append({ "label": "%s wyprowadza się tutaj (na swoje)" % p.name, "action": "move_out", "place": b.id, "ok": true })
+	if house_price(b) > 0.0 and not owns(household, b) and (is_free_house(b) or b.id == household.home_id):
+		out.append({ "label": "Kup dom: %s (%d zł)" % [b.name, int(house_price(b))], "action": "buy", "place": b.id, "ok": household.cash >= house_price(b) })
+	if b.id == household.home_id and p.household_id == household.id and p.id != family.root_id and family.stage_of(p) != "child":
+		out.append({ "label": "Wyrzuć z domu: %s" % p.name, "action": "throw_out", "place": b.id, "ok": true })
+	return out
+
+
+func house_action(action: String, agent_id: int, bid: String) -> bool:
+	var p := person_of(agent_by_id(agent_id))
+	match action:
+		"rent":
+			return rent_house(bid)
+		"move_out":
+			return p != null and rent_house(bid, p.id)
+		"buy":
+			return buy_house(bid)
+		"throw_out":
+			return p != null and throw_out(p.id)
+	return false
 
 
 # Cudze miejsce: budynek należy do innego rodu albo osoby spoza rodu gracza.
@@ -390,6 +430,101 @@ func assign_job(agent_id: int, job: String, place: String) -> bool:
 	jobs.replan(a)
 	note("%s najmuje się: %s (%d zł/dzień)." % [person_of(a).name, SimJobs.JOB_LABELS.get(job, job), int(o["wage"])], "info", a.position)
 	return true
+
+
+# --- Mieszkanie: bezpośrednie rozkazy gracza (O1) ---
+
+func is_free_house(b: SimBuilding) -> bool:
+	if b == null or not b.type in HOUSE_TYPES:
+		return false
+	for h: SimHousehold in households.values():
+		if h.home_id == b.id and not h.members.is_empty():
+			return false
+	return true
+
+
+func house_price(b: SimBuilding) -> float:
+	return float(balance["housing"]["price"].get(b.type, 0.0))
+
+
+# Wynajem wolnego domu: dla całej rodziny gracza albo dla jednej osoby, która się
+# wyprowadza i zakłada osobne gospodarstwo w obrębie rodu (I4).
+func rent_house(bid: String, person_id: int = -1) -> bool:
+	var b: SimBuilding = buildings.get(bid)
+	if not is_free_house(b):
+		return false
+	var days := float(balance["housing"]["rent_upfront_days"])
+	if person_id < 0:
+		if household.cash < b.rent_per_day * days:
+			note("Za mało pieniędzy na wynajem: %s (%d zł z góry)." % [b.name, int(b.rent_per_day * days)], "warn", null)
+			return false
+		var old := household.home_id
+		move_household(household, b)
+		note("Rodzina przeprowadza się: %s (%d zł dziennie)." % [b.name, int(b.rent_per_day)], "good", b.door())
+		chronicle.add(clock.now(), "move", "Przeprowadzka do: %s (z: %s)." % [b.name, old if old != "" else "pod gołym niebem"], household.members, family.player_lineage_id)
+		return true
+	return move_out(person_id, b)
+
+
+func move_out(person_id: int, b: SimBuilding) -> bool:
+	var p: SimPerson = family.persons.get(person_id)
+	if p == null or not family.is_ours(p) or family.stage_of(p) in ["child", "teen"] or not is_free_house(b):
+		return false
+	var days := float(balance["housing"]["rent_upfront_days"])
+	if p.purse + household.cash < b.rent_per_day * days and not owns(household, b):
+		note("%s nie stać na wynajem: %s." % [p.name, b.name], "warn", null)
+		return false
+	var h := new_household(b.id, 0.0)
+	join_household(p, h)
+	# Na start bierze swoją sakwę (i nic ze wspólnej skrzyni).
+	h.cash = p.purse
+	p.purse = 0.0
+	p.held = 0.0
+	var a := agent_by_id(p.agent_id)
+	if a != null:
+		jobs.replan(a)
+	note("%s wyprowadza się na swoje: %s." % [p.name, b.name], "info", b.door())
+	chronicle.add(clock.now(), "move", "%s wyprowadza się na swoje (%s), zostaje w rodzie." % [p.name, b.name], [p.id], p.lineage_id)
+	return true
+
+
+func buy_house(bid: String) -> bool:
+	var b: SimBuilding = buildings.get(bid)
+	var price := house_price(b) if b != null else 0.0
+	if b == null or price <= 0.0 or owns(household, b) or household.cash < price:
+		note("Nie da się kupić: %s (cena %d zł)." % [b.name if b != null else "?", int(price)], "warn", null)
+		return false
+	household.pay(price)
+	pay_owner(b, price)
+	b.owner_kind = "lineage"
+	b.owner_id = family.player_lineage_id
+	note("Ród %s kupuje: %s. Koniec czynszu za ten dom." % [family.dynasty, b.name], "good", b.door())
+	chronicle.add(clock.now(), "purchase", "Kupno domu: %s za %d zł." % [b.name, int(price)], household.members, family.player_lineage_id)
+	return true
+
+
+# Wyrzucenie z domu: osoba zostaje bez dachu (osobne gospodarstwo, ten sam ród) i to pamięta.
+func throw_out(person_id: int) -> bool:
+	var p: SimPerson = family.persons.get(person_id)
+	if p == null or p.household_id != household.id or p.id == family.root_id or family.stage_of(p) == "child":
+		return false
+	var h := new_household("", 0.0)
+	join_household(p, h)
+	if family.root_id >= 0:
+		bonds.remember(p.id, SimBonds.person(family.root_id), "thrown_out", [family.root_id])
+	var a := agent_by_id(p.agent_id)
+	if a != null:
+		jobs.replan(a)
+	note("%s zostaje wyrzucon%s z domu." % [p.name, "y" if p.sex == "m" else "a"], "warn", a.position if a != null else null)
+	chronicle.add(clock.now(), "thrown_out", "%s wyrzucon%s z domu." % [p.name, "y" if p.sex == "m" else "a"], [p.id], p.lineage_id)
+	return true
+
+
+# Rodzina sama wychodzi z domu (np. żeby nie płacić czynszu): pod gołe niebo.
+func leave_home() -> void:
+	var b: SimBuilding = buildings.get(household.home_id)
+	move_household(household, null)
+	note("Rodzina opuszcza dom%s. Śpicie pod gołym niebem." % ((": " + b.name) if b != null else ""), "warn", null)
 
 
 # Stragan przy domu gracza (M1): deski z tartaku rodu.
@@ -940,7 +1075,8 @@ func _settle_rent(h: SimHousehold) -> void:
 	var eco: Dictionary = balance["economy"]
 	var b: SimBuilding = buildings.get(h.home_id)
 	if b == null:
-		var free := free_house()
+		# Bez automatu dla gracza (O1): gracz sam wynajmuje, kupuje albo buduje.
+		var free := free_house() if h != household else null
 		if free != null and h.cash >= free.rent_per_day * float(eco["rehouse_rent_days"]):
 			move_household(h, free)
 			if h == household:
