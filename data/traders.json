@@ -1,0 +1,93 @@
+{
+  "every_days": 1,
+  "arrive_at": 0.32,
+  "stay": 0.3,
+  "entry": [
+    94.0,
+    22.0
+  ],
+  "stand": [
+    3.0,
+    1.5
+  ],
+  "origins": [
+    {
+      "id": "rzeczyca",
+      "name": "Rzeczyca",
+      "trader": {
+        "name": "Szymon",
+        "surname": "Wrona",
+        "sex": "m",
+        "age_days": 34.0
+      },
+      "cash": [
+        120,
+        200
+      ],
+      "buys": {
+        "plank": {
+          "qty": [
+            10,
+            24
+          ],
+          "price": 3.6
+        },
+        "chair": {
+          "qty": [
+            1,
+            4
+          ],
+          "price_mult": 1.15
+        }
+      },
+      "sells": {
+        "food": {
+          "qty": [
+            30,
+            50
+          ],
+          "price": 0.9
+        }
+      }
+    },
+    {
+      "id": "gorzyn",
+      "name": "Górzyn",
+      "trader": {
+        "name": "Paweł",
+        "surname": "Mazur",
+        "sex": "m",
+        "age_days": 45.0
+      },
+      "cash": [
+        60,
+        120
+      ],
+      "buys": {
+        "log": {
+          "qty": [
+            6,
+            14
+          ],
+          "price": 2.2
+        }
+      },
+      "sells": {
+        "food": {
+          "qty": [
+            35,
+            55
+          ],
+          "price": 0.8
+        },
+        "log": {
+          "qty": [
+            0,
+            0
+          ],
+          "price": 2.0
+        }
+      }
+    }
+  ]
+}

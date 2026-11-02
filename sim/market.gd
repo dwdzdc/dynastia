@@ -40,6 +40,10 @@ func trades(good: String) -> bool:
 	return _goods.has(good)
 
 
+func target(good: String) -> int:
+	return int(_goods[good]["target"])
+
+
 # Mnożnik ceny z zapasu: mało towaru — drożej, dużo — taniej.
 func _mult(good: String) -> float:
 	var t := float(_goods[good]["target"])
@@ -111,7 +115,7 @@ func sell_to(buyer: SimHousehold, good: String, qty: int) -> int:
 # Zawór dobowy: braki dowiezione z miasta, nadwyżki wywiezione (płaci/dostaje kupiec).
 func new_day() -> void:
 	var t := till()
-	if t == null:
+	if t == null or not bool(_cfg["valve"]):
 		return
 	for good in _goods:
 		var g: Dictionary = _goods[good]

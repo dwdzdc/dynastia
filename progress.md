@@ -134,7 +134,7 @@ Cel: rodzina przestaje być oderwana od świata. Inne rody żyją z tych samych 
 
 - [x] H1 Kupiec jako osoba (S9): własna kasa i zapas, kupuje tylko, gdy ma pieniądze i zbyt, cena z zapasu i kasy; zastępuje `household.sell` → test: kupiec bez pieniędzy nie kupi, cena spada z zapasem.
 - [x] H2 Kupujący: gospodarstwa kupują jedzenie i opał u kupca za własne pieniądze → test: biedna okolica nie kupi desek, pieniądze krążą (suma w świecie stała bez importu/eksportu).
-- [ ] H3 Kupcy wędrowni: rozkład w danych, wóz z krawędzi mapy, oferta kupna/sprzedaży z ilością, ceną i terminem, towar donoszony fizycznie, odjazd z towarem → test: dostarczona oferta płaci, przegapiona przepada.
+- [x] H3 Kupcy wędrowni: rozkład w danych, wóz z krawędzi mapy, oferta kupna/sprzedaży z ilością, ceną i terminem, towar donoszony fizycznie, odjazd z towarem → test: dostarczona oferta płaci, przegapiona przepada.
 - [ ] H4 Pole (osobny moduł): siew wiosną, wzrost, żniwa latem, zboże do spichrza; zima bez plonów → test: plon tylko w sezonie, zaniedbane pole daje mniej.
 - [ ] H5 Młyn i piekarnia z receptur: zboże → mąka → chleb, chleb jest jedzeniem → test: łańcuch daje chleb bez nowego kodu produkcji.
 - [ ] H6 Kamieniołom z receptury: kamień jako budulec → test: kamień trafia do składu.
@@ -155,7 +155,7 @@ Cel: rodzina przestaje być oderwana od świata. Inne rody żyją z tych samych 
 
 ## Iteracja 3 — codzienność i ciało
 
-Zróżnicowany rytm dnia jak w RimWorldzie (różne pory snu i pracy, droga do domu trwa, kolacja nie jest natychmiastowa), temperatura i ubiór, kontrola poczęć (przełącznik, szanse w danych, nigdy 0 i 100%), cmentarze i pomniki, czytelna progresja doświadczenia, płeć jako składnik naśladowania dorosłych (`goals.md`).
+Zegar pór dnia zamiast godzin (tarcza jak w Don't Starve: poranek, dzień, zmierzch, noc, z długościami zależnymi od pory roku) razem z płynnymi fazami dnia. Zróżnicowany rytm dnia jak w RimWorldzie (różne pory snu i pracy, droga do domu trwa, kolacja nie jest natychmiastowa), temperatura i ubiór, kontrola poczęć (przełącznik, szanse w danych, nigdy 0 i 100%), cmentarze i pomniki, czytelna progresja doświadczenia, płeć jako składnik naśladowania dorosłych (`goals.md`).
 
 ## Dalej
 

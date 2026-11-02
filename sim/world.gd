@@ -22,6 +22,7 @@ var bonds: SimBonds
 var together: SimTogether
 var ai: SimAI
 var market: SimMarket
+var traders: SimTraders
 var chronicle: SimChronicle
 
 var buildings: Dictionary = {}   # id -> SimBuilding
@@ -45,7 +46,7 @@ var _last_day := 0
 var _regrow_total: float
 
 
-func _init(seed: int, p_balance: Dictionary, p_map: Dictionary, p_people: Dictionary, p_memories: Dictionary, p_recipes: Dictionary) -> void:
+func _init(seed: int, p_balance: Dictionary, p_map: Dictionary, p_people: Dictionary, p_memories: Dictionary, p_recipes: Dictionary, p_traders: Dictionary) -> void:
 	balance = p_balance
 	map = p_map
 	people = p_people
@@ -79,6 +80,7 @@ func _init(seed: int, p_balance: Dictionary, p_map: Dictionary, p_people: Dictio
 	family.setup_start()
 	_spawn_society()
 	market = SimMarket.new(self, balance["market"])
+	traders = SimTraders.new(self, p_traders)
 	for p in family.living():
 		p.set_meta("stage", family.stage_of(p))
 	note("Ród %s zaczyna w wynajętej chacie pod lasem. Czynsz %d zł dziennie — pilnuj kasy." % [
@@ -416,6 +418,7 @@ func _step(dt: float) -> void:
 				a.idle_reason = "w areszcie (jeszcze %.1f dnia)" % maxf(a.jail_days, 0.0)
 				if a.jail_days <= 0.0:
 					release_from_jail(a)
+	traders.tick()
 	together.sample(dt)
 
 

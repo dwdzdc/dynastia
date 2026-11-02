@@ -73,6 +73,7 @@ func _run_all() -> void:
 	_test_marriage_with_existing_people()
 	_test_merchant_is_a_person()
 	_test_buyers_pay_from_own_money()
+	_test_traveling_traders()
 	_test_world_deterministic()
 	_test_world_30_days_autonomous()
 	_test_economy_chain_produces_income()
@@ -218,7 +219,7 @@ func _map() -> Dictionary:
 
 
 func _new_world(seed := 12345) -> RefCounted:
-	return WORLD_SCRIPT.new(seed, _balance(), _map(), _people(), LOADER_SCRIPT.load_json("res://data/memories.json"), LOADER_SCRIPT.load_json("res://data/recipes.json"))
+	return WORLD_SCRIPT.new(seed, _balance(), _map(), _people(), LOADER_SCRIPT.load_json("res://data/memories.json"), LOADER_SCRIPT.load_json("res://data/recipes.json"), LOADER_SCRIPT.load_json("res://data/traders.json"))
 
 
 func _run_days(world, days: float) -> void:
@@ -1006,6 +1007,29 @@ func _test_buyers_pay_from_own_money() -> void:
 	w.jobs.replan(buyer)
 	var why := String(buyer.steps[buyer.steps.size() - 1].get("why", ""))
 	check("hungry person explains the market is empty", why.contains("na targu nie ma jedzenia") or buyer.plan_kind == "eat")
+
+
+func _test_traveling_traders() -> void:
+	var w = _new_world()
+	var tr = w.traders
+	var origin: Dictionary = (tr._cfg["origins"] as Array)[0]
+	var v: Dictionary = tr.arrive(origin)
+	var trader = w.family.persons[int(v["person"])]
+	check("trader is a named person from a real place", trader.name == String(origin["trader"]["name"]) and v["origin_name"] == origin["name"])
+	check("trader wants planks", tr.wants("plank") > 0)
+	var cash0: float = w.household.cash
+	var r: Dictionary = tr.sell_to_wagon(w.household, "plank", 3, [])
+	check("delivered goods are paid from the trader's cash", int(r["qty"]) == 3 and w.household.cash > cash0)
+	check("trader can't be married off", not w.family.can_marry(trader))
+	# Odjazd: oferta przepada.
+	w.clock.set_time(w.clock.day_index(), minf(0.99, w.clock.time_of_day() + float(tr._cfg["stay"]) + 0.01))
+	tr.tick()
+	var a = w.agent_by_id(trader.agent_id)
+	for i in 400:
+		if a.status == "away":
+			break
+		w.step_sim(1.0)
+	check("missed offer expires when the wagon leaves", a.status == "away" and tr.wants("plank") == 0)
 
 
 func _state_sig(w) -> String:

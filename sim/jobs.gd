@@ -601,13 +601,13 @@ func _plan_carrier(a: SimAgent) -> bool:
 	var mill: SimBuilding = w.building("sawmill")
 	var shop: SimBuilding = w.building("workshop")
 	var market: SimBuilding = w.building("market")
-	if shop.amount("chair") > 0 and w.market.wants("chair") > 0:
+	if shop.amount("chair") > 0 and w.market.wants("chair") + w.traders.wants("chair") > 0:
 		_pickup_and_deliver(a, shop, "chair", market, "niesie krzesła na targ")
 		return true
 	if _carpenter_present() and shop.space("plank") > 0 and mill.amount("plank") > 0:
 		_pickup_and_deliver(a, mill, "plank", shop, "niesie deski do stolarni", shop.space("plank"))
 		return true
-	if _hh(a).sell_planks and mill.amount("plank") > 0 and w.market.wants("plank") > 0:
+	if _hh(a).sell_planks and mill.amount("plank") > 0 and w.market.wants("plank") + w.traders.wants("plank") > 0:
 		_pickup_and_deliver(a, mill, "plank", market, "niesie deski na targ")
 		return true
 	if mill.amount("plank") > 0 and _hh(a).sell_planks:
@@ -702,6 +702,9 @@ func apply(a: SimAgent, step: Dictionary) -> bool:
 			return true
 		"meal_away":
 			return _fx_meal_away(a, float(step["arg"]))
+		"trader_gone":
+			w.traders.gone(a, String(step["arg"]))
+			return true
 		"eat_carried":
 			if a.carrying == "food" and a.carrying_qty > 0:
 				a.carrying_qty -= 1
@@ -763,7 +766,16 @@ func _fx_deposit(a: SimAgent, bid: String) -> bool:
 		return true
 	var b: SimBuilding = w.building(bid)
 	if b.type == "market":
-		# Sprzedaż kupcowi (H1): bierze tyle, na ile ma pieniądze i zbyt.
+		# Najpierw na wóz kupca wędrownego (lepsza cena), resztę miejscowemu kupcowi (H1, H3).
+		var rw: Dictionary = w.traders.sell_to_wagon(_hh(a), a.carrying, a.carrying_qty, a.carrying_qualities)
+		if int(rw["qty"]) > 0:
+			w.events.float_text(b.door() + Vector2(2, 0), "+%d zł (wóz)" % int(round(float(rw["paid"]))), "money")
+			w.stats["sold_" + a.carrying] = int(w.stats.get("sold_" + a.carrying, 0)) + int(rw["qty"])
+			a.carrying_qty -= int(rw["qty"])
+			a.carrying_qualities = a.carrying_qualities.slice(int(rw["qty"]))
+			if a.carrying_qty <= 0:
+				a.clear_carry()
+				return true
 		var r: Dictionary = w.market.buy_from(_hh(a), a.carrying, a.carrying_qty, a.carrying_qualities)
 		var n := int(r["qty"])
 		if n > 0:

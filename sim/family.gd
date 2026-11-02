@@ -574,6 +574,9 @@ func _pick_name(sex: String) -> String:
 # --- Małżeństwa ---
 
 func can_marry(p: SimPerson) -> bool:
+	var l := lineage_of(p)
+	if l != null and l.role == "trader":
+		return false   # kupiec wędrowny tylko przejeżdża
 	return p.alive() and p.spouse_id < 0 and days_lived(p) >= life_day(_fam["marry_from"]) and not p.attached
 
 
