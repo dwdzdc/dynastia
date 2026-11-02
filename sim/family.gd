@@ -357,8 +357,7 @@ func new_day() -> void:
 		_tick_pregnancy(p)
 	for p in all_living():
 		_roll_conception(p)
-	for p in all_living():
-		_roll_courtship(p)
+	_check_courtships()
 	update_strength()
 	_check_departures()
 
@@ -401,7 +400,6 @@ func depart(p: SimPerson) -> void:
 	l.add(p)
 	l.root_id = p.id
 	p.weak_days = 0
-	p.seeking_spouse = false
 	var a: SimAgent = w.agent_by_id(p.agent_id)
 	# Własne gospodarstwo: wolny dom, a gdy go nie ma, kąt u sąsiadów.
 	var house: SimBuilding = w.free_house()
@@ -580,49 +578,142 @@ func can_marry(p: SimPerson) -> bool:
 	return p.alive() and p.spouse_id < 0 and days_lived(p) >= life_day(_fam["marry_from"]) and not p.attached
 
 
-func set_seeking(pid: int, on: bool) -> void:
-	var p: SimPerson = persons.get(pid)
-	if p == null or not can_marry(p):
-		return
-	p.seeking_spouse = on
-	if on:
-		w.note("%s rozgląda się za %s." % [p.name, "żoną" if p.sex == "m" else "mężem"], "info", null)
+# --- Romans jako proces (S18, N3–N5) ---
+
+func _romance() -> Dictionary:
+	return w.balance["romance"]
 
 
-func _roll_courtship(p: SimPerson) -> void:
-	if not p.seeking_spouse or not can_marry(p) or p.has_meta("engaged"):
+# Czy tych dwoje w ogóle może się w sobie zakochać „na serio” (do ślubu).
+func could_court(p: SimPerson, q: SimPerson) -> bool:
+	return p.sex != q.sex and p.lineage_id != q.lineage_id and can_marry(p) and can_marry(q) \
+		and absf(days_lived(p) - days_lived(q)) <= float(_marriage()["max_age_gap_days"])
+
+
+func love(p: SimPerson, q: SimPerson) -> float:
+	return w.bonds.value(p.id, SimBonds.love(q.id))
+
+
+# W kim osoba jest zakochana (najmocniej, powyżej progu szukania okazji); -1 = w nikim.
+func beloved(p: SimPerson) -> int:
+	if p == null:
+		return -1
+	var best := -1
+	var best_v := float(_romance()["seek_love"])
+	for t: String in w.bonds.targets_of(p.id, "love:"):
+		var v := w.bonds.value(p.id, t)
+		if v >= best_v:
+			best_v = v
+			best = int(t.substr(5))
+	return best
+
+
+# Po rozmowie (N3, N4): wolnemu może ktoś wpaść w oko; kto już jest zakochany, ten
+# z każdą rozmową bardziej (zaloty), a z sakwy kupuje drobny prezent.
+func after_talk(p: SimPerson, q: SimPerson, compat: float) -> void:
+	if not could_court(p, q):
 		return
-	var a: SimAgent = w.agent_by_id(p.agent_id)
-	if a == null or a.status != "active":
+	var r := _romance()
+	if love(p, q) <= 0.0:
+		var liking := maxf(0.0, w.bonds.value(p.id, SimBonds.person(q.id)))
+		if w.rng.chance(float(r["eye_chance"]) + float(r["eye_per_liking"]) * liking):
+			w.bonds.remember(p.id, SimBonds.love(q.id), "caught_eye", [q.id])
+			if is_ours(p):
+				w.note("%s zerka na %s (ród %s)." % [p.name, q.name, lineage_of(q).name], "info", null)
 		return
-	if not w.rng.chance(float(_fam["marry_chance_per_day"])):
+	w.bonds.remember(p.id, SimBonds.love(q.id), "courted", [q.id], maxf(compat, 0.1))
+	if love(p, q) >= float(r["gift_love"]) and p.purse >= float(r["gift_cost"]):
+		p.purse -= float(r["gift_cost"])
+		p.held = minf(p.held, p.purse)
+		w.bonds.remember(q.id, SimBonds.love(p.id), "gift", [p.id])
+		var a: SimAgent = w.agent_by_id(p.agent_id)
+		if a != null:
+			w.events.float_text(a.position, "prezent dla: %s" % q.name, "info")
+
+
+# Raz na dobę: pary zakochane w sobie nawzajem dochodzą do rozmowy rodzin (N5).
+func _check_courtships() -> void:
+	var r := _romance()
+	for p in all_living():
+		if p.has_meta("engaged") or not can_marry(p):
+			continue
+		var qid := beloved(p)
+		var q: SimPerson = persons.get(qid)
+		if q == null or q.has_meta("engaged") or beloved(q) != p.id or p.id > q.id:
+			continue
+		if love(p, q) < float(r["propose_love"]) or love(q, p) < float(r["propose_love"]) or not could_court(p, q):
+			continue
+		_families_talk(p, q)
+
+
+# Pozycja rodu (S19): pieniądze w skrzyniach, budynki i to, co myślą o nim inni.
+func standing(l: SimLineage) -> float:
+	var r := _romance()
+	var cash := 0.0
+	var mem := living_members(l.id)
+	var hh := {}
+	for p: SimPerson in mem:
+		hh[p.household_id] = true
+	for hid in hh:
+		var h: SimHousehold = w.households.get(hid)
+		if h != null:
+			cash += maxf(h.cash, 0.0) - h.debt
+	var owned := 0
+	for b: SimBuilding in w.buildings.values():
+		if b.owner_kind == "lineage" and b.owner_id == l.id:
+			owned += 1
+	var opinion := 0.0
+	var n := 0
+	for o in all_living():
+		if o.lineage_id == l.id:
+			continue
+		for m: SimPerson in mem:
+			opinion += w.bonds.value(o.id, SimBonds.person(m.id))
+			n += 1
+	return cash + float(r["standing_building"]) * owned + float(r["standing_opinion"]) * (opinion / maxf(1.0, float(n)))
+
+
+# Rodziny się dogadują: przy dużej różnicy pozycji (mezalians) wyżej stojący ród musi
+# się zgodzić — trudno, ale możliwe. Gdy w grę wchodzi ród gracza, decyduje gracz.
+func _families_talk(p: SimPerson, q: SimPerson) -> void:
+	var r := _romance()
+	var lp := lineage_of(p)
+	var lq := lineage_of(q)
+	var sp := standing(lp)
+	var sq := standing(lq)
+	var gap := absf(sp - sq)
+	var higher: SimLineage = lp if sp >= sq else lq
+	var lower_person: SimPerson = q if higher == lp else p
+	if gap > float(r["mesalliance_gap"]) and higher.id != player_lineage_id:
+		var avg := (love(p, q) + love(q, p)) * 0.5
+		var chance := clampf(avg / float(r["consent_love_scale"]) - (gap - float(r["mesalliance_gap"])) / float(r["mesalliance_gap"]),
+			float(r["consent_min"]), float(r["consent_max"]))
+		if not w.rng.chance(chance):
+			var head: SimPerson = persons.get(higher.root_id)
+			for x in [p, q]:
+				if head != null and x != head:
+					w.bonds.remember(x.id, SimBonds.person(head.id), "match_refused", [head.id])
+			if is_ours(p) or is_ours(q):
+				w.note("Ród %s nie zgadza się na ślub %s i %s — za niska pozycja %s." % [higher.name, p.name, q.name, lower_person.name], "warn", null)
+			return
+	if not is_ours(p) and not is_ours(q):
+		marry(p, q)
 		return
-	var cands := marriage_candidates(p)
-	if cands.is_empty():
-		return
-	var c: SimPerson = cands[0]
-	if not is_ours(p) and not is_ours(c):
-		marry(p, c)
-		return
-	# Ktoś z rodu gracza: decyduje gracz. Swój kandydat musi sam szukać pary.
-	if is_ours(c) and not c.seeking_spouse:
-		return
-	var ours: SimPerson = p if is_ours(p) else c
-	var other: SimPerson = c if ours == p else p
+	_ask_player(p if is_ours(p) else q, q if is_ours(p) else p, gap > float(r["mesalliance_gap"]))
+
+
+func _ask_player(ours: SimPerson, other: SimPerson, mesalliance: bool) -> void:
 	var mover := _mover(ours, other)
-	var known := w.bonds.value(ours.id, SimBonds.person(other.id))
-	var acquaintance := "znają się dobrze" if known >= float(_marriage()["know_well"]) else ("znają się z widzenia" if known > 0.0 else "prawie się nie znają")
 	var after := ("%s wejdzie do rodu %s i zamieszka z wami." % [other.name, dynasty]) if mover == other \
 		else ("%s przejdzie do rodu %s i zamieszka u nich." % [ours.name, lineage_of(other).name])
 	var traits_txt := "brak szczególnych" if other.traits.is_empty() else ", ".join(other.traits.map(func(t): return trait_label(t)))
 	var char_txt := "nic szczególnego" if other.character.is_empty() else ", ".join(other.character.map(func(x): return character_label(x)))
-	# Para czeka na decyzję gracza: nikt inny jej w tym czasie nie zaręczy.
 	ours.set_meta("engaged", true)
 	other.set_meta("engaged", true)
-	w.events.ask("marriage", "Propozycja ślubu",
-		"%s %s (lat %d, ród %s) i %s — %s.\n%s\nCechy: %s. Charakter: %s.\nWesele kosztuje %d zł (płaci rodzina, do której wchodzi panna młoda lub pan młody; brak pójdzie w dług)." % [
-			other.name, other.surname, int(age_of(other)), lineage_of(other).name, ours.name, acquaintance,
-			after, traits_txt, char_txt, int(_marriage()["wedding_cost"])],
+	w.events.ask("marriage", "Rodziny rozmawiają o ślubie",
+		"%s i %s %s (lat %d, ród %s) chodzą ze sobą i chcą się pobrać.%s\n%s\nCechy: %s. Charakter: %s.\nWesele kosztuje %d zł (płaci rodzina, do której wchodzi panna młoda lub pan młody; brak pójdzie w dług)." % [
+			ours.name, other.name, other.surname, int(age_of(other)), lineage_of(other).name,
+			" To mezalians — ludzie będą gadać." if mesalliance else "", after, traits_txt, char_txt, int(_marriage()["wedding_cost"])],
 		[{ "label": "Zgoda na ślub", "value": "yes" }, { "label": "Odmowa", "value": "no" }],
 		{ "person": ours.id, "cand": other.id })
 
@@ -674,7 +765,12 @@ func resolve_marriage(data: Dictionary, accepted: bool) -> void:
 	if p == null or c == null or not p.alive() or not c.alive() or not can_marry(p) or not can_marry(c):
 		return
 	if not accepted:
-		w.note("%s odrzuca zaloty %s. Szuka dalej." % [p.name, c.name], "info", null)
+		# Odmowa rodu gracza: oboje to pamiętają (głowie rodu), a uczucie słabnie.
+		var head: SimPerson = root()
+		for x in [p, c]:
+			if head != null and x != head:
+				w.bonds.remember(x.id, SimBonds.person(head.id), "match_refused", [head.id])
+		w.note("Rodzina nie zgadza się na ślub %s i %s." % [p.name, c.name], "info", null)
 		return
 	marry(p, c)
 
@@ -693,8 +789,6 @@ func marry(a: SimPerson, b: SimPerson) -> void:
 	mover.attached = true
 	mover.blood = false
 	mover.surname = new_l.surname
-	mover.seeking_spouse = false
-	stayer.seeking_spouse = false
 	a.spouse_id = b.id
 	b.spouse_id = a.id
 	a.unions.append({ "spouse": b.id, "start": w.clock.now(), "end": -1.0 })
@@ -725,7 +819,6 @@ func marry(a: SimPerson, b: SimPerson) -> void:
 func on_death(p: SimPerson, cause: String) -> void:
 	p.death_day = w.clock.now()
 	p.death_cause = cause
-	p.seeking_spouse = false
 	p.pregnant_left = -1.0
 	var s: SimPerson = persons.get(p.spouse_id)
 	if s != null and s.alive():

@@ -27,6 +27,7 @@ var work_acts: Array = ["chop", "forage", "labor"]  # czynności, które są pra
 const BASE_WORK_ACTS := ["chop", "forage", "labor"]
 const OVERSEE_OFFSET := Vector2(1.2, 1.2)     # nadzorca staje obok pilnowanego
 const OVERSEE_WAITS := 4.0                    # jak długo stoi przy jednym miejscu
+const LOVE_OFFSET := Vector2(1.5, 0.8)        # zakochany staje obok tej drugiej osoby
 const POOR_MEALS := 4.0                       # bieda: w skrzyni mniej niż na tyle posiłków
 const FIREWOOD_TRIP := 2                      # ile kłód opału niesie się na raz
 const PAY_QUEUE_SPREAD := 6                  # ilu ludzi stoi obok siebie po wypłatę
@@ -105,7 +106,8 @@ func desired_kind(a: SimAgent) -> String:
 		return "dinner"
 	if a.is_child:
 		return "child"
-	if block == "work" and a.can_work() and a.job != "none":
+	# Święto (N2): dzień wolny od pracy — za ladą stoją tylko kramarze.
+	if block == "work" and a.can_work() and a.job != "none" and (not festival_today() or a.job == "stallkeeper"):
 		return "work"
 	if block in ["free", "dinner"] and a.job == "stallkeeper" and a.can_work() and a.plan_kind == "work" and not a.steps.is_empty():
 		return "work"   # kramarz stoi za ladą do kolacji
@@ -154,9 +156,13 @@ func replan(a: SimAgent) -> void:
 			_plan_collect(a)
 		"chore":
 			if not _plan_chore(a):
-				# W dzień wolne wśród ludzi przed domem, wieczorem odpoczynek w środku.
+				# W dzień wolne wśród ludzi przed domem; wieczorem karczma, święto albo dom.
 				if block_at(w.clock.time_of_day()) == "work" and not a.is_child:
 					_free_time(a, _rest_reason(a).trim_prefix("wolne — "))
+				elif not a.is_child and festival_today():
+					_free_time(a, "święto na placu")
+				elif _wants_tavern(a):
+					_plan_tavern(a)
 				else:
 					_go_inside(a, _home(a), "rest", 3.0, _rest_reason(a))
 
@@ -829,11 +835,51 @@ func _plan_collect(a: SimAgent) -> void:
 # czas wolny przed domem, wśród ludzi, zamiast stania w miejscu (jak w Cultures).
 # Kto obsadza stanowisko (tartak, później stragan), ten czeka przy nim.
 func _free_time(a: SimAgent, why: String) -> void:
+	# Święto: wszyscy na placu, tańce i rozmowy (N2).
+	if festival_today() and not a.is_child:
+		var sq: SimBuilding = w.building("market")
+		var spread := float(w.balance["social"]["festival_spread"])
+		_walk(a, sq.door() + Vector2(w.rng.next_float(-spread, spread), w.rng.next_float(-1.0, spread * 0.5)), "idzie na święto")
+		_act(a, "dance", float(_cfg["wait_seconds"]) * FREE_TIME_WAITS, "świętuje na placu")
+		return
+	# Zakochany szuka okazji: wolne spędza tam, gdzie akurat jest ta druga osoba (N3).
+	var love := w.family.beloved(w.person_of(a))
+	var la := w.agent_by_id(w.family.persons[love].agent_id) if love >= 0 else null
+	if la != null and la.is_active() and not la.hidden:
+		_walk(a, la.position + LOVE_OFFSET, "szuka okazji, żeby zobaczyć: %s" % w.family.persons[love].name)
+		_act(a, "rest", float(_cfg["wait_seconds"]) * FREE_TIME_WAITS, "kręci się koło: %s" % w.family.persons[love].name)
+		return
 	var base: Vector2 = _home(a).door() if _home(a) != null else _homeless_spot(a)
 	var k := w.rng.next_float(0.0, TAU)
 	var r := w.rng.next_float(FREE_SPOT_RADIUS.x, FREE_SPOT_RADIUS.y)
 	_walk(a, base + Vector2(cos(k), absf(sin(k)) * 0.6 + 0.6) * r, "wolne — %s" % why)
 	_act(a, "rest", float(_cfg["wait_seconds"]) * FREE_TIME_WAITS, "wolne — %s" % why)
+
+
+func festival_today() -> bool:
+	var sc: Dictionary = w.balance["social"]
+	return w.clock.day_index() % int(sc["festival_every"]) == int(sc["festival_day"])
+
+
+# Karczma wieczorem (N2): wydatek z własnej sakwy, gwar i rozmowy z obcymi.
+func _wants_tavern(a: SimAgent) -> bool:
+	var p := w.person_of(a)
+	var sc: Dictionary = w.balance["social"]
+	if p == null or a.is_child or not w.buildings.has("tavern") or p.purse < float(sc["tavern_price"]):
+		return false
+	if w.clock.time_of_day() < float(w.balance["schedule"]["work_end"]):
+		return false   # do karczmy chodzi się wieczorem
+	if int(a.get_meta("tavern_day", -1)) == w.clock.day_index():
+		return false
+	a.set_meta("tavern_day", w.clock.day_index())
+	return w.rng.chance(float(sc["tavern_chance"]))
+
+
+func _plan_tavern(a: SimAgent) -> void:
+	var t: SimBuilding = w.building("tavern")
+	_walk(a, t.door(), "idzie wieczorem do karczmy")
+	_do(a, "tavern_pay")
+	_act(a, "drink", float(w.balance["social"]["tavern_seconds"]), "siedzi w karczmie", t.id)
 
 
 # Dokąd odnieść to, co agent ma w rękach (np. po przerwaniu planu).
@@ -946,6 +992,18 @@ func apply(a: SimAgent, step: Dictionary) -> bool:
 			return _fx_pickup(a, step["arg"])
 		"return_coins":
 			_return_coins(a)
+			return true
+		"tavern_pay":
+			var tp := w.person_of(a)
+			var price := float(w.balance["social"]["tavern_price"])
+			if tp == null or tp.purse < price:
+				return false
+			tp.purse -= price
+			tp.held = minf(tp.held, tp.purse)
+			w.pay_owner(w.building("tavern"), price)
+			return true
+		"talk_done":
+			w.talk.done(a, int(step["arg"]))
 			return true
 		"hand_out":
 			w.contracts.hand_out(a, String(step["arg"]))

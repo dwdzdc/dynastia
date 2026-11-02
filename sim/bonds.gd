@@ -27,6 +27,11 @@ static func person(pid: int) -> String:
 	return "p:%d" % pid
 
 
+# Uczucie (S18): osobny kanał od sympatii, ten sam magazyn.
+static func love(pid: int) -> String:
+	return "love:%d" % pid
+
+
 static func act(name: String) -> String:
 	return "act:%s" % name
 

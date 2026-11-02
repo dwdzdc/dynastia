@@ -140,11 +140,11 @@ Pętla gry: ród Wilków (6 osób, 3 pokolenia) w chacie pod lasem. Co 5 dni czy
 
 ### Faza N — spotkania i romans
 
-- [ ] N1 Rozmowa (S17) → test: obcy z targu się poznają, bez spotkań więź spoza domu nie rośnie.
-- [ ] N2 Miejsca i czas wolny: karczma wieczorem (wydatek z sakwy), święto na placu co N dób; wolni od pracy członkowie rodu bywają.
-- [ ] N3 Wpadnięcie w oko (S18): zakochany spędza wolny czas tam, gdzie bywa druga osoba.
-- [ ] N4 Zaloty: wzajemność, prezent z sakwy → próg w obie strony uruchamia rozmowę rodzin.
-- [ ] N5 Zgoda rodów i mezalians (S19); gracz dostaje okno tylko na tym etapie → test: mezalians trudny, ale możliwy.
+- [x] N1 Rozmowa (S17) → test: obcy z targu się poznają, bez spotkań więź spoza domu nie rośnie.
+- [x] N2 Miejsca i czas wolny: karczma wieczorem (wydatek z sakwy), święto na placu co N dób; wolni od pracy członkowie rodu bywają.
+- [x] N3 Wpadnięcie w oko (S18): zakochany spędza wolny czas tam, gdzie bywa druga osoba.
+- [x] N4 Zaloty: wzajemność, prezent z sakwy → próg w obie strony uruchamia rozmowę rodzin.
+- [x] N5 Zgoda rodów i mezalians (S19); gracz dostaje okno tylko na tym etapie → test: mezalians trudny, ale możliwy.
 
 ### Faza O — mieszkanie
 

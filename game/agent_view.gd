@@ -229,6 +229,16 @@ func _animate() -> void:
 					lean = 0.4
 					arm_l = -0.9 + sin(_t * 4.0) * 0.4
 					arm_r = -0.9 - sin(_t * 4.0) * 0.4
+		"talk":
+			# Rozmowa: gestykulacja.
+			arm_r = -0.6 + sin(_t * 3.5) * 0.35
+			arm_l = -0.2
+			bob = absf(sin(_t * 2.0)) * 0.02
+		"dance":
+			bob = absf(sin(_t * 5.0)) * 0.2
+			arm_l = -2.2 + sin(_t * 5.0) * 0.4
+			arm_r = -2.2 - sin(_t * 5.0) * 0.4
+			leg = sin(_t * 10.0) * 0.4
 		"oversee":
 			# Ręce za plecami, rozgląda się.
 			arm_l = 0.5

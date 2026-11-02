@@ -261,6 +261,10 @@ func _building(b: SimBuilding) -> void:
 			_house(n, Vector3(9.0, 4.0, 6.0), PLASTER, Color(0.45, 0.2, 0.15), false)
 			_add(n, Gfx3D.box(Vector3(2.2, 6.5, 2.2), PLASTER), Vector3(-3.2, 3.25, 0))
 			_add(n, Gfx3D.cone(1.8, 2.4, Color(0.45, 0.2, 0.15), 4), Vector3(-3.2, 7.7, 0), PI / 4)
+		"tavern":
+			_house(n, Vector3(6.0, 3.0, 4.6), WOOD, THATCH.darkened(0.15), true)
+			_add(n, Gfx3D.cylinder(0.06, 2.6, WOOD_DARK), Vector3(3.4, 1.3, 2.0))
+			_add(n, Gfx3D.box(Vector3(1.2, 0.7, 0.08), Color(0.7, 0.2, 0.15)), Vector3(3.4, 2.3, 2.1))
 		"jail":
 			_house(n, Vector3(6.0, 3.6, 5.0), STONE, Color(0.35, 0.33, 0.32), false)
 			_add(n, Gfx3D.box(Vector3(1.6, 5.8, 1.6), STONE.darkened(0.1)), Vector3(2.4, 2.9, -1.4))

@@ -1,65 +1,553 @@
 {
   "dynasty": "Wilk",
   "names": {
-    "m": ["Jan", "Piotr", "Jakub", "Maciej", "Wojciech", "Stanisław", "Tomasz", "Mikołaj", "Bartłomiej", "Szymon", "Marcin", "Paweł", "Grzegorz", "Andrzej", "Kacper", "Florian", "Wawrzyniec", "Józef"],
-    "f": ["Maria", "Zofia", "Agnieszka", "Katarzyna", "Anna", "Jadwiga", "Małgorzata", "Barbara", "Elżbieta", "Dorota", "Helena", "Urszula", "Marianna", "Regina", "Jagna", "Franciszka", "Łucja", "Teresa"]
+    "m": [
+      "Jan",
+      "Piotr",
+      "Jakub",
+      "Maciej",
+      "Wojciech",
+      "Stanisław",
+      "Tomasz",
+      "Mikołaj",
+      "Bartłomiej",
+      "Szymon",
+      "Marcin",
+      "Paweł",
+      "Grzegorz",
+      "Andrzej",
+      "Kacper",
+      "Florian",
+      "Wawrzyniec",
+      "Józef"
+    ],
+    "f": [
+      "Maria",
+      "Zofia",
+      "Agnieszka",
+      "Katarzyna",
+      "Anna",
+      "Jadwiga",
+      "Małgorzata",
+      "Barbara",
+      "Elżbieta",
+      "Dorota",
+      "Helena",
+      "Urszula",
+      "Marianna",
+      "Regina",
+      "Jagna",
+      "Franciszka",
+      "Łucja",
+      "Teresa"
+    ]
   },
-  "surnames": ["Nowak", "Kowal", "Bednarz", "Sowa", "Kmieć", "Wrona", "Mazur", "Baran", "Sikora", "Kos", "Duda", "Gil"],
+  "surnames": [
+    "Nowak",
+    "Kowal",
+    "Bednarz",
+    "Sowa",
+    "Kmieć",
+    "Wrona",
+    "Mazur",
+    "Baran",
+    "Sikora",
+    "Kos",
+    "Duda",
+    "Gil"
+  ],
   "traits": {
-    "silny": {"label": "silny", "work": {"chop": 1.25, "carry": 1.15}, "health_regen": 1.1},
-    "zreczny": {"label": "zręczny", "work": {"craft": 1.2, "saw": 1.15}, "quality": 0.12, "accident": 0.7},
-    "pracowity": {"label": "pracowity", "work": {"all": 1.12}},
-    "leniwy": {"label": "leniwy", "work": {"all": 0.85}},
-    "chorowity": {"label": "chorowity", "sick": 2.0, "health_regen": 0.7},
-    "krzepki": {"label": "krzepki", "sick": 0.5, "health_regen": 1.3},
-    "nieostrozny": {"label": "nieostrożny", "accident": 2.0, "work": {"all": 1.05}},
-    "kulawy": {"label": "kulawy (uraz)", "speed": 0.7, "work": {"chop": 0.7, "carry": 0.7}}
+    "silny": {
+      "label": "silny",
+      "work": {
+        "chop": 1.25,
+        "carry": 1.15
+      },
+      "health_regen": 1.1
+    },
+    "zreczny": {
+      "label": "zręczny",
+      "work": {
+        "craft": 1.2,
+        "saw": 1.15
+      },
+      "quality": 0.12,
+      "accident": 0.7
+    },
+    "pracowity": {
+      "label": "pracowity",
+      "work": {
+        "all": 1.12
+      }
+    },
+    "leniwy": {
+      "label": "leniwy",
+      "work": {
+        "all": 0.85
+      }
+    },
+    "chorowity": {
+      "label": "chorowity",
+      "sick": 2.0,
+      "health_regen": 0.7
+    },
+    "krzepki": {
+      "label": "krzepki",
+      "sick": 0.5,
+      "health_regen": 1.3
+    },
+    "nieostrozny": {
+      "label": "nieostrożny",
+      "accident": 2.0,
+      "work": {
+        "all": 1.05
+      }
+    },
+    "kulawy": {
+      "label": "kulawy (uraz)",
+      "speed": 0.7,
+      "work": {
+        "chop": 0.7,
+        "carry": 0.7
+      }
+    }
   },
   "character": {
-    "lojalny": {"label": "lojalny"},
-    "porywczy": {"label": "porywczy"},
-    "pamietliwy": {"label": "pamiętliwy"},
-    "ambitny": {"label": "ambitny"},
-    "ciekawski": {"label": "ciekawski"}
+    "lojalny": {
+      "label": "lojalny"
+    },
+    "porywczy": {
+      "label": "porywczy"
+    },
+    "pamietliwy": {
+      "label": "pamiętliwy"
+    },
+    "ambitny": {
+      "label": "ambitny"
+    },
+    "ciekawski": {
+      "label": "ciekawski"
+    }
   },
   "inheritance": {
-    "traits": {"pool": ["silny", "zreczny", "pracowity", "leniwy", "chorowity", "krzepki", "nieostrozny"], "inherit_chance": 0.35, "random_chance": 0.2, "conflicts": [["pracowity", "leniwy"], ["krzepki", "chorowity"]]},
-    "character": {"pool": ["lojalny", "porywczy", "pamietliwy", "ambitny", "ciekawski"], "inherit_chance": 0.3, "random_chance": 0.5, "conflicts": []}
+    "traits": {
+      "pool": [
+        "silny",
+        "zreczny",
+        "pracowity",
+        "leniwy",
+        "chorowity",
+        "krzepki",
+        "nieostrozny"
+      ],
+      "inherit_chance": 0.35,
+      "random_chance": 0.2,
+      "conflicts": [
+        [
+          "pracowity",
+          "leniwy"
+        ],
+        [
+          "krzepki",
+          "chorowity"
+        ]
+      ]
+    },
+    "character": {
+      "pool": [
+        "lojalny",
+        "porywczy",
+        "pamietliwy",
+        "ambitny",
+        "ciekawski"
+      ],
+      "inherit_chance": 0.3,
+      "random_chance": 0.5,
+      "conflicts": []
+    }
   },
   "ai_lineages": [
-    {"name": "Dworscy", "surname": "Dworski", "home": "manor", "cash": 400.0, "role": "gentry", "owns": ["manor", "home", "n1", "n2", "n3"], "members": [
-      {"key": "lord", "name": "Wojciech", "sex": "m", "age_days": 48.0, "root": true, "traits": [], "character": ["ambitny"], "job": "none"},
-      {"key": "lady", "name": "Urszula", "sex": "f", "age_days": 44.0, "spouse": "lord", "attached": true, "surname": "Gil", "traits": [], "character": ["pamietliwy"], "job": "none"},
-      {"key": "heir", "name": "Florian", "sex": "m", "age_days": 21.0, "mother": "lady", "father": "lord", "traits": ["zreczny"], "character": ["ciekawski"], "job": "none"}
-    ]},
-    {"name": "Kos", "surname": "Kos", "home": "n1", "cash": 30.0, "members": [
-      {"key": "f", "name": "Bartłomiej", "sex": "m", "age_days": 37.0, "root": true, "traits": ["silny"], "character": ["porywczy"], "job": "laborer", "skills": {"chop": 2.0}},
-      {"key": "m", "name": "Dorota", "sex": "f", "age_days": 31.0, "spouse": "f", "attached": true, "surname": "Sowa", "traits": [], "character": ["lojalny"], "job": "laborer"},
-      {"key": "d", "name": "Jagna", "sex": "f", "age_days": 17.5, "mother": "m", "father": "f", "traits": ["pracowity"], "character": ["ciekawski"], "job": "laborer"},
-      {"key": "s", "name": "Kacper", "sex": "m", "age_days": 8.0, "mother": "m", "father": "f", "traits": [], "character": [], "job": "none"}
-    ]},
-    {"name": "Sowa", "surname": "Sowa", "home": "n2", "cash": 25.0, "members": [
-      {"key": "w", "name": "Helena", "sex": "f", "age_days": 46.0, "root": true, "traits": ["krzepki"], "character": ["lojalny"], "job": "forager"},
-      {"key": "s", "name": "Grzegorz", "sex": "m", "age_days": 19.0, "mother": "w", "traits": ["leniwy"], "character": ["porywczy"], "job": "laborer"},
-      {"key": "d", "name": "Łucja", "sex": "f", "age_days": 16.5, "mother": "w", "traits": [], "character": ["ambitny"], "job": "laborer"}
-    ]},
-    {"name": "Nowak", "surname": "Nowak", "home": "n3", "cash": 20.0, "members": [
-      {"key": "h", "name": "Marcin", "sex": "m", "age_days": 22.0, "root": true, "traits": ["pracowity"], "character": ["ambitny"], "job": "laborer"},
-      {"key": "w", "name": "Teresa", "sex": "f", "age_days": 20.0, "spouse": "h", "attached": true, "surname": "Duda", "traits": [], "character": ["lojalny"], "job": "laborer"},
-      {"key": "b", "name": "Józef", "sex": "m", "age_days": 2.0, "mother": "w", "father": "h", "traits": [], "character": [], "job": "none"}
-    ]},
-    {"name": "Bednarz", "surname": "Bednarz", "home": "t1", "cash": 400.0, "owns": ["t1", "t2", "t3", "market"], "role": "merchant", "members": [
-      {"key": "m", "name": "Mikołaj", "sex": "m", "age_days": 41.0, "root": true, "traits": [], "character": ["ambitny"], "job": "none"},
-      {"key": "w", "name": "Regina", "sex": "f", "age_days": 38.0, "spouse": "m", "attached": true, "surname": "Mazur", "traits": [], "character": ["pamietliwy"], "job": "none"},
-      {"key": "s", "name": "Tomasz", "sex": "m", "age_days": 15.0, "mother": "w", "father": "m", "traits": ["zreczny"], "character": ["ciekawski"], "job": "none"}
-    ]}
+    {
+      "name": "Dworscy",
+      "surname": "Dworski",
+      "home": "manor",
+      "cash": 400.0,
+      "role": "gentry",
+      "owns": [
+        "manor",
+        "home",
+        "n1",
+        "n2",
+        "n3"
+      ],
+      "members": [
+        {
+          "key": "lord",
+          "name": "Wojciech",
+          "sex": "m",
+          "age_days": 48.0,
+          "root": true,
+          "traits": [],
+          "character": [
+            "ambitny"
+          ],
+          "job": "none"
+        },
+        {
+          "key": "lady",
+          "name": "Urszula",
+          "sex": "f",
+          "age_days": 44.0,
+          "spouse": "lord",
+          "attached": true,
+          "surname": "Gil",
+          "traits": [],
+          "character": [
+            "pamietliwy"
+          ],
+          "job": "none"
+        },
+        {
+          "key": "heir",
+          "name": "Florian",
+          "sex": "m",
+          "age_days": 21.0,
+          "mother": "lady",
+          "father": "lord",
+          "traits": [
+            "zreczny"
+          ],
+          "character": [
+            "ciekawski"
+          ],
+          "job": "none"
+        }
+      ]
+    },
+    {
+      "name": "Kos",
+      "surname": "Kos",
+      "home": "n1",
+      "cash": 30.0,
+      "members": [
+        {
+          "key": "f",
+          "name": "Bartłomiej",
+          "sex": "m",
+          "age_days": 37.0,
+          "root": true,
+          "traits": [
+            "silny"
+          ],
+          "character": [
+            "porywczy"
+          ],
+          "job": "laborer",
+          "skills": {
+            "chop": 2.0
+          }
+        },
+        {
+          "key": "m",
+          "name": "Dorota",
+          "sex": "f",
+          "age_days": 31.0,
+          "spouse": "f",
+          "attached": true,
+          "surname": "Sowa",
+          "traits": [],
+          "character": [
+            "lojalny"
+          ],
+          "job": "laborer"
+        },
+        {
+          "key": "d",
+          "name": "Jagna",
+          "sex": "f",
+          "age_days": 17.5,
+          "mother": "m",
+          "father": "f",
+          "traits": [
+            "pracowity"
+          ],
+          "character": [
+            "ciekawski"
+          ],
+          "job": "laborer"
+        },
+        {
+          "key": "s",
+          "name": "Kacper",
+          "sex": "m",
+          "age_days": 8.0,
+          "mother": "m",
+          "father": "f",
+          "traits": [],
+          "character": [],
+          "job": "none"
+        }
+      ]
+    },
+    {
+      "name": "Sowa",
+      "surname": "Sowa",
+      "home": "n2",
+      "cash": 25.0,
+      "members": [
+        {
+          "key": "w",
+          "name": "Helena",
+          "sex": "f",
+          "age_days": 46.0,
+          "root": true,
+          "traits": [
+            "krzepki"
+          ],
+          "character": [
+            "lojalny"
+          ],
+          "job": "forager"
+        },
+        {
+          "key": "s",
+          "name": "Grzegorz",
+          "sex": "m",
+          "age_days": 19.0,
+          "mother": "w",
+          "traits": [
+            "leniwy"
+          ],
+          "character": [
+            "porywczy"
+          ],
+          "job": "laborer"
+        },
+        {
+          "key": "d",
+          "name": "Łucja",
+          "sex": "f",
+          "age_days": 16.5,
+          "mother": "w",
+          "traits": [],
+          "character": [
+            "ambitny"
+          ],
+          "job": "laborer"
+        }
+      ]
+    },
+    {
+      "name": "Nowak",
+      "surname": "Nowak",
+      "home": "n3",
+      "cash": 20.0,
+      "members": [
+        {
+          "key": "h",
+          "name": "Marcin",
+          "sex": "m",
+          "age_days": 22.0,
+          "root": true,
+          "traits": [
+            "pracowity"
+          ],
+          "character": [
+            "ambitny"
+          ],
+          "job": "laborer"
+        },
+        {
+          "key": "w",
+          "name": "Teresa",
+          "sex": "f",
+          "age_days": 20.0,
+          "spouse": "h",
+          "attached": true,
+          "surname": "Duda",
+          "traits": [],
+          "character": [
+            "lojalny"
+          ],
+          "job": "laborer"
+        },
+        {
+          "key": "b",
+          "name": "Józef",
+          "sex": "m",
+          "age_days": 2.0,
+          "mother": "w",
+          "father": "h",
+          "traits": [],
+          "character": [],
+          "job": "none"
+        }
+      ],
+      "owns": [
+        "tavern"
+      ]
+    },
+    {
+      "name": "Bednarz",
+      "surname": "Bednarz",
+      "home": "t1",
+      "cash": 400.0,
+      "owns": [
+        "t1",
+        "t2",
+        "t3",
+        "market"
+      ],
+      "role": "merchant",
+      "members": [
+        {
+          "key": "m",
+          "name": "Mikołaj",
+          "sex": "m",
+          "age_days": 41.0,
+          "root": true,
+          "traits": [],
+          "character": [
+            "ambitny"
+          ],
+          "job": "none"
+        },
+        {
+          "key": "w",
+          "name": "Regina",
+          "sex": "f",
+          "age_days": 38.0,
+          "spouse": "m",
+          "attached": true,
+          "surname": "Mazur",
+          "traits": [],
+          "character": [
+            "pamietliwy"
+          ],
+          "job": "none"
+        },
+        {
+          "key": "s",
+          "name": "Tomasz",
+          "sex": "m",
+          "age_days": 15.0,
+          "mother": "w",
+          "father": "m",
+          "traits": [
+            "zreczny"
+          ],
+          "character": [
+            "ciekawski"
+          ],
+          "job": "none"
+        }
+      ]
+    }
   ],
   "start_family": [
-    {"key": "gran", "name": "Agnieszka", "sex": "f", "age_days": 60.5, "traits": ["krzepki"], "character": ["pamietliwy"], "job": "none", "skills": {"craft": 3.0}},
-    {"key": "father", "name": "Jan", "sex": "m", "age_days": 38.6, "traits": ["silny"], "character": ["lojalny"], "job": "woodcutter", "mother": "gran", "root": true, "skills": {"chop": 4.0, "saw": 2.0}},
-    {"key": "mother", "name": "Maria", "sex": "f", "age_days": 34.5, "traits": ["pracowity"], "character": ["ambitny"], "job": "carrier", "spouse": "father", "attached": true, "surname": "Kmieć", "skills": {"craft": 1.0}},
-    {"key": "son", "name": "Piotr", "sex": "m", "age_days": 17.0, "traits": ["zreczny"], "character": ["ciekawski", "ambitny"], "job": "sawyer", "mother": "mother", "father": "father", "skills": {"saw": 2.0, "chop": 1.0}},
-    {"key": "daughter", "name": "Zofia", "sex": "f", "age_days": 14.0, "traits": [], "character": ["porywczy"], "job": "none", "mother": "mother", "father": "father", "skills": {}},
-    {"key": "kid", "name": "Kuba", "sex": "m", "age_days": 7.0, "traits": ["nieostrozny"], "character": ["ciekawski"], "job": "none", "mother": "mother", "father": "father", "skills": {}}
+    {
+      "key": "gran",
+      "name": "Agnieszka",
+      "sex": "f",
+      "age_days": 60.5,
+      "traits": [
+        "krzepki"
+      ],
+      "character": [
+        "pamietliwy"
+      ],
+      "job": "none",
+      "skills": {
+        "craft": 3.0
+      }
+    },
+    {
+      "key": "father",
+      "name": "Jan",
+      "sex": "m",
+      "age_days": 38.6,
+      "traits": [
+        "silny"
+      ],
+      "character": [
+        "lojalny"
+      ],
+      "job": "woodcutter",
+      "mother": "gran",
+      "root": true,
+      "skills": {
+        "chop": 4.0,
+        "saw": 2.0
+      }
+    },
+    {
+      "key": "mother",
+      "name": "Maria",
+      "sex": "f",
+      "age_days": 34.5,
+      "traits": [
+        "pracowity"
+      ],
+      "character": [
+        "ambitny"
+      ],
+      "job": "carrier",
+      "spouse": "father",
+      "attached": true,
+      "surname": "Kmieć",
+      "skills": {
+        "craft": 1.0
+      }
+    },
+    {
+      "key": "son",
+      "name": "Piotr",
+      "sex": "m",
+      "age_days": 17.0,
+      "traits": [
+        "zreczny"
+      ],
+      "character": [
+        "ciekawski",
+        "ambitny"
+      ],
+      "job": "sawyer",
+      "mother": "mother",
+      "father": "father",
+      "skills": {
+        "saw": 2.0,
+        "chop": 1.0
+      }
+    },
+    {
+      "key": "daughter",
+      "name": "Zofia",
+      "sex": "f",
+      "age_days": 14.0,
+      "traits": [],
+      "character": [
+        "porywczy"
+      ],
+      "job": "none",
+      "mother": "mother",
+      "father": "father",
+      "skills": {}
+    },
+    {
+      "key": "kid",
+      "name": "Kuba",
+      "sex": "m",
+      "age_days": 7.0,
+      "traits": [
+        "nieostrozny"
+      ],
+      "character": [
+        "ciekawski"
+      ],
+      "job": "none",
+      "mother": "mother",
+      "father": "father",
+      "skills": {}
+    }
   ]
 }

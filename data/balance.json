@@ -261,7 +261,6 @@
     "birth_risk_low_health_mult": 2.0,
     "birth_risk_low_health": 50.0,
     "max_household": 12,
-    "marry_chance_per_day": 0.3,
     "marry_from": {
       "stage": "adult",
       "day": 0.0
@@ -359,6 +358,8 @@
     "default_job": "laborer",
     "wealthy_cash_per_adult": 60.0
   },
+  "social": {"tavern_price": 1.0, "tavern_chance": 0.3, "tavern_seconds": 70.0, "festival_every": 5, "festival_day": 4, "festival_spread": 5.0},
+  "romance": {"eye_chance": 0.08, "eye_per_liking": 0.004, "seek_love": 6.0, "gift_love": 14.0, "gift_cost": 2.0, "propose_love": 22.0, "standing_building": 60.0, "standing_opinion": 3.0, "mesalliance_gap": 250.0, "consent_love_scale": 40.0, "consent_min": 0.05, "consent_max": 0.95},
   "marriage": {
     "residence": "bride_moves",
     "max_age_gap_days": 14.0,

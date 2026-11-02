@@ -15,6 +15,11 @@
     "accident_seen": {"weight": -20.0, "half_life_days": 40.0, "permanent": false, "text": "widział(a) wypadek {with}: {act}"},
     "ordered_against_will": {"weight": -4.0, "half_life_days": 12.0, "permanent": false, "text": "{with} kazał(a) wbrew woli"},
     "unpaid_wage": {"weight": -25.0, "half_life_days": 30.0, "permanent": false, "text": "{with} nie zapłacił(a) za robotę"},
+    "talked": {"weight": 3.0, "half_life_days": 10.0, "permanent": false, "text": "rozmowa z {with}"},
+    "caught_eye": {"weight": 8.0, "half_life_days": 12.0, "permanent": false, "text": "wpadł(a) w oko: {with}"},
+    "courted": {"weight": 4.0, "half_life_days": 15.0, "permanent": false, "text": "spotkanie z {with}"},
+    "gift": {"weight": 6.0, "half_life_days": 20.0, "permanent": false, "text": "prezent od {with}"},
+    "match_refused": {"weight": -20.0, "half_life_days": 40.0, "permanent": false, "text": "{with} nie zgodził(a) się na ślub"},
     "quarrel": {"weight": -6.0, "half_life_days": 10.0, "permanent": false, "text": "kłótnia z {with}"}
   },
   "start": {
@@ -25,6 +30,7 @@
   },
   "on_birth": {"parent_to_child": ["child_born"]},
   "on_wedding": {"spouses": ["wedding", "married"]},
+  "talk": {"sample_every": 2.0, "radius": 3.5, "seconds": 20.0, "idle_acts": ["rest", "wait", "drink", "dance"], "social_buildings": ["tavern"], "same_character": 0.3, "clash": [["porywczy", "porywczy"], ["porywczy", "pamietliwy"], ["ambitny", "ambitny"]], "clash_penalty": 0.8, "quarrel_chance": 0.5, "min_scale": 0.2},
   "together": {
     "radius": 3.0,
     "sample_every": 1.0,

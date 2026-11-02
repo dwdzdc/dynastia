@@ -20,6 +20,7 @@ var jobs: SimJobs
 var family: SimFamily
 var bonds: SimBonds
 var together: SimTogether
+var talk: SimTalk
 var ai: SimAI
 var trade: SimTrade
 var traders: SimTraders
@@ -82,6 +83,7 @@ func _init(seed: int, p_balance: Dictionary, p_map: Dictionary, p_people: Dictio
 	bonds = SimBonds.new(self, memories)
 	chronicle = SimChronicle.new()
 	together = SimTogether.new(self, memories["together"])
+	talk = SimTalk.new(self, memories["talk"])
 	ai = SimAI.new(self)
 	family.setup_start()
 	_spawn_society()
@@ -539,6 +541,7 @@ func _step(dt: float) -> void:
 					release_from_jail(a)
 	traders.tick()
 	together.sample(dt)
+	talk.sample(dt)
 
 
 func _body(a: SimAgent, days: float) -> void:
@@ -649,6 +652,10 @@ func _act(a: SimAgent, s: Dictionary, dt: float) -> void:
 	a.labor_task = String(s.get("task", ""))
 	if act == "sell":
 		_quiet_stall(a)
+	if act == "talk":
+		var other := agent_by_id(int(s.get("partner", -1)))
+		if other != null and other.position.distance_to(a.position) > MOVE_EPS:
+			a.facing = (other.position - a.position).normalized()
 	if jobs.is_work(act):
 		contracts.accrue(a, s, dt)
 	if act == "labor":

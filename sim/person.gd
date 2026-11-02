@@ -25,7 +25,7 @@ var weak_days: int = 0          # ile dób z rzędu siła przynależności jest 
 var traits: Array = []          # cechy ciała i talentu (silny, chorowity…), z wpływem na ciało
 var character: Array = []       # charakter (lojalny, porywczy…), wpływa na więzi i wolę
 var agent_id: int = -1
-var seeking_spouse: bool = false
+
 var pregnant_left: float = -1.0 # doby do porodu; <0 = nie w ciąży
 var children: Array = []
 var unions: Array = []          # { spouse, start, end } — historia małżeństw, nic nie jest kasowane

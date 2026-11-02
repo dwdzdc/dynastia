@@ -71,6 +71,7 @@ func _run_all() -> void:
 	_test_ai_households_live()
 	_test_bonds_across_lineages()
 	_test_marriage_with_existing_people()
+	_test_talk_and_romance()
 	_test_stall_trade()
 	_test_field_cycle()
 	_test_money_in_chest()
@@ -939,20 +940,67 @@ func _test_bonds_across_lineages() -> void:
 	check("strength computed per lineage from its own root", is_equal_approx(float(f.strength[kos.root_id]), 1.0) and float(f.strength[jagna.id]) > 0.0 and is_equal_approx(float(f.strength[f.root_id]), 1.0))
 
 
+func _fall_in_love(w, p, q) -> void:
+	for i in 12:
+		w.bonds.remember(p.id, SimBonds.love(q.id), "courted", [q.id])
+		w.bonds.remember(q.id, SimBonds.love(p.id), "courted", [p.id])
+
+
+# N1–N5: rozmowa daje więź tylko rozmówcom; obcy stojący obok nie zyskują nic;
+# zakochanie rośnie z rozmów; mezalians wymaga zgody wyżej stojącego rodu.
+func _test_talk_and_romance() -> void:
+	var w = _new_world()
+	var f = w.family
+	var piotr = _named(f, "Piotr")
+	var a = w.agent_by_id(piotr.agent_id)
+	var other = f.marriage_candidates(piotr)[0]
+	var b = w.agent_by_id(other.agent_id)
+	check("strangers do not know each other", w.bonds.value(piotr.id, SimBonds.person(other.id)) == 0.0)
+	for x in [a, b]:
+		x.steps.clear()
+		x.controlled = false
+		x.activity = "rest"
+		x.inside = ""
+		x.hidden = false
+	a.position = Vector2(60, 40)
+	b.position = Vector2(61, 40)
+	w.talk.sample(99.0)
+	check("two free people next to each other start talking", a.steps.size() > 0 and a.steps[0].get("act") == "talk" and b.steps[0].get("act") == "talk")
+	w.talk.done(a, other.id)
+	check("talk leaves a memory of the other person", w.bonds.value(piotr.id, SimBonds.person(other.id)) > 0.0)
+	w.bonds.remember(piotr.id, SimBonds.love(other.id), "caught_eye", [other.id])
+	var l0: float = f.love(piotr, other)
+	f.after_talk(piotr, other, 1.0)
+	check("in love: each talk deepens it (courting)", f.love(piotr, other) > l0)
+	_fall_in_love(w, piotr, other)
+	check("in love: free time goes where the beloved is", f.beloved(piotr) == other.id)
+	# Mezalians: wyżej stojący ród AI zwykle się nie zgadza.
+	var q2 = null
+	for p in f.all_living():
+		if p.sex != other.sex and p.lineage_id != other.lineage_id and f.can_marry(p) and not f.is_ours(p) and f.could_court(other, p):
+			q2 = p
+	if q2 != null:
+		var rich = f.lineage_of(other)
+		w.balance["romance"]["mesalliance_gap"] = 0.0001
+		w.balance["romance"]["consent_max"] = 0.0
+		w.balance["romance"]["consent_min"] = 0.0
+		_fall_in_love(w, other, q2)
+		f._families_talk(other, q2)
+		check("mesalliance: the higher family refuses", other.spouse_id < 0 and q2.spouse_id < 0)
+
+
 func _test_marriage_with_existing_people() -> void:
 	var w = _new_world()
 	var f = w.family
 	var piotr = _named(f, "Piotr")
 	var max_id: int = f.persons.keys().max()
-	f.set_seeking(piotr.id, true)
+	# Romans (N3–N5): dwoje zakochanych w sobie nawzajem — rodziny siadają do rozmowy.
+	var cand = f.marriage_candidates(piotr)[0]
+	_fall_in_love(w, piotr, cand)
+	f._check_courtships()
 	var asked := {}
-	for i in 1500:
-		w.step_sim(5.0)
-		if w.events.blocking() and w.events.prompts[0]["kind"] == "marriage":
-			asked = w.events.prompts[0]
-			break
-		while w.events.blocking():
-			w.resolve_prompt(int(w.events.prompts[0]["id"]), w.events.prompts[0]["options"][0]["value"])
+	if w.events.blocking() and w.events.prompts[0]["kind"] == "marriage":
+		asked = w.events.prompts[0]
 	check("proposal names an existing person from another lineage", not asked.is_empty() and f.persons.has(int(asked["data"]["cand"]))
 		and f.persons[int(asked["data"]["cand"])].lineage_id != f.player_lineage_id)
 	if asked.is_empty():
@@ -1446,12 +1494,12 @@ func _test_marriage_and_birth() -> void:
 	for p in w.family.living():
 		if p.name == "Piotr":
 			piotr = p
-	w.family.set_seeking(piotr.id, true)
-	_run_days_auto(w, 25.0)
-	check("seeking adult eventually marries", not piotr.unions.is_empty())
+	_fall_in_love(w, piotr, w.family.marriage_candidates(piotr)[0])
+	_run_days_auto(w, 3.0)
+	check("lovers with the family's consent marry", not piotr.unions.is_empty())
 	for p in w.family.living():
-		if w.family.can_marry(p):
-			w.family.set_seeking(p.id, true)
+		if w.family.can_marry(p) and not w.family.marriage_candidates(p).is_empty():
+			_fall_in_love(w, p, w.family.marriage_candidates(p)[0])
 	_run_days_auto(w, 15.0)
 	# Dziecko pary, która pobrała się w trakcie gry (matka nie jest z rodziny startowej).
 	var start_ids: Array = [1, 2, 3, 4, 5, 6]
@@ -1506,8 +1554,8 @@ func _test_long_run_no_crash() -> void:
 	var days := 0
 	while days < 30 and not w.family.game_over:
 		for p in w.family.living():
-			if w.family.can_marry(p) and not p.seeking_spouse:
-				w.family.set_seeking(p.id, true)
+			if w.family.can_marry(p) and w.family.beloved(p) < 0 and not w.family.marriage_candidates(p).is_empty():
+				_fall_in_love(w, p, w.family.marriage_candidates(p)[0])
 			var a = w.agent_by_id(p.agent_id)
 			if a != null and a.job == "none" and a.can_work() and not p.attached:
 				a.job = "laborer"

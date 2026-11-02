@@ -64,6 +64,9 @@ func _sample_group(here: Array, focus: Dictionary, dt: float) -> void:
 			if a.inside == "" and a.position.distance_to(b.position) > float(_cfg["radius"]):
 				continue
 			var ctx: String = _ctx_of[a.activity]
+			# Spoza domu więź daje tylko wspólna praca i rozmowa (S17), nie samo stanie obok.
+			if ctx != "work" and w.family.persons[a.person_id].household_id != w.family.persons[b.person_id].household_id:
+				continue
 			var lo := mini(a.person_id, b.person_id)
 			var hi := maxi(a.person_id, b.person_id)
 			var key := "%d|%d|%s|%s" % [lo, hi, ctx, a.inside]

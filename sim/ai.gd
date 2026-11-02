@@ -46,11 +46,6 @@ func new_day() -> void:
 				_assign(wa, job)
 				wa.workplace = own[0].id if job == "stallkeeper" else ""
 			continue
-		# Dorośli bez pary z rodów AI rozglądają się za małżonkiem sami.
-		for pid in h.members:
-			var q: SimPerson = w.family.persons[pid]
-			if not w.family.is_ours(q) and w.family.can_marry(q):
-				q.seeking_spouse = true
 		var home: SimBuilding = w.buildings.get(h.home_id)
 		var hungry := home != null and home.amount("food") < int(cfg["forage_when_food_below"]) \
 			and h.cash < float(cfg["forage_when_cash_below"])

@@ -474,13 +474,9 @@ func _build_person_info(a: SimAgent) -> void:
 			if hint.text == "":
 				hint.text = JOB_HINTS.get(a.job, ""))
 
-	var marry := _button("", func():
-		fam.set_seeking(p.id, not p.seeking_spouse), 17)
-	_info_box.add_child(marry)
-	_info_updaters.append(func():
-		marry.visible = fam.can_marry(p)
-		marry.text = ("Przestań szukać " if p.seeking_spouse else "Szukaj ") + ("żony" if p.sex == "m" else "męża")
-		marry.button_pressed = p.seeking_spouse)
+	_dyn(func():
+		var b := fam.beloved(p)
+		return ("Zakochan%s w: %s" % ["y" if p.sex == "m" else "a", fam.persons[b].name]) if b >= 0 else "", 16, Color(1.0, 0.6, 0.7))
 	var rel := _button("", func(): world.release_manual(a.id), 17)
 	_info_box.add_child(rel)
 	_info_updaters.append(func():
@@ -995,6 +991,11 @@ func _draw_overlay() -> void:
 			_overlay.draw_circle(sp + Vector2(0, -10), 12, Color(0.85, 0.15, 0.1))
 			_overlay.draw_arc(sp + Vector2(0, -10), 12, 0, TAU, 20, Color(1, 1, 1), 2)
 			_text(sp + Vector2(0, -3), "!", 18, Color(1, 1, 1))
+		if a.activity == "talk" and zoom_ok:
+			# Dymek rozmowy (S17): widać, kto z kim gada.
+			var bp := sp + Vector2(14, -22)
+			_overlay.draw_circle(bp, 11, Color(1, 1, 1, 0.9))
+			_text(bp + Vector2(0, 5), "…", 16, Color(0.2, 0.2, 0.2))
 		var ours := world.family.is_ours(p)
 		if main.selected_id == a.id or main.hover_id == a.id or (zoom_ok and main.cam_size < 30.0):
 			# Obcy z nazwiskiem i w barwie swojego rodu, swoi samym imieniem na biało.
