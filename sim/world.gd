@@ -35,6 +35,7 @@ var sites: Dictionary = {}       # plac budowy (O2): id -> { b, kind, lineage, h
 var buildables: Dictionary       # katalog budowy (S29): data/buildables.json
 var needs: SimNeeds              # potrzeby gospodarstw (S23): data/needs.json
 var roads_built: Array = []      # drogi zbudowane w grze: [od, do] (Vector2)
+var enterprises: Dictionary = {} # przedsięwzięcia (S24, T1): id budynku -> { b, type, owner (gosp.) }
 var _next_site := 1
 var agents: Array = []           # SimAgent (także zmarli — status "dead")
 var chore_claims: Dictionary = {}  # "food:<gosp.>"/"firewood:<gosp.>" -> agent id
@@ -99,6 +100,7 @@ func _init(seed: int, p_balance: Dictionary, p_map: Dictionary, p_people: Dictio
 	trade = SimTrade.new(self, balance["trade"])
 	needs = SimNeeds.new(self, DataLoader.load_json("res://data/needs.json"))
 	_spawn_stalls()
+	_spawn_enterprises()
 	traders = SimTraders.new(self, p_traders)
 	contracts = SimContracts.new(self, balance["contracts"])
 	ai.new_day()   # rody AI od razu rozdzielają role (kramarz, nadzorca, praca)
@@ -122,6 +124,31 @@ func _spawn_stalls() -> void:
 		st.buys = sd.get("buys", []).duplicate()
 		for g in sd.get("start_stock", {}):
 			stock.add(g, int(sd["start_stock"][g]))
+
+
+# Przedsięwzięcia z danych (T1): warsztat z właścicielem. Ten sam byt dla gracza i AI.
+func _spawn_enterprises() -> void:
+	for ed: Dictionary in map.get("enterprises", []):
+		var h := household_at(String(ed["owner_home"]))
+		var b: SimBuilding = buildings.get(String(ed["building"]))
+		if h != null and b != null:
+			add_enterprise(b, h.id)
+
+
+func add_enterprise(b: SimBuilding, owner_hid: int) -> void:
+	enterprises[b.id] = { "b": b, "type": b.type, "owner": owner_hid }
+	var h: SimHousehold = households.get(owner_hid)
+	if h != null and not h.members.is_empty():
+		b.owner_kind = "lineage"
+		b.owner_id = family.persons[h.members[0]].lineage_id
+
+
+# Warsztat danego typu należący do gospodarstwa (pierwszy), albo null.
+func enterprise_building(hid: int, type: String) -> SimBuilding:
+	for e: Dictionary in enterprises.values():
+		if int(e["owner"]) == hid and e["type"] == type:
+			return e["b"]
+	return null
 
 
 # Rody AI z danych (G1): każdy z domem, gospodarstwem, kasą i majątkiem.
@@ -409,7 +436,7 @@ func _work_options(a: SimAgent, b: SimBuilding) -> Array:
 			out.append({ "label": "%s: brak wakatów" % b.name, "job": "", "place": bid, "ok": false })
 		return out
 	for r: Dictionary in jobs.recipes.values():
-		if String(r["building"]) == bid:
+		if String(r["type"]) == b.type and enterprises.has(bid) and int(enterprises[bid]["owner"]) == household.id:
 			out.append({ "label": "Przydziel: %s" % SimJobs.JOB_LABELS.get(r["job"], r["job"]), "job": String(r["job"]), "place": "", "ok": true })
 	if trade.stalls.has(bid):
 		out.append({ "label": "Przydziel: %s" % SimJobs.JOB_LABELS["stallkeeper"], "job": "stallkeeper", "place": "", "ok": true })
@@ -740,8 +767,11 @@ func manual_chop(agent_id: int, tree_id: int, append := false) -> void:
 	a.steps.append({ "t": "walk", "to": t.position + CHOP_SPOT, "why": "idzie ściąć wskazane drzewo" })
 	a.steps.append({ "t": "act", "act": "chop", "left": chop_secs, "why": "rąbie wskazane drzewo (ręcznie, szybciej)", "inside": "", "alert": false })
 	a.steps.append({ "t": "do", "fn": "chop_done", "arg": t.id })
-	a.steps.append({ "t": "walk", "to": building("sawmill").door() + SAWMILL_DROP, "why": "niesie kłodę do tartaku" })
-	a.steps.append({ "t": "do", "fn": "deposit", "arg": "sawmill" })
+	var mill := enterprise_building(household_of(a).id, "sawmill")
+	var drop: SimBuilding = mill if mill != null else home_of(a)
+	if drop != null:
+		a.steps.append({ "t": "walk", "to": drop.door() + SAWMILL_DROP, "why": "niesie kłodę: %s" % drop.name })
+		a.steps.append({ "t": "do", "fn": "deposit", "arg": drop.id })
 
 
 # Anuluj resztę rozkazów i wróć do autopilota od razu.

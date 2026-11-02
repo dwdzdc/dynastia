@@ -785,7 +785,7 @@ func _build_offers(b: SimBuilding) -> void:
 		_info_box.add_child(_label("Zaznacz swoją osobę i kliknij PPM na budynek, żeby się najęła.", 15, DIM))
 		return
 	for r: Dictionary in world.jobs.recipes.values():
-		if String(r["building"]) != b.id:
+		if String(r["type"]) != b.type:
 			continue
 		var job := String(r["job"])
 		var bid := b.id

@@ -436,8 +436,8 @@ func _plan_work(a: SimAgent) -> void:
 			_plan_woodcutter(a)
 		"carrier":
 			if not _plan_carrier(a):
-				var mill: SimBuilding = w.building("sawmill")
-				if _hh(a) == w.household and _hh(a).sell_planks and mill.amount("plank") > 0:
+				var mill := _own(a, "sawmill")
+				if mill != null and _hh(a).sell_planks and mill.amount("plank") > 0:
 					_free_time(a, "nikt nie skupuje desek po waszej cenie")
 				else:
 					_free_time(a, "nie ma nic do noszenia")
@@ -461,7 +461,10 @@ func _plan_work(a: SimAgent) -> void:
 
 
 func _plan_woodcutter(a: SimAgent) -> void:
-	var mill: SimBuilding = w.building("sawmill")
+	var mill := _ent(a, "sawmill")
+	if mill == null:
+		_free_time(a, "nie ma tartaku, do którego nosić kłody")
+		return
 	var cap := int(w.balance["carry"]["log"])
 	if a.carrying == "log" and a.carrying_qty < cap and mill.space("log") > a.carrying_qty:
 		var near: SimTree = w.nearest_tree(a.position)
@@ -474,7 +477,7 @@ func _plan_woodcutter(a: SimAgent) -> void:
 			_wait(a, "skład kłód w tartaku pełny — potrzebny tracz", "wait", true)
 			return
 		_walk(a, mill.door() + Vector2(-1.5, 0.0), "niesie kłodę do tartaku")
-		_do(a, "deposit", "sawmill")
+		_do(a, "deposit", mill.id)
 		return
 	if a.carrying != "":
 		_plan_deliver_carried(a)
@@ -561,8 +564,23 @@ func _plan_forage(a: SimAgent) -> void:
 
 
 # Praca w budynku według receptury (S13): wejścia → wyjścia, czas, umiejętność.
+# Warsztat, w którym osoba pracuje: z umowy (cudzy) albo własnego gospodarstwa (T1).
+func _ent(a: SimAgent, type: String) -> SimBuilding:
+	if a.workplace != "" and w.buildings.has(a.workplace) and w.buildings[a.workplace].type == type:
+		return w.buildings[a.workplace]
+	return w.enterprise_building(_hh(a).id, type)
+
+
+# Warsztat własnego gospodarstwa (do zaopatrzenia domu i sprzedaży wyrobów).
+func _own(a: SimAgent, type: String) -> SimBuilding:
+	return w.enterprise_building(_hh(a).id, type)
+
+
 func _plan_producer(a: SimAgent, r: Dictionary) -> void:
-	var b: SimBuilding = w.building(String(r["building"]))
+	var b: SimBuilding = _ent(a, String(r["type"]))
+	if b == null:
+		_free_time(a, "nie ma warsztatu, w którym by pracował(a)")
+		return
 	var inputs: Dictionary = r["inputs"]
 	var outputs: Dictionary = r["outputs"]
 	if a.carrying != "" and not inputs.has(a.carrying):
@@ -588,7 +606,7 @@ func _plan_producer(a: SimAgent, r: Dictionary) -> void:
 	var act := String(r["act"])
 	_walk(a, spot, "idzie do: %s" % b.name)
 	_act(a, act, _dur(a, String(r["skill"]), float(r["seconds"])), String(r["doing"]))
-	_do(a, "produce", r)
+	_do(a, "produce", { "r": r, "b": b.id })
 
 
 func _plan_laborer(a: SimAgent) -> void:
@@ -672,8 +690,8 @@ func _repair_trip(a: SimAgent) -> bool:
 		_do(a, "repair", home.id)
 		return true
 	var want := mini(w.needs.repair_planks(home), int(w.balance["carry"]["plank"]))
-	var mill: SimBuilding = w.building("sawmill")
-	if _hh(a) == w.household and mill.amount("plank") > 0:
+	var mill := _own(a, "sawmill")
+	if mill != null and mill.amount("plank") > 0:
 		_pickup_and_deliver(a, mill, "plank", home, "niesie deski na remont chaty", want)
 	elif _spare_money(a) <= 0.0 or not _buy_trip(a, "plank", want, home, "idzie kupić deski na remont", "niesie deski na remont chaty"):
 		return false
@@ -751,13 +769,13 @@ func _firewood_trip(a: SimAgent) -> bool:
 	if _home(a) == null:
 		return false
 	var home: SimBuilding = _home(a)
-	var mill: SimBuilding = w.building("sawmill")
+	var mill := _own(a, "sawmill")
 	if home.amount("log") >= _hh(a).target_firewood or home.space("log") <= 0:
 		return false
 	if w.chore_claims.has(_claim(a, "firewood")):
 		return false
 	# Z własnego tartaku bierze tylko ród, do którego tartak należy; inni kupują na straganie.
-	if _hh(a) != w.household or mill.amount("log") <= 0:
+	if mill == null or mill.amount("log") <= 0:
 		if not _buy_trip(a, "log", mini(FIREWOOD_TRIP, home.space("log")), home, "idzie kupić opał", "niesie opał do chaty"):
 			return false
 		w.chore_claims[_claim(a, "firewood")] = a.id
@@ -766,7 +784,7 @@ func _firewood_trip(a: SimAgent) -> bool:
 	w.chore_claims[_claim(a, "firewood")] = a.id
 	a.claims.append("chore:" + _claim(a, "firewood"))
 	_walk(a, mill.door() + Vector2(-1.5, 0.0), "idzie po opał do tartaku")
-	_do(a, "pickup", { "b": "sawmill", "good": "log", "qty": mini(2, mill.amount("log")) })
+	_do(a, "pickup", { "b": mill.id, "good": "log", "qty": mini(FIREWOOD_TRIP, mill.amount("log")) })
 	_walk(a, home.door(), "niesie opał do chaty")
 	_do(a, "deposit", home.id)
 	return true
@@ -791,9 +809,10 @@ func _fetch_coins(a: SimAgent, need: float) -> void:
 	_do(a, "take_coins", amt)
 
 
-func _carpenter_present() -> bool:
+# Czy w tej stolarni ktoś pracuje (wtedy deski idą do niej, a nie na sprzedaż).
+func _carpenter_present(shop: SimBuilding) -> bool:
 	for a in w.agents:
-		if a.is_active() and a.job == "carpenter" and a.can_work():
+		if a.is_active() and a.job == "carpenter" and a.can_work() and _ent(a, "workshop") == shop:
 			return true
 	return false
 
@@ -811,16 +830,14 @@ func _plan_carrier(a: SimAgent) -> bool:
 	# Kupiec (M5): dokupuje do swojego straganu tam, gdzie taniej, niż sam sprzedaje.
 	if st != null and _restock(a, st):
 		return true
-	if _hh(a) != w.household:
-		return false
-	var mill: SimBuilding = w.building("sawmill")
-	var shop: SimBuilding = w.building("workshop")
-	if shop.amount("chair") > 0 and _sell_or_stock(a, shop, "chair", st):
+	var mill := _own(a, "sawmill")
+	var shop := _own(a, "workshop")
+	if shop != null and shop.amount("chair") > 0 and _sell_or_stock(a, shop, "chair", st):
 		return true
-	if _carpenter_present() and shop.space("plank") > 0 and mill.amount("plank") > 0:
+	if mill != null and shop != null and _carpenter_present(shop) and shop.space("plank") > 0 and mill.amount("plank") > 0:
 		_pickup_and_deliver(a, mill, "plank", shop, "niesie deski do stolarni", shop.space("plank"))
 		return true
-	if _hh(a).sell_planks and mill.amount("plank") > 0 and _sell_or_stock(a, mill, "plank", st):
+	if mill != null and _hh(a).sell_planks and mill.amount("plank") > 0 and _sell_or_stock(a, mill, "plank", st):
 		return true
 	return false
 
@@ -880,8 +897,8 @@ func _plan_builder(a: SimAgent) -> void:
 	var b: SimBuilding = site["b"]
 	var cc: Dictionary = w.balance["construction"]
 	if float(site["work"]) >= w.site_work_allowed(site) - 0.01:
-		var mill: SimBuilding = w.building("sawmill")
-		if b.space("plank") > 0 and mill.amount("plank") > 0:
+		var mill := w.enterprise_building(int(site["household"]), "sawmill")
+		if b.space("plank") > 0 and mill != null and mill.amount("plank") > 0:
 			_pickup_and_deliver(a, mill, "plank", b, "niesie deski na budowę", mini(int(cc["carry_planks"]), b.space("plank")))
 			return
 		_free_time(a, "budowa czeka na materiał")
@@ -1028,19 +1045,27 @@ func _plan_deliver_carried(a: SimAgent) -> void:
 		"food":
 			dest = _home(a).id
 		"log":
-			dest = "sawmill" if _home(a).space("log") <= 0 else _home(a).id
-			if a.job == "woodcutter":
-				dest = "sawmill"
+			var lm := _ent(a, "sawmill")
+			dest = _home(a).id
+			if lm != null and (a.job == "woodcutter" or _home(a).space("log") <= 0):
+				dest = lm.id
 		"plank", "chair":
-			if a.carrying == "plank" and _carpenter_present() and w.building("workshop").space("plank") > 0:
-				dest = "workshop"
+			var ws := _own(a, "workshop")
+			if a.carrying == "plank" and ws != null and _carpenter_present(ws) and ws.space("plank") > 0:
+				dest = ws.id
 			else:
 				var buyer := w.trade.best_buyer(a, a.carrying)
 				if buyer != null:
 					_walk(a, buyer.counter(), "niesie na sprzedaż: %s (%s)" % [w.good_label(a.carrying), buyer.building.name])
 					_do(a, "sell_at", buyer.id)
 					return
-				dest = "sawmill" if a.carrying == "plank" else "workshop"   # bez zbytu wraca do składu
+				# Bez zbytu wraca do składu (albo do domu, gdy ród nie ma warsztatu).
+				var back := _own(a, "sawmill" if a.carrying == "plank" else "workshop")
+				dest = back.id if back != null else (_home(a).id if _home(a) != null else "")
+	if dest == "":
+		a.clear_carry()
+		_wait(a, "nie ma dokąd tego zanieść")
+		return
 	var b: SimBuilding = w.building(dest)
 	_walk(a, b.door(), "odnosi: %s → %s" % [w.good_label(a.carrying), b.name])
 	_do(a, "deposit", dest)
@@ -1378,8 +1403,11 @@ func _fx_forage(a: SimAgent) -> bool:
 	return true
 
 
-func _fx_produce(a: SimAgent, r: Dictionary) -> bool:
-	var b: SimBuilding = w.building(String(r["building"]))
+func _fx_produce(a: SimAgent, arg: Dictionary) -> bool:
+	var r: Dictionary = arg["r"]
+	var b: SimBuilding = w.buildings.get(String(arg["b"]))
+	if b == null:
+		return false
 	var inputs: Dictionary = r["inputs"]
 	for g in inputs:
 		if b.amount(g) < int(inputs[g]):

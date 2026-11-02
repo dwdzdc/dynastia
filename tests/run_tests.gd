@@ -90,6 +90,7 @@ func _run_all() -> void:
 	_test_needs_tiers()
 	_test_wear_and_repair()
 	_test_prices_from_stock()
+	_test_enterprises()
 	_test_theft_process()
 	_test_world_deterministic()
 	_test_world_30_days_autonomous()
@@ -855,7 +856,7 @@ func _test_recipe_from_data() -> void:
 	var w = _new_world()
 	check("saw and craft come from recipes", w.jobs.recipe_for_job("sawyer").get("act") == "saw" and w.jobs.recipe_for_job("carpenter").get("act") == "craft")
 	# Nowa receptura tylko w danych: „łupanie” kłody na dwie deski w tartaku.
-	var r := { "job": "splitter", "building": "sawmill", "act": "split", "skill": "saw", "seconds": 5.0,
+	var r := { "job": "splitter", "type": "sawmill", "act": "split", "skill": "saw", "seconds": 5.0,
 		"inputs": { "log": 1 }, "outputs": { "plank": 1 }, "spot": [0.0, 1.0], "doing": "łupie kłodę",
 		"accident_where": "przy łupaniu", "wait_input": "czeka na kłody", "full": "pełno" }
 	w.jobs.recipes["split"] = r
@@ -867,7 +868,7 @@ func _test_recipe_from_data() -> void:
 	w.jobs.replan(a)
 	var acts: Array = a.steps.filter(func(s): return s["t"] == "act").map(func(s): return s["act"])
 	check("a recipe added only in data is planned", "split" in acts)
-	check("and it produces its outputs", w.jobs._fx_produce(a, r) and mill.amount("plank") == planks + 1)
+	check("and it produces its outputs", w.jobs._fx_produce(a, { "r": r, "b": mill.id }) and mill.amount("plank") == planks + 1)
 
 
 func _test_society_from_data() -> void:
@@ -1584,6 +1585,30 @@ func _test_prices_from_stock() -> void:
 	mst.stock.add("food", 190)
 	w.ai.set_prices()
 	check("full granary sells cheaper", w.trade.sell_min(est, "food") < lean)
+
+
+# T1 (S24): warsztat to przedsięwzięcie z właścicielem; ten sam kod pracy w dowolnym
+# warsztacie danego typu — tracz u obcych pracuje w ich tartaku, nie w twoim.
+func _test_enterprises() -> void:
+	var w = _new_world()
+	check("player's sawmill is an enterprise owned by the player's household",
+		w.enterprise_building(w.household.id, "sawmill") == w.building("sawmill") and w.building("sawmill").owner_id == w.family.player_lineage_id)
+	var b := SimBuilding.new("mill2", "Tartak Kosów", "sawmill", Vector2(30, 50), w.balance["storage"]["sawmill"])
+	w.buildings[b.id] = b
+	var kos = w.household_at("n1")
+	w.add_enterprise(b, kos.id)
+	b.add("log", 3)
+	var worker = null
+	for pid in kos.members:
+		var a = w.agent_by_id(w.family.persons[pid].agent_id)
+		if a.can_work():
+			worker = a
+	worker.job = "sawyer"
+	worker.steps.clear()
+	w.jobs._plan_producer(worker, w.jobs.recipe_for_job("sawyer"))
+	var prod: Array = worker.steps.filter(func(s): return s["t"] == "do" and s["fn"] == "produce")
+	check("another household's sawyer works in their own sawmill", not prod.is_empty() and prod[0]["arg"]["b"] == "mill2")
+	check("player's sawmill is foreign to them, theirs to the player", w.is_foreign(b) and not w.is_foreign(w.building("sawmill")))
 
 
 func _test_theft_process() -> void:
