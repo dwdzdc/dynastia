@@ -939,6 +939,10 @@ func _plan_builder(a: SimAgent) -> void:
 		if b.space("plank") > 0 and mill != null and mill.amount("plank") > 0:
 			_pickup_and_deliver(a, mill, "plank", b, "niesie deski na budowę", mini(int(cc["carry_planks"]), b.space("plank")))
 			return
+		# Bez własnego tartaku: deski kupuje się na straganie (dla zleceniodawcy z jego pieniędzy).
+		if b.space("plank") > 0 and _hh(a).id == int(site["household"]) \
+				and _buy_trip(a, "plank", mini(int(cc["carry_planks"]), b.space("plank")), b, "kupuje deski na budowę", "niesie deski na budowę"):
+			return
 		_free_time(a, "budowa czeka na materiał")
 		return
 	var spot: Vector2 = b.position

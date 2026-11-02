@@ -187,7 +187,7 @@ Pętla gry: ród Wilków (6 osób, 3 pokolenia) w chacie pod lasem. Co 5 dni czy
 - [x] R4 Ceny AI z zapasu i potrzeb (S26) → test: brak → drożej, nadmiar → taniej.
 - [x] T1 Przedsięwzięcie jako byt (S24), tartak gracza przepięty → test: łańcuch jak dziś.
 - [x] T2 AI prowadzi przedsięwzięcie (najmuje, kupuje wejścia, sprzedaje, zamyka przy stratach) → test.
-- [ ] T3 AI zakłada przedsięwzięcie z katalogu, gdy ceny dają zysk → test: drogie deski → ktoś stawia tartak.
+- [x] T3 AI zakłada przedsięwzięcie z katalogu, gdy ceny dają zysk → test: drogie deski → ktoś stawia tartak.
 - [ ] T4 Las i działki mają właściciela (S27) → test.
 - [ ] U1 Miasto-agregat (S25) z danych → test: bez handlu braki i rosnące ceny.
 - [ ] U2 Wóz jako przewóz między miastem a wsią, skończona kasa, czas drogi → test: suma pieniędzy świata stała.

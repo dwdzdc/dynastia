@@ -92,6 +92,7 @@ func _run_all() -> void:
 	_test_prices_from_stock()
 	_test_enterprises()
 	_test_ai_runs_enterprise()
+	_test_ai_founds_enterprise()
 	_test_theft_process()
 	_test_world_deterministic()
 	_test_world_30_days_autonomous()
@@ -1645,6 +1646,29 @@ func _test_ai_runs_enterprise() -> void:
 		and int(w.contracts.find_offer(rich.id, "mill3", "sawyer")["slots"]) > 0)
 	kos.cash = 0.0
 	check("no money: the workshop stands idle", not w.ai.operating(kos, shop))
+
+
+# T3: brak desek na rynku i nikt ich nie robi → zamożny ród AI zleca budowę tartaku
+# z katalogu; gotowy tartak jest jego przedsięwzięciem.
+func _test_ai_founds_enterprise() -> void:
+	var w = _new_world()
+	w.household.cash = 0.0   # tartak gracza stoi (brak pieniędzy na wsad i dniówki)
+	for st in w.trade.stalls.values():
+		st.stock.take("plank", 9999)
+	var rich = w.estate_owner()
+	rich.cash = 500.0
+	w.ai.found_enterprises()
+	var sid := ""
+	for k in w.sites:
+		if int(w.sites[k]["household"]) == rich.id and w.sites[k]["kind"] == "sawmill":
+			sid = k
+	check("scarce planks: a wealthy AI household commissions a sawmill", sid != "")
+	if sid == "":
+		return
+	var site: Dictionary = w.sites[sid]
+	site["b"].add("plank", int(w.site_cfg(site)["materials"]["plank"]))
+	w.build_work(sid, 99999.0)
+	check("the finished sawmill is their enterprise", w.enterprise_building(rich.id, "sawmill") != null)
 
 
 func _test_theft_process() -> void:

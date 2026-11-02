@@ -7,6 +7,9 @@ extends RefCounted
 
 var w: SimWorld
 
+const FOUND_RINGS := 4    # ile pierścieni wokół domu przeszukać pod budowę
+const FOUND_DIRS := 8     # ile kierunków na pierścień
+
 
 func _init(world: SimWorld) -> void:
 	w = world
@@ -16,6 +19,7 @@ func new_day() -> void:
 	var cfg: Dictionary = w.balance["ai"]
 	post_offers()
 	set_prices()
+	found_enterprises()
 	for h: SimHousehold in w.households.values():
 		if h == w.household or h.members.is_empty():
 			continue
@@ -167,6 +171,72 @@ func _surplus(h: SimHousehold, g: String) -> float:
 		if cap > 0.0:
 			best = maxf(best, clampf(float(st.stock.amount(g)) / cap, 0.0, 1.0))
 	return best
+
+
+# Zakładanie warsztatów (T3): zamożny ród AI, który widzi, że wyrobu brakuje u kupca
+# (pusta półka, wysoka cena), a nikt we wsi go nie robi, zleca budowę z katalogu.
+func found_enterprises() -> void:
+	var cfg: Dictionary = w.balance["ai"]
+	for h: SimHousehold in w.households.values():
+		if h == w.household or h.members.is_empty() or h.home_id == "" or h.cash < float(cfg["found_cash"]):
+			continue
+		if w.sites.values().any(func(s): return int(s["household"]) == h.id):
+			continue
+		for kind in w.buildables:
+			var bc: Dictionary = w.buildables[kind]
+			if not bool(bc.get("enterprise", false)) or w.enterprise_building(h.id, String(bc["result"])) != null:
+				continue
+			if not _scarce_output(String(bc["result"])):
+				continue
+			var at := _free_spot_near(w.buildings[h.home_id].position, float(bc["clearance"]))
+			if at.x != INF and w.commission(kind, at, null, h) != "":
+				w.note("Ród %s zaczyna budować: %s." % [w.family.lineage_of(w.family.persons[h.members[0]]).name, String(bc["label"]).to_lower()], "info", at)
+				break
+
+
+# Czy wyrobu tego typu warsztatu brakuje na rynku: kupiec ma mało, a nikt go nie robi.
+func _scarce_output(type: String) -> bool:
+	var tc: Dictionary = w.balance["trade"]
+	for e: Dictionary in w.enterprises.values():
+		var oh: SimHousehold = w.households.get(int(e["owner"]))
+		if e["type"] == type and oh != null and operating(oh, e["b"]):
+			return false
+	for r: Dictionary in w.jobs.recipes.values():
+		if String(r["type"]) != type:
+			continue
+		for g in r["outputs"]:
+			var stock := 0
+			for st: SimStall in w.trade.stalls.values():
+				if not st.temporary:
+					stock += st.stock.amount(g)
+			if float(stock) < float(tc["restock_target"].get(g, 1)) * float(w.balance["ai"]["found_when_stock_below"]):
+				return true
+	return false
+
+
+# Wolne miejsce pod budowę w pobliżu domu (z dala od innych budynków i pól).
+func _free_spot_near(center: Vector2, clearance: float) -> Vector2:
+	var ws: Array = w.map["world_size"]
+	for ring in range(1, FOUND_RINGS + 1):
+		for k in FOUND_DIRS:
+			var ang := TAU * float(k) / float(FOUND_DIRS)
+			var p := center + Vector2(cos(ang), sin(ang)) * clearance * 1.2 * float(ring)
+			if p.x < 2.0 or p.y < 2.0 or p.x > float(ws[0]) - 2.0 or p.y > float(ws[1]) - 2.0:
+				continue
+			var ok := true
+			for b: SimBuilding in w.buildings.values():
+				if b.position.distance_to(p) < clearance:
+					ok = false
+					break
+			for f: SimField in w.fields:
+				if f.rect.grow(clearance * 0.5).has_point(p):
+					ok = false
+			var fr: Dictionary = w.map["forest"]
+			if Rect2(float(fr["x"]), float(fr["y"]), float(fr["w"]), float(fr["h"])).grow(2.0).has_point(p):
+				ok = false
+			if ok:
+				return p
+	return Vector2(INF, INF)
 
 
 # Jakie stanowiska są dziś potrzebne w warsztatach rodu (T2): zawód z receptury,

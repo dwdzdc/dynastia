@@ -612,7 +612,9 @@ func leave_home() -> void:
 # Zlecenie budowy z katalogu (S29, T0): powstaje plac budowy, na który trzeba donieść
 # materiały i na którym ktoś musi pracować; ród wystawia też ofertę dla budowlańców.
 # Budowa liniowa (droga) bierze dwa punkty: początek i koniec.
-func commission(kind: String, at: Vector2, to: Variant = null) -> String:
+func commission(kind: String, at: Vector2, to: Variant = null, owner: SimHousehold = null) -> String:
+	if owner == null:
+		owner = household
 	var cfg: Dictionary = buildables.get(kind, {})
 	if cfg.is_empty():
 		return ""
@@ -629,9 +631,12 @@ func commission(kind: String, at: Vector2, to: Variant = null) -> String:
 	var b := SimBuilding.new(id, "Plac budowy: %s" % String(cfg["label"]).to_lower(), "site", pos, mats)
 	buildings[id] = b
 	var total := float(cfg["work"]) if not line else float(cfg["work_per_unit"]) * at.distance_to(to as Vector2)
-	sites[id] = { "b": b, "kind": kind, "lineage": family.player_lineage_id, "household": household.id, "work": 0.0,
+	var lin: int = family.persons[owner.members[0]].lineage_id if not owner.members.is_empty() else family.player_lineage_id
+	sites[id] = { "b": b, "kind": kind, "lineage": lin, "household": owner.id, "work": 0.0,
 		"total": total, "from": at, "to": to if line else at }
-	post_player_offer(id, "builder", int(balance["construction"]["builders"]), float(balance["jobs"]["laborer_wage_day"]))
+	contracts.post(owner.id, id, "builder", int(balance["construction"]["builders"]), float(balance["jobs"]["laborer_wage_day"]))
+	if owner != household:
+		return id
 	var need := ", ".join(mats.keys().map(func(g): return "%d× %s" % [int(mats[g]), good_label(g)]))
 	note("Plac budowy wytyczony (%s). %s — przydziel budowlańca (PPM na plac) albo poczekaj na najętych." % [
 		String(cfg["label"]).to_lower(), ("Potrzeba: " + need) if need != "" else "Potrzeba tylko pracy"], "info", b.door())
@@ -702,7 +707,7 @@ func _finish_site(site_id: String) -> void:
 			note("Stragan gotowy. Postaw za ladą kramarza (PPM na stragan).", "good", b.door())
 			return
 	b.type = String(cfg["result"])
-	b.name = String(cfg["name"])
+	b.name = "%s (%s)" % [String(cfg["name"]), lname] if bool(cfg.get("enterprise", false)) else String(cfg["name"])
 	b.stock = {}
 	b.capacity = (balance["storage"].get(b.type, balance["storage"]["home"]) as Dictionary).duplicate()
 	for g in b.capacity:
@@ -710,7 +715,9 @@ func _finish_site(site_id: String) -> void:
 	b.owner_kind = "lineage"
 	b.owner_id = int(site["lineage"])
 	b.rent_per_day = float(balance["economy"]["rent_per_day"].get(b.type, 0.0))
-	note("Budowa skończona: %s należy do rodu %s." % [b.name, lname], "good", b.door())
+	if bool(cfg.get("enterprise", false)):
+		add_enterprise(b, int(site["household"]))
+	note("Budowa skończona: %s należy do rodu %s." % [b.name, lname], "good" if int(site["household"]) == household.id else "info", b.door())
 	chronicle.add(clock.now(), "built", "Zbudowany: %s." % b.name, [], int(site["lineage"]))
 
 
