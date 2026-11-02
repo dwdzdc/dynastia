@@ -1,0 +1,29 @@
+sim/person.gd
+  s_01663f7cfcc9df::t_30ea822198cb42 20
+sim/lineage.gd.uid
+  s_01663f7cfcc9df::t_30ea822198cb42 1
+tests/run_tests.gd
+  s_01663f7cfcc9df::t_19452784573336 50,296-310,407-411
+progress.md
+  ai_agent 65
+sim/lineage.gd
+  s_01663f7cfcc9df::t_30ea822198cb42 1-34
+sim/family.gd
+  s_01663f7cfcc9df::t_30ea822198cb42 10-11,22-30,48,67,99-124,353,386-395,507
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "d012c52cb44e4f8cd315054d652bc19d89c1a2d3",
+  "prompts": {},
+  "sessions": {
+    "s_01663f7cfcc9df": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0628b2b4-7b30-464d-a1f4-7ea1e2566c94",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Dawid Dziedzic <24682682+dwdzdc@users.noreply.github.com>"
+    }
+  }
+}
