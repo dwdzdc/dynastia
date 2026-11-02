@@ -46,7 +46,7 @@ var stats: Dictionary = {}
 
 const SITE_CLEARANCE := 6.0   # plac budowy nie może stać bliżej innego budynku
 const FOREST_JOBS := ["woodcutter", "forager"]   # co można robić w lesie (PPM na las)
-const HOUSE_TYPES := ["home", "decor_house", "decor_town", "manor"]  # budynki, w których można mieszkać
+const HOUSE_TYPES := ["home", "decor_house", "decor_town", "manor", "shack"]  # budynki, w których można mieszkać
 const START_AFTER_WAKE := 0.02           # gra startuje chwilę po pobudce (część doby)
 const TREE_PLACE_TRIES := 4000            # limit prób rozmieszczenia drzew
 const CHOP_SPOT := Vector2(0.9, 0.4)      # gdzie staje drwal względem pnia
@@ -768,6 +768,10 @@ func _finish_site(site_id: String) -> void:
 	b.rent_per_day = float(balance["economy"]["rent_per_day"].get(b.type, 0.0))
 	if bool(cfg.get("enterprise", false)):
 		add_enterprise(b, int(site["household"]))
+	# Ród AI bez dachu wprowadza się od razu do tego, co postawił (X5).
+	var sh: SimHousehold = households.get(int(site["household"]))
+	if b.type in HOUSE_TYPES and sh != null and sh != household and sh.home_id == "":
+		move_household(sh, b)
 	note("Budowa skończona: %s należy do rodu %s." % [b.name, lname], "good" if int(site["household"]) == household.id else "info", b.door())
 	chronicle.add(clock.now(), "built", "Zbudowany: %s." % b.name, [], int(site["lineage"]))
 

@@ -192,6 +192,7 @@
     "manor": {
       "food": 200,
       "log": 12, "tools": 8, "cloth": 12, "chair": 12, "luxury": 6, "plank": 20},
+    "shack": {"food": 10, "log": 4, "cloth": 4, "tools": 2},
     "stall": {"food": 60, "log": 20, "plank": 40, "chair": 12, "tools": 10, "cloth": 15, "luxury": 8}
   },
   "trees": {
@@ -226,7 +227,7 @@
     "default_target_food": 20,
     "default_target_firewood": 6,
     "debt_jail_forgive": 0.5,
-    "meal_away_price": 1.5, "authority_home": "manor", "stumpage_per_log": 0.5, "plot_price": {"house": 40.0, "sawmill": 30.0, "workshop": 25.0, "stall": 10.0, "road": 0.0},
+    "meal_away_price": 1.5, "authority_home": "manor", "stumpage_per_log": 0.5, "plot_price": {"shack": 0.0, "house": 40.0, "sawmill": 30.0, "workshop": 25.0, "stall": 10.0, "road": 0.0},
     "homeless_spot": [
       60.0,
       46.0

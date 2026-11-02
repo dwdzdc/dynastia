@@ -943,6 +943,18 @@ func _plan_builder(a: SimAgent) -> void:
 		if b.space("plank") > 0 and _hh(a).id == int(site["household"]) \
 				and _buy_trip(a, "plank", mini(int(cc["carry_planks"]), b.space("plank")), b, "kupuje deski na budowę", "niesie deski na budowę"):
 			return
+		# Kłody (np. na szałas) budowlaniec sam ścina w lesie i znosi na plac.
+		if b.space("log") > 0:
+			if a.carrying == "log":
+				_walk(a, b.door(), "niesie kłodę na budowę")
+				_do(a, "deposit", b.id)
+				return
+			var tr: SimTree = w.nearest_tree(a.position)
+			if tr != null:
+				_chop(a, tr, b)
+				_walk(a, b.door(), "niesie kłodę na budowę")
+				_do(a, "deposit", b.id)
+				return
 		_free_time(a, "budowa czeka na materiał")
 		return
 	var spot: Vector2 = b.position

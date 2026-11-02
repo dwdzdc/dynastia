@@ -1,4 +1,15 @@
 {
+  "shack": {
+    "label": "Szałas",
+    "category": "Mieszkanie",
+    "result": "shack",
+    "name": "Szałas",
+    "materials": {
+      "log": 4
+    },
+    "work": 200.0,
+    "clearance": 4.0
+  },
   "house": {
     "label": "Dom",
     "category": "Mieszkanie",

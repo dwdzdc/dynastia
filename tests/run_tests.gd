@@ -100,6 +100,7 @@ func _run_all() -> void:
 	_test_ai_falls()
 	_test_matchmaking()
 	_test_migration()
+	_test_shelter()
 	_test_theft_process()
 	_test_world_deterministic()
 	_test_world_30_days_autonomous()
@@ -1831,6 +1832,24 @@ func _test_migration() -> void:
 	town.add("food", 9999)
 	w.migration._grow_towns()
 	check("a town with food to spare grows", town.population > p1)
+
+
+# X5 (S32): bezdomny ród AI stawia szałas z kłód z lasu i się do niego wprowadza.
+func _test_shelter() -> void:
+	var w = _new_world()
+	var h = w.household_at("n2")
+	w.move_household(h, null)
+	w.ai._shelter_homeless()
+	var sid := ""
+	for k in w.sites:
+		if int(w.sites[k]["household"]) == h.id:
+			sid = k
+	check("homeless lineage starts a shack and puts someone to build it", sid != "" and h.members.any(
+		func(pid): return w.agent_by_id(w.family.persons[pid].agent_id).job == "builder"))
+	var site: Dictionary = w.sites[sid]
+	site["b"].add("log", 4)
+	w.build_work(sid, 99999.0)
+	check("finished shack becomes their home", h.home_id == sid and w.buildings[sid].type == "shack")
 
 
 func _test_theft_process() -> void:

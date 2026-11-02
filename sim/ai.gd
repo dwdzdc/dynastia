@@ -93,6 +93,7 @@ func new_day() -> void:
 				w.jobs.replan(a)
 			else:
 				_assign(a, "none" if winter else "forager")
+	_shelter_homeless()   # po przydziałach: bezdomni budują szałas (X5)
 
 
 # Granice cen rodów AI (M3, R4): z zapasu i potrzeb. Czego brakuje — za to zapłacą
@@ -211,6 +212,40 @@ func _sell_when_broke() -> void:
 		var text := "Ród %s, zadłużony, sprzedaje %s rodowi %s za %d zł." % [sl.name, asset.name, bl.name, int(price)]
 		w.chronicle.add(w.clock.now(), "sale", text, [], lid)
 		w.note(text, "info", asset.door())
+
+
+# Bezdomny ród AI stawia szałas na dziko i sam go buduje (X5); z niego dalej może
+# się wybić (wynajem, dom), a w nędzy odejść do miasta (X3).
+func _shelter_homeless() -> void:
+	for h: SimHousehold in w.households.values():
+		if h == w.household or h.members.is_empty() or h.home_id != "":
+			continue
+		var l := w.family.lineage_of(w.family.persons[h.members[0]])
+		if l == null or l.role == "trader":
+			continue
+		var builders: Array = h.members.map(func(pid): return w.agent_by_id(w.family.persons[pid].agent_id)).filter(
+			func(x): return x != null and x.is_active() and x.can_work())
+		if builders.is_empty():
+			continue
+		var sid := ""
+		for k in w.sites:
+			if int(w.sites[k]["household"]) == h.id:
+				sid = k
+		if sid == "":
+			var fr: Dictionary = w.map["forest"]
+			var edge := Vector2(float(fr["x"]) + float(fr["w"]) + 4.0, float(fr["y"]) + float(fr["h"]) * 0.6)
+			var at := _free_spot_near(edge, float(w.buildables["shack"]["clearance"]))
+			if at.x == INF:
+				continue
+			sid = w.commission("shack", at, null, h)
+			if sid == "":
+				continue
+			w.note("Ród %s stawia szałas na dziko." % l.name, "info", at)
+		var wa: SimAgent = builders[0]
+		w.contracts.quit(w.person_of(wa), "")
+		wa.job = "builder"
+		wa.workplace = sid
+		w.jobs.replan(wa)
 
 
 # Kupiec AI jeździ do miasta (U3), gdy ma na półce coś, czego miastu brakuje, a tam
