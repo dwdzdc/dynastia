@@ -130,13 +130,13 @@ Pętla gry: ród Wilków (6 osób, 3 pokolenia) w chacie pod lasem. Co 5 dni czy
 
 ### Faza M — handel
 
-- [ ] M1 Stragan (S16) jako budynek, także przy domu (z desek) → zrzut.
-- [ ] M2 Przydział „za ladą”, zwijanie na noc → bez sprzedawcy nie ma sprzedaży.
-- [ ] M3 Granice cen gracza (panel gospodarstwa), AI liczy swoje → test.
-- [ ] M4 Kupujący obchodzą stragany (cena, odległość, więź) i się targują → test: tańszy wygrywa, przy równej cenie lubiany, bez porozumienia brak transakcji; gracz widzi ludzi przy ladzie i dymek z ceną.
-- [ ] M5 Kupiec hurt → detal zamiast `SimMarket` → test: zarabia tylko, gdy marża pokrywa drogę.
-- [ ] M6 Brak zbytu widoczny (towar zalega, „nikt nie kupuje”) → sonda.
-- [ ] M7 Wozy wędrowne jadą drogą od krawędzi mapy i stają na targu jako stragan.
+- [x] M1 Stragan (S16) jako budynek, także przy domu (z desek) → zrzut.
+- [x] M2 Przydział „za ladą”, zwijanie na noc → bez sprzedawcy nie ma sprzedaży.
+- [x] M3 Granice cen gracza (panel gospodarstwa), AI liczy swoje → test.
+- [x] M4 Kupujący obchodzą stragany (cena, odległość, więź) i się targują → test: tańszy wygrywa, przy równej cenie lubiany, bez porozumienia brak transakcji; gracz widzi ludzi przy ladzie i dymek z ceną.
+- [x] M5 Kupiec hurt → detal zamiast `SimMarket` → test: zarabia tylko, gdy marża pokrywa drogę.
+- [x] M6 Brak zbytu widoczny (towar zalega, „nikt nie kupuje”) → sonda.
+- [x] M7 Wozy wędrowne jadą drogą od krawędzi mapy i stają na targu jako stragan.
 
 ### Faza N — spotkania i romans
 

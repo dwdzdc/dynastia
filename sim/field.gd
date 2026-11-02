@@ -20,7 +20,7 @@ var _heap_frac := 0.0          # ułamek snopa z poprzednich zagonów (zmarniał
 const RIPE_EPS := 0.0001   # suma ułamków dób nie trafia równo w 1.0
 const HEAP_INSET := 1.0    # snopy: odległość od narożnika pola
 const EDGE := 0.4          # zagon zaczyna się kawałek od miedzy
-const TASK_LABELS := { "plow": "orka", "sow": "siew", "harvest": "żniwa" }
+const TASK_LABELS := { "plow": "orka", "sow": "siew", "weed": "pielenie", "harvest": "żniwa" }
 
 
 func _init(spec: Dictionary, cfg: Dictionary) -> void:
@@ -44,7 +44,7 @@ func _init(spec: Dictionary, cfg: Dictionary) -> void:
 			var x1 := rect.position.x + cw * (c + 1) - EDGE
 			cells.append({
 				"start": Vector2(x0 if fwd else x1, y), "end": Vector2(x1 if fwd else x0, y),
-				"stage": "fallow", "growth": 0.0, "crop": 1.0, "done": 0.0, "by": -1,
+				"stage": "fallow", "growth": 0.0, "crop": 1.0, "done": 0.0, "by": -1, "weeded": false,
 			})
 
 
@@ -64,6 +64,10 @@ func cell_task(i: int, season: String) -> String:
 			return "plow" if season in _cfg["plow_seasons"] else ""
 		"plowed":
 			return "sow" if season in _cfg["sow_seasons"] else ""
+		"sown":
+			# Pielenie w połowie wzrostu: robota na lato, niewypielony zagon da mniej.
+			var c: Dictionary = cells[i]
+			return "weed" if not bool(c["weeded"]) and float(c["growth"]) >= float(_cfg["weed_from"]) else ""
 		"ripe":
 			return "harvest"
 	return ""
@@ -115,6 +119,9 @@ func work(i: int, season: String, secs: float) -> String:
 			c["stage"] = "sown"
 			c["growth"] = 0.0
 			c["crop"] = 1.0
+			c["weeded"] = false
+		"weed":
+			c["weeded"] = true
 		"harvest":
 			var got := float(_cfg["yield_per_cell"]) * float(c["crop"]) + _heap_frac
 			heap += int(floor(got))
@@ -148,6 +155,8 @@ func new_day(season: String) -> int:
 					if float(c["growth"]) >= 1.0 - RIPE_EPS:
 						c["growth"] = 1.0
 						c["stage"] = "ripe"
+						if not bool(c["weeded"]):
+							c["crop"] = float(c["crop"]) * float(_cfg["unweeded_crop"])
 			"ripe":
 				if winter:
 					_reset(c)

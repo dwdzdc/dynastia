@@ -71,7 +71,7 @@ func _run_all() -> void:
 	_test_ai_households_live()
 	_test_bonds_across_lineages()
 	_test_marriage_with_existing_people()
-	_test_merchant_is_a_person()
+	_test_stall_trade()
 	_test_field_cycle()
 	_test_money_in_chest()
 	_test_buy_through_purse()
@@ -793,7 +793,9 @@ func _test_households_separate() -> void:
 	var food_b: int = w.building("n1").amount("food")
 	buyer.position = w.building("n1").door()
 	w.jobs._fx_take_coins(buyer, 10.0)
-	w.jobs._fx_buy_food(buyer, 3)
+	var st = _stall_ready(w, "stall_bednarz")
+	buyer.position = st.counter()
+	w.jobs._fx_buy_at(buyer, { "stall": st.id, "good": "food", "qty": 3, "to": "n1" })
 	buyer.position = w.building("n1").door()
 	w.jobs._fx_deposit(buyer, "n1")
 	check("purchase paid from own household, stored in own home", hb.cash < 30.0 and is_equal_approx(w.household.cash, cash_a) and w.building("n1").amount("food") == food_b + 3)
@@ -899,7 +901,7 @@ func _test_ai_households_live() -> void:
 			var a = w.agent_by_id(p.agent_id)
 			if not p.alive() and (p.death_cause.contains("głodu") or p.death_cause.contains("zamarzł")):
 				alive = false
-			elif a.needs["food"] < 5.0:
+			elif a.status == "active" and a.needs["food"] < 5.0:
 				fed = false
 			if a.job in ["laborer", "forager"]:
 				worked = true
@@ -973,25 +975,59 @@ func _test_marriage_with_existing_people() -> void:
 	check("no fitting candidates, no wedding", f.marriage_candidates(gran).is_empty())
 
 
-func _test_merchant_is_a_person() -> void:
+# Stragan z kramarzem za ladą (pomocnik testów): ktoś z gospodarstwa właściciela stoi
+# przy ladzie z pieniędzmi w sakwie.
+func _stall_ready(w, id: String):
+	var st = w.trade.stalls[id]
+	var h = w.households[st.owner]
+	var ka = w.agent_by_id(w.family.persons[h.members[0]].agent_id)
+	ka.position = st.building.position
+	ka.steps.clear()
+	w.jobs._fx_open_stall(ka, id)
+	w.person_of(ka).purse = 200.0
+	return st
+
+
+# M1–M5 (S16): handel przy ladzie. Bez kramarza nie ma handlu; cena wychodzi między
+# granicami obu stron; bez porozumienia brak transakcji; pieniądze z sakwy do sakwy.
+func _test_stall_trade() -> void:
 	var w = _new_world()
-	var mk = w.market
-	check("merchant is a person from the merchant lineage", mk.merchant() != null and mk.merchant().surname == "Bednarz" and mk.till() != w.household)
-	var p0: float = mk.buy_price("plank")
-	mk.building.add("plank", 40)
-	check("price drops as the merchant's stock grows", mk.buy_price("plank") < p0)
-	var till = mk.till()
-	var seller = w.household
-	var cash0: float = seller.cash
-	var till0: float = till.cash
-	var r: Dictionary = mk.buy_from(seller, "plank", 2, [])
-	check("merchant pays from his own till", int(r["qty"]) == 2 and is_equal_approx(seller.cash - cash0, till0 - till.cash))
-	till.cash = 0.0
-	r = mk.buy_from(seller, "plank", 2, [])
-	check("merchant without money buys nothing", int(r["qty"]) == 0)
-	till.cash = 1000.0
-	mk.building.add("plank", 200)
-	check("merchant with a full store wants no more", mk.wants("plank") == 0 and int(mk.buy_from(seller, "plank", 1, [])["qty"]) == 0)
+	var st = w.trade.stalls["stall_bednarz"]
+	var buyer = w.agent_by_id(w.family.root().agent_id)
+	var bp = w.family.root()
+	bp.purse = 50.0
+	buyer.position = st.counter()
+	st.keeper = -1
+	st.packed = true
+	check("nobody behind the counter: no sale", int(w.trade.sell_to(st, buyer, "food", 2)["qty"]) == 0)
+	_stall_ready(w, "stall_bednarz")
+	var oh = w.households[st.owner]
+	var m0: float = _money(w)
+	var r: Dictionary = w.trade.sell_to(st, buyer, "food", 2)
+	var unit: float = float(r["paid"]) / 2.0
+	check("sale at the counter, price between both limits", int(r["qty"]) == 2
+		and unit >= w.trade.sell_min(oh, "food") - 0.001 and unit <= w.trade.buy_max(w.household, "food") + 0.001)
+	check("trade only moves money between people", absf(_money(w) - m0) < 0.001)
+	buyer.position = w.home().door()
+	check("buyer away from the counter buys nothing", int(w.trade.sell_to(st, buyer, "food", 1)["qty"]) == 0)
+	buyer.position = st.counter()
+	w.trade.set_limit(w.household, "food", "buy_max", 0.1)
+	check("no agreement on price, no deal", int(w.trade.sell_to(st, buyer, "food", 1)["qty"]) == 0)
+	w.trade.set_limit(w.household, "food", "buy_max", 3.0)
+	buyer.skills["trade"] = 0.0
+	var p_novice: float = w.trade.quote(st, buyer, "food")
+	buyer.skills["trade"] = 8.0
+	check("a better haggler pays less", w.trade.quote(st, buyer, "food") < p_novice)
+	# Kupiec skupuje deski od sprzedającego, płaci z sakwy kramarza.
+	buyer.carrying = "plank"
+	buyer.carrying_qty = 3
+	w.trade.set_limit(w.household, "plank", "sell_min", 1.0)
+	var purse0: float = bp.purse
+	var rb: Dictionary = w.trade.buy_from(st, buyer, "plank", 3, [])
+	check("merchant stall buys planks and pays in hand", int(rb["qty"]) == 3 and bp.purse > purse0)
+	check("the merchant buys cheap and sells dear", w.trade.buy_max(oh, "plank") < w.trade.sell_min(oh, "plank"))
+	w.person_of(w.agent_by_id(st.keeper)).purse = 0.0
+	check("keeper without money buys nothing", w.trade.best_buyer(buyer, "plank") == null or w.trade.best_buyer(buyer, "plank") != st)
 
 
 func _money(w) -> float:
@@ -1020,10 +1056,12 @@ func _test_field_cycle() -> void:
 	f.work(0, "spring", float(ws["plow"]))
 	f.work(0, "spring", float(ws["sow"]))
 	check("one strip plowed and sown by work, the rest untouched", f.cells[0]["stage"] == "sown" and f.count("fallow") == f.cells.size() - 1)
-	check("harvest only from a ripe strip", f.cell_task(0, "summer") == "" and f.heap == 0)
+	check("harvest only from a ripe strip", f.cell_task(0, "summer") != "harvest" and f.heap == 0)
 	for i in int(cfg["grow_days"]):
 		f.new_day("summer")
-	check("sown strip ripens over grow_days", f.cells[0]["stage"] == "ripe")
+		if f.cell_task(0, "summer") == "weed":
+			f.work(0, "summer", float(ws["weed"]))
+	check("sown strip needs weeding mid-growth and then ripens", f.cells[0]["stage"] == "ripe" and f.cells[0]["weeded"])
 	f.work(0, "summer", float(ws["harvest"]))
 	check("harvest leaves the crop on the field", f.cells[0]["stage"] == "stubble" and f.heap == int(cfg["yield_per_cell"]))
 	f.cells[1]["stage"] = "ripe"
@@ -1067,8 +1105,10 @@ func _test_buy_through_purse() -> void:
 	var a = w.agent_by_id(root.agent_id)
 	var h = w.household
 	root.purse = 0.0
-	a.position = w.building("market").door()
-	check("away from home: no money in purse, no purchase", not w.jobs._fx_take_coins(a, 10.0) and not w.jobs._fx_buy_food(a, 1))
+	var st = _stall_ready(w, "stall_bednarz")
+	var buy: Dictionary = { "stall": "stall_bednarz", "good": "food", "qty": 1 }
+	a.position = st.counter()
+	check("away from home: no money in purse, no purchase", not w.jobs._fx_take_coins(a, 10.0) and not w.jobs._fx_buy_at(a, buy))
 	w.home().take("food", 9999)
 	a.job = "none"
 	w.jobs.release(a)
@@ -1080,8 +1120,9 @@ func _test_buy_through_purse() -> void:
 	a.position = w.home().door()
 	w.jobs._fx_take_coins(a, 12.0)
 	check("coins move from chest to purse", is_equal_approx(root.purse, 12.0) and is_equal_approx(h.cash, chest0 - 12.0))
-	a.position = w.building("market").door()
-	w.jobs._fx_buy_food(a, 2)
+	a.position = st.counter()
+	buy["qty"] = 2
+	w.jobs._fx_buy_at(a, buy)
 	a.position = w.home().door()
 	w.jobs._fx_deposit(a, w.home().id)
 	var pocket := float(w.balance["purse"]["pocket_money"])
@@ -1090,49 +1131,53 @@ func _test_buy_through_purse() -> void:
 
 func _test_buyers_pay_from_own_money() -> void:
 	var w = _new_world()
-	var mk = w.market
+	var st = _stall_ready(w, "stall_bednarz")
 	var buyer = w.agent_by_id(w.family.root().agent_id)
-	var m0: float = _money(w)
-	buyer.position = w.home().door()
-	w.jobs._fx_take_coins(buyer, 10.0)
-	w.jobs._fx_buy_food(buyer, 3)
-	mk.buy_from(w.household, "plank", 2, [])
-	check("trade between people only moves money (sum unchanged)", absf(_money(w) - m0) < 0.001)
+	var buy: Dictionary = { "stall": "stall_bednarz", "good": "food", "qty": 1 }
+	buyer.position = st.counter()
 	w.family.root().purse = 0.0
-	buyer.clear_carry()
-	check("person with an empty purse buys nothing, even with a full chest", not w.jobs._fx_buy_food(buyer, 1))
+	check("person with an empty purse buys nothing, even with a full chest", not w.jobs._fx_buy_at(buyer, buy))
 	w.family.root().purse = 100.0
-	mk.building.take("food", 9999)
-	check("merchant without stock sells nothing", not w.jobs._fx_buy_food(buyer, 1))
-	w.jobs.replan(buyer)
+	for x in w.trade.stalls.values():
+		x.stock.take("food", 9999)
+	check("stall without stock sells nothing", not w.jobs._fx_buy_at(buyer, buy))
 	buyer.needs["food"] = 1.0
 	w.building("home").take("food", 9999)
 	w.jobs.replan(buyer)
 	var why := String(buyer.steps[buyer.steps.size() - 1].get("why", ""))
-	check("hungry person explains the market is empty", why.contains("na targu nie ma jedzenia") or buyer.plan_kind == "eat")
+	check("hungry person explains nobody sells food", why.contains("nikt nie sprzedaje jedzenia") or buyer.plan_kind == "eat")
 
 
+# M7: wóz kupca wędrownego staje na placu jako stragan; skupuje to, po co przyjechał,
+# po cenie z oferty; po odjeździe stragan znika, a oferta przepada.
 func _test_traveling_traders() -> void:
 	var w = _new_world()
 	var tr = w.traders
 	var origin: Dictionary = (tr._cfg["origins"] as Array)[0]
 	var v: Dictionary = tr.arrive(origin)
 	var trader = w.family.persons[int(v["person"])]
+	var a = w.agent_by_id(trader.agent_id)
 	check("trader is a named person from a real place", trader.name == String(origin["trader"]["name"]) and v["origin_name"] == origin["name"])
-	check("trader wants planks", tr.wants("plank") > 0)
-	var cash0: float = w.household.cash
-	var r: Dictionary = tr.sell_to_wagon(w.household, "plank", 3, [])
-	check("delivered goods are paid from the trader's cash", int(r["qty"]) == 3 and w.household.cash > cash0)
+	var st = tr.stall_of(v)
+	check("wagon stands on the square as a stall that buys planks", st != null and "plank" in st.buys and tr.wants("plank") > 0)
+	a.position = st.building.position
+	a.steps.clear()
+	w.jobs._fx_open_stall(a, st.id)
+	var seller = w.agent_by_id(_named(w.family, "Piotr").agent_id)
+	seller.position = st.counter()
+	seller.carrying = "plank"
+	seller.carrying_qty = 3
+	var purse0: float = w.person_of(seller).purse
+	var r: Dictionary = w.trade.buy_from(st, seller, "plank", 3, [])
+	check("delivered goods are paid in hand from the trader's purse", int(r["qty"]) == 3 and w.person_of(seller).purse > purse0)
 	check("trader can't be married off", not w.family.can_marry(trader))
-	# Odjazd: oferta przepada.
 	w.clock.set_time(w.clock.day_index(), minf(0.99, w.clock.time_of_day() + float(tr._cfg["stay"]) + 0.01))
 	tr.tick()
-	var a = w.agent_by_id(trader.agent_id)
 	for i in 400:
 		if a.status == "away":
 			break
 		w.step_sim(1.0)
-	check("missed offer expires when the wagon leaves", a.status == "away" and tr.wants("plank") == 0)
+	check("missed offer expires when the wagon leaves", a.status == "away" and tr.wants("plank") == 0 and not w.trade.stalls.has(st.id))
 
 
 # L3 (S15): praca u kogoś to umowa z oferty; płaca narasta z pracy, a wręcza ją płatnik
@@ -1185,6 +1230,8 @@ func _test_field_work() -> void:
 	var a = w.agent_by_id(_named(w.family, "Piotr").agent_id)
 	var b = w.agent_by_id(_named(w.family, "Maria").agent_id)
 	w.clock.set_time(0, float(w.balance["schedule"]["work_start"]) + 0.05)
+	var est_offer: Dictionary = w.contracts.find_offer_at("manor", "laborer")
+	est_offer["slots"] = int(est_offer["slots"]) + 2   # AI zajmuje wakaty od startu
 	for x in [a, b]:
 		x.job = "laborer"
 		w.jobs.release(x)
@@ -1245,6 +1292,8 @@ func _test_assign_by_place() -> void:
 	var jobs_of := func(opts: Array) -> Array: return opts.map(func(o): return o["job"])
 	check("forest offers woodcutter and forager", jobs_of.call(w.job_options(a.id, "forest")).has("woodcutter"))
 	check("own sawmill offers sawyer", jobs_of.call(w.job_options(a.id, "sawmill")) == ["sawyer"])
+	var vac: Dictionary = w.contracts.find_offer_at("manor", "laborer")
+	vac["slots"] = w.contracts.taken(vac) + 1
 	var manor_opts: Array = w.job_options(a.id, "field:" + w.fields[0].id)
 	check("foreign field shows the vacancy with wage", manor_opts.size() == 1 and manor_opts[0]["job"] == "laborer"
 		and manor_opts[0]["place"] == "manor" and String(manor_opts[0]["label"]).contains("zł"))
@@ -1417,12 +1466,16 @@ func _test_marriage_and_birth() -> void:
 		if int(e["lineage"]) == w.family.player_lineage_id:
 			departed.append_array(e["who"])
 	var pl: int = w.family.player_lineage_id
+	var born_ours := {}
+	for e in w.chronicle.of_kind("birth"):
+		if int(e["lineage"]) == pl:
+			born_ours[int(e["who"][0])] = true
 	for p in w.family.persons.values():
 		# Kto wżenił się w ród gracza albo urodził się jego członkowi, musi w nim być
 		# (chyba że odszedł albo sam(a) wyszedł/wyszła za mąż do innego rodu).
 		var married_out: bool = p.attached and p.spouse_id >= 0 and w.family.persons[p.spouse_id].lineage_id != pl
 		var joined: bool = (p.attached and p.spouse_id >= 0 and w.family.persons[p.spouse_id].lineage_id == pl) \
-			or (p.mother_id >= 0 and w.family.persons[p.mother_id].lineage_id == pl and not married_out)
+			or (born_ours.has(p.id) and not married_out)
 		if joined and p.lineage_id != pl and not p.id in departed:
 			in_lineage = false
 	check("spouses and newborns join player lineage", in_lineage)

@@ -26,6 +26,9 @@ const CROP_YOUNG := Color(0.38, 0.6, 0.22)
 const CROP_RIPE := Color(0.88, 0.74, 0.3)
 const CROP_MAX_H := 0.9                      # wysokość dojrzałego zboża
 const SHEAF := Color(0.85, 0.7, 0.32)
+const MARKET_SQUARE := Vector3(13.0, 0.06, 9.0)
+const AWNINGS := [Color(0.75, 0.2, 0.15), Color(0.2, 0.45, 0.7), Color(0.85, 0.7, 0.2), Color(0.35, 0.6, 0.3), Color(0.6, 0.35, 0.6)]
+const GOOD_COLORS := { "food": Color(0.85, 0.5, 0.2), "log": Color(0.52, 0.35, 0.19), "plank": Color(0.86, 0.68, 0.42), "chair": Color(0.45, 0.3, 0.18) }
 
 var world: SimWorld
 var agent_views: Dictionary = {}   # agent id -> AgentView
@@ -35,7 +38,8 @@ var _windows: Array = []           # okna chaty (świecą nocą)
 var _ground: MeshInstance3D
 var _floor: MeshInstance3D
 var _tufts: Array = []
-var _fields: Dictionary = {}       # field id -> { base, rows, heap, last }
+var _fields: Dictionary = {}       # field id -> { cells, heap }
+var _stalls: Dictionary = {}       # stall id -> { node, awning, goods, last }
 const SEASON_GRASS := {
 	"spring": Color(0.33, 0.45, 0.22), "summer": Color(0.4, 0.46, 0.21),
 	"autumn": Color(0.47, 0.41, 0.22), "winter": Color(0.84, 0.86, 0.9),
@@ -90,6 +94,46 @@ func _field(f: SimField) -> void:
 	var hs := f.heap_spot()
 	var heap := _add(n, Gfx3D.cylinder(0.6, 1.0, SHEAF, 0.35, 8), Vector3(hs.x, 0.5, hs.y))
 	_fields[f.id] = { "cells": cells, "heap": heap }
+
+
+# Stragany (M1, M7) pojawiają się i znikają w trakcie gry (wóz kupca, nowy kram).
+# Zwinięty: bez daszka i towaru na ladzie.
+func _refresh_stalls() -> void:
+	for id in _stalls.keys():
+		if not world.trade.stalls.has(id):
+			(_stalls[id]["node"] as Node3D).queue_free()
+			_stalls.erase(id)
+	for st: SimStall in world.trade.stalls.values():
+		if not _stalls.has(st.id):
+			_stalls[st.id] = _stall(st)
+		var d: Dictionary = _stalls[st.id]
+		var shown: Array = st.goods.filter(func(g): return st.stock.amount(g) > 0)
+		var key := "%s|%s" % [st.packed, ",".join(shown)]
+		if key == d["last"]:
+			continue
+		d["last"] = key
+		(d["awning"] as Node3D).visible = not st.packed
+		var goods: Array = d["goods"]
+		for i in goods.size():
+			var mi: MeshInstance3D = goods[i]
+			mi.visible = not st.packed and i < shown.size()
+			if mi.visible:
+				Gfx3D.set_color(mi, GOOD_COLORS.get(shown[i], WOOD))
+
+
+func _stall(st: SimStall) -> Dictionary:
+	var s := Node3D.new()
+	s.position = Vector3(st.building.position.x, 0, st.building.position.y)
+	add_child(s)
+	_add(s, Gfx3D.box(Vector3(2.8, 1.0, 1.4), WOOD), Vector3(0, 0.5, 0))
+	for x in [-1.3, 1.3]:
+		_add(s, Gfx3D.cylinder(0.07, 2.4, WOOD_DARK), Vector3(x, 1.2, -0.6))
+	var aw := _add(s, Gfx3D.box(Vector3(3.2, 0.12, 2.0), AWNINGS[absi(st.id.hash()) % AWNINGS.size()]), Vector3(0, 2.4, 0))
+	aw.rotation.x = 0.2
+	var goods: Array = []
+	for i in 4:
+		goods.append(_add(s, Gfx3D.sphere(0.28, WOOD), Vector3(-0.9 + i * 0.6, 1.13, 0.1)))
+	return { "node": s, "awning": aw, "goods": goods, "last": "" }
 
 
 func _refresh_field(f: SimField) -> void:
@@ -211,18 +255,8 @@ func _building(b: SimBuilding) -> void:
 			_pile_slot(b, "log", n, Vector3(-4.0, 0, 0.8))
 			_pile_slot(b, "plank", n, Vector3(4.0, 0, 0.8))
 		"market":
-			var colors := [Color(0.75, 0.2, 0.15), Color(0.2, 0.45, 0.7), Color(0.85, 0.7, 0.2)]
-			for i in 3:
-				var s := Node3D.new()
-				s.position = Vector3(-4.0 + i * 4.0, 0, -0.5 if i == 1 else 0.5)
-				n.add_child(s)
-				_add(s, Gfx3D.box(Vector3(2.8, 1.0, 1.4), WOOD), Vector3(0, 0.5, 0))
-				for x in [-1.3, 1.3]:
-					_add(s, Gfx3D.cylinder(0.07, 2.4, WOOD_DARK), Vector3(x, 1.2, -0.6))
-				var aw := _add(s, Gfx3D.box(Vector3(3.2, 0.12, 2.0), colors[i]), Vector3(0, 2.4, 0))
-				aw.rotation.x = 0.2
-				_add(s, Gfx3D.sphere(0.3, Color(0.85, 0.5, 0.2)), Vector3(-0.6, 1.15, 0))
-				_add(s, Gfx3D.sphere(0.28, Color(0.5, 0.7, 0.25)), Vector3(0.5, 1.12, 0.1))
+			# Plac targowy: bruk; stragany stoją na nim osobno (M1).
+			_add(n, Gfx3D.box(MARKET_SQUARE, STONE.lightened(0.15)), Vector3(0, 0.03, 1.0))
 		"manor":
 			_house(n, Vector3(9.0, 4.0, 6.0), PLASTER, Color(0.45, 0.2, 0.15), false)
 			_add(n, Gfx3D.box(Vector3(2.2, 6.5, 2.2), PLASTER), Vector3(-3.2, 3.25, 0))
@@ -345,6 +379,7 @@ func set_season(season: String, blend: float) -> void:
 func refresh(delta: float, selected_id: int, night: float) -> void:
 	for f: SimField in world.fields:
 		_refresh_field(f)
+	_refresh_stalls()
 	var regrow: float = world.regrow_total()
 	for t: SimTree in world.trees:
 		var g: float = t.growth(regrow)

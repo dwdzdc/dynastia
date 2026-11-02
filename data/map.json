@@ -95,7 +95,7 @@
       "y": 30
     }
   ],
-  "fields": [{"id": "f1", "owner": "manor", "x": 50, "y": 3, "w": 9, "h": 6}, {"id": "f2", "owner": "manor", "x": 61, "y": 3, "w": 9, "h": 6}, {"id": "f3", "owner": "manor", "x": 50, "y": 11, "w": 9, "h": 6}, {"id": "f4", "owner": "manor", "x": 61, "y": 11, "w": 9, "h": 6}], "roads": [
+  "stalls": [{"id": "stall_bednarz", "name": "Kram Bednarzy", "x": 70.5, "y": 28.0, "owner_home": "t1", "goods": ["food", "log", "plank", "chair"], "buys": ["plank", "chair"], "start_stock": {"food": 50, "log": 16}}, {"id": "stall_manor", "name": "Stragan dworski", "x": 84.5, "y": 20.5, "owner_home": "manor", "stock_from": "manor", "goods": ["food"], "start_stock": {"food": 150}}], "fields": [{"id": "f1", "owner": "manor", "x": 50, "y": 3, "w": 9, "h": 6}, {"id": "f2", "owner": "manor", "x": 61, "y": 3, "w": 9, "h": 6}, {"id": "f3", "owner": "manor", "x": 50, "y": 11, "w": 9, "h": 6}, {"id": "f4", "owner": "manor", "x": 61, "y": 11, "w": 9, "h": 6}], "roads": [
     [
       "home",
       "sawmill"

@@ -212,6 +212,12 @@ func _animate() -> void:
 					arm_r = -1.2 + sin(_t * 4.0) * 0.9
 					arm_l = -0.6
 					leg = sin(_t * 2.0) * 0.25
+				"weed":
+					# Pielenie: przykucnięty, ręce przy ziemi.
+					crouch = 0.3
+					lean = 0.6
+					arm_l = -0.8 + sin(_t * 5.0) * 0.3
+					arm_r = -0.8 - sin(_t * 5.0) * 0.3
 				"harvest":
 					# Kosa: zamach oburącz nisko nad ziemią.
 					_tool.visible = true

@@ -30,6 +30,7 @@ var target_food: int
 var target_firewood: int
 var sell_planks: bool = true
 var reputation: float = 0.0          # sfera: stolarstwo
+var prices: Dictionary = {}          # towar -> { sell_min, buy_max } (granice cen, M3)
 var earned_today: float = 0.0
 var spent_today: float = 0.0
 var last_day_net: float = 0.0

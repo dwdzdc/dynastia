@@ -21,7 +21,7 @@ var family: SimFamily
 var bonds: SimBonds
 var together: SimTogether
 var ai: SimAI
-var market: SimMarket
+var trade: SimTrade
 var traders: SimTraders
 var contracts: SimContracts
 var chronicle: SimChronicle
@@ -85,14 +85,31 @@ func _init(seed: int, p_balance: Dictionary, p_map: Dictionary, p_people: Dictio
 	ai = SimAI.new(self)
 	family.setup_start()
 	_spawn_society()
-	market = SimMarket.new(self, balance["market"])
+	trade = SimTrade.new(self, balance["trade"])
+	_spawn_stalls()
 	traders = SimTraders.new(self, p_traders)
 	contracts = SimContracts.new(self, balance["contracts"])
-	ai.post_offers()
+	ai.new_day()   # rody AI od razu rozdzielają role (kramarz, nadzorca, praca)
 	for p in family.living():
 		p.set_meta("stage", family.stage_of(p))
 	note("Ród %s zaczyna w wynajętej chacie pod lasem. Czynsz %d zł dziennie — pilnuj kasy." % [
 		family.dynasty, int(home().rent_per_day)], "info", home().door())
+
+
+# Stragany z danych (M1): lada na placu albo przy budynku właściciela.
+func _spawn_stalls() -> void:
+	for sd: Dictionary in map.get("stalls", []):
+		var b := SimBuilding.new(String(sd["id"]), String(sd["name"]), "stall",
+			Vector2(float(sd["x"]), float(sd["y"])), balance["storage"]["stall"])
+		buildings[b.id] = b
+		var h := household_at(String(sd["owner_home"]))
+		if h == null:
+			continue
+		var stock: SimBuilding = buildings.get(String(sd.get("stock_from", "")), b)
+		var st := trade.add_stall(b, stock, h.id, sd["goods"])
+		st.buys = sd.get("buys", []).duplicate()
+		for g in sd.get("start_stock", {}):
+			stock.add(g, int(sd["start_stock"][g]))
 
 
 # Rody AI z danych (G1): każdy z domem, gospodarstwem, kasą i majątkiem.
@@ -333,7 +350,9 @@ func job_options(agent_id: int, target: String) -> Array:
 	for r: Dictionary in jobs.recipes.values():
 		if String(r["building"]) == bid:
 			out.append({ "label": "Przydziel: %s" % SimJobs.JOB_LABELS.get(r["job"], r["job"]), "job": String(r["job"]), "place": "", "ok": true })
-	if b.type == "market":
+	if trade.stalls.has(bid):
+		out.append({ "label": "Przydziel: %s" % SimJobs.JOB_LABELS["stallkeeper"], "job": "stallkeeper", "place": "", "ok": true })
+	if b.type in ["market", "stall"] or b.id == a.home_id:
 		out.append({ "label": "Przydziel: %s" % SimJobs.JOB_LABELS["carrier"], "job": "carrier", "place": "", "ok": true })
 	if b.id == a.home_id:
 		out.append({ "label": "Bez przydziału (domowe obowiązki)", "job": "none", "place": "", "ok": true })
@@ -342,6 +361,8 @@ func job_options(agent_id: int, target: String) -> Array:
 
 # Cudze miejsce: budynek należy do innego rodu albo osoby spoza rodu gracza.
 func is_foreign(b: SimBuilding) -> bool:
+	if trade.stalls.has(b.id):
+		return trade.stalls[b.id].owner != household.id
 	match b.owner_kind:
 		"lineage":
 			return b.owner_id != family.player_lineage_id and not owns(household, b)
@@ -366,6 +387,16 @@ func assign_job(agent_id: int, job: String, place: String) -> bool:
 	contracts.hire(o, person_of(a))
 	jobs.replan(a)
 	note("%s najmuje się: %s (%d zł/dzień)." % [person_of(a).name, SimJobs.JOB_LABELS.get(job, job), int(o["wage"])], "info", a.position)
+	return true
+
+
+# Stragan przy domu gracza (M1): deski z tartaku rodu.
+func build_home_stall() -> bool:
+	var st := trade.build_stall(household, building("sawmill"))
+	if st == null:
+		note("Za mało desek w tartaku na stragan (%d)." % int(balance["trade"]["stall_cost_planks"]), "warn", null)
+		return false
+	note("Stoi nowy stragan przy domu. Postaw za ladą kramarza (PPM na stragan).", "good", st.counter())
 	return true
 
 
@@ -616,6 +647,8 @@ func _act(a: SimAgent, s: Dictionary, dt: float) -> void:
 	if jobs.is_work(act) and not s.has("will"):
 		_check_will(a, s, act)
 	a.labor_task = String(s.get("task", ""))
+	if act == "sell":
+		_quiet_stall(a)
 	if jobs.is_work(act):
 		contracts.accrue(a, s, dt)
 	if act == "labor":
@@ -636,8 +669,6 @@ func _act(a: SimAgent, s: Dictionary, dt: float) -> void:
 			a.steps.clear()
 
 
-# Dniówka na folwarku (H7, L2): pracodawca to ród właściciela dworu. Płaci z własnej
-# kasy za czas pracy na jego polach; plon to zebrane i zniesione snopy.
 # Pole właściciela (budynku), na którym jest dziś robota albo snopy do zniesienia.
 func field_with_work(owner_building: String) -> SimField:
 	var season := clock.current_season()
@@ -672,6 +703,17 @@ func estate_owner() -> SimHousehold:
 	return best
 
 
+# Brak zbytu widać (M6): kramarz, przy którym długo nikt nic nie kupił, mówi to wprost.
+func _quiet_stall(a: SimAgent) -> void:
+	var st: SimStall = trade.stall_of_keeper(a)
+	if st == null or st.keeper != a.id:
+		return
+	if st.last_deal == 0.0:
+		st.last_deal = clock.now()
+	if clock.now() - st.last_deal > float(balance["trade"]["quiet_days"]):
+		a.idle_reason = "stoi za ladą — nikt nie kupuje (ceny? towar?)"
+
+
 func _labor(a: SimAgent, s: Dictionary, dt: float) -> void:
 	# Płaca narasta w umowie (SimContracts.accrue), wręcza ją płatnik po robocie (L3).
 	# Praca posuwa robotę na konkretnym polu (L2); po skończonym zadaniu nowy plan.
@@ -694,19 +736,6 @@ func _labor(a: SimAgent, s: Dictionary, dt: float) -> void:
 			note("Żniwa skończone na polu (%s): %d snopów do zniesienia." % [building(f.owner_building).name, f.heap], "info", f.heap_spot())
 	else:
 		a.position = from.lerp(to, f.progress(i, season))
-
-
-# Dwór sprzedaje nadwyżkę plonów kupcowi (pieniądze wracają do dworu i dalej do ludzi).
-func _estate_sells() -> void:
-	var est: Dictionary = balance["estate"]
-	var b: SimBuilding = building(String(est["building"]))
-	var owner := estate_owner()
-	if owner == null:
-		return
-	var surplus := mini(b.amount("food") - int(est["reserve_food"]), int(est["sell_to_merchant_per_day"]))
-	if surplus > 0:
-		var r: Dictionary = market.buy_from(owner, "food", surplus, [])
-		b.take("food", int(r["qty"]))
 
 
 # Na początku czynności: niechętny robi wolniej (w efektywności) i czasem rzuca robotę w połowie (D4).
@@ -890,8 +919,6 @@ func _new_day() -> void:
 			note("Niezebrane zboże zgniło na polu (%s)." % building(f.owner_building).name, "warn", f.center())
 	contracts.settle_day()
 	together.end_day()
-	_estate_sells()
-	market.new_day()
 	ai.new_day()
 	family.new_day()
 	bonds.prune()

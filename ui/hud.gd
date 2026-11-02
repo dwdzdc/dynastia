@@ -40,6 +40,7 @@ const SKILL_LABELS := { "chop": "rąbanie", "saw": "piłowanie", "craft": "stola
 
 const FAMILY_W := 440.0   # szerokość panelu rodu (karty zawijają tekst)
 
+const PRICE_STEP := 0.1   # krok granicy ceny w panelu chaty (zł)
 var main: Node
 var world: SimWorld
 var camera: Camera3D
@@ -654,6 +655,11 @@ func _build_building_info(b: SimBuilding) -> void:
 			_info_box.add_child(keep)
 			_stepper("Jedzenie", func(): return hh.target_food, func(d): hh.target_food = clampi(hh.target_food + d, 0, int(b.capacity["food"])))
 			_stepper("Opał", func(): return hh.target_firewood, func(d): hh.target_firewood = clampi(hh.target_firewood + d, 0, int(b.capacity["log"])))
+			if b.id == hh.home_id:
+				_build_price_limits(hh)
+				if world.trade.stalls_of(hh.id).filter(func(x): return not x.temporary).is_empty():
+					_info_box.add_child(_button("Postaw stragan przy domu (%d desek z tartaku)" % int(world.balance["trade"]["stall_cost_planks"]),
+						func(): world.build_home_stall(), 16))
 		"sawmill":
 			_dyn(func(): return "Kłody: %d / %d\nDeski: %d / %d" % [b.amount("log"), int(b.capacity["log"]), b.amount("plank"), int(b.capacity["plank"])], 18)
 			_dyn(func(): return "Drwale: %d · tracze: %d · drzewa do ścięcia: %d" % [_count_job("woodcutter"), _count_job("sawyer"),
@@ -668,18 +674,18 @@ func _build_building_info(b: SimBuilding) -> void:
 				return "Deski: %d / %d\nKrzesła: %d / %d (jakość: %s)" % [b.amount("plank"), int(b.capacity["plank"]), b.amount("chair"), int(b.capacity["chair"]), qtxt], 18)
 			_dyn(func(): return "Stolarze: %d. 2 deski = 1 krzesło. Lepszy stolarz = droższe krzesła i reputacja." % _count_job("carpenter"), 16, DIM)
 		"market":
-			var mk := world.market
 			_dyn(func():
-				var m := mk.merchant()
-				var t := mk.till()
-				return "Kupiec: %s · kasa kupca: %d zł" % [m.full_name() if m != null else "nikt", int(t.cash) if t != null else 0], 17)
-			_dyn(func(): return "Kupiec płaci:\n  deski: %.1f zł/szt (weźmie jeszcze %d)\n  krzesło: %d–%d zł wg jakości (weźmie %d)\nKupiec sprzedaje:\n  jedzenie: %.1f zł (ma %d)\n  opał: %.1f zł/kłoda (ma %d)" % [
-				mk.buy_price("plank"), mk.wants("plank"), int(mk.buy_price("chair", 0.2, hh.reputation)), int(mk.buy_price("chair", 0.8, hh.reputation)), mk.wants("chair"),
-				mk.sell_price("food"), mk.building.amount("food"), mk.sell_price("log"), mk.building.amount("log")], 17)
-			_dyn(func(): return "Reputacja stolarska rodu: %.1f\nIm więcej towaru ma kupiec, tym mniej płaci; bez pieniędzy nie kupi nic." % hh.reputation, 16, DIM)
-			var sell := _button("", func(): hh.sell_planks = not hh.sell_planks, 17)
-			_info_box.add_child(sell)
-			_info_updaters.append(func(): sell.text = "Sprzedawaj deski: " + ("TAK" if hh.sell_planks else "NIE (tylko do stolarni)"))
+				var lines: Array = []
+				for st: SimStall in world.trade.stalls.values():
+					var ka := world.agent_by_id(st.keeper)
+					lines.append("%s — %s" % [st.building.name, ("za ladą: " + world.person_of(ka).name) if ka != null and st.is_open() else "zwinięty"])
+				return "Stragany:\n  " + "\n  ".join(lines), 17)
+			var hint := _label("Kliknij stragan, żeby zobaczyć ceny. Swoje granice cen ustawiasz w panelu chaty.", 15, DIM)
+			hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			hint.custom_minimum_size.x = 400
+			_info_box.add_child(hint)
+		"stall":
+			_build_stall_info(world.trade.stalls.get(b.id))
 		"manor":
 			_dyn(func(): return "Pola dworu: %s" % ", ".join(world.fields.filter(func(f): return f.owner_building == b.id).map(
 				func(f): return "%d/%d zagonów zasianych" % [f.count("sown") + f.count("ripe"), f.cells.size()])), 16, DIM)
@@ -721,6 +727,57 @@ func _build_offers(b: SimBuilding) -> void:
 		_stepper("Stawka (zł)", func(): return int(get_o.call().get("wage", default_wage)), func(d):
 			var o: Dictionary = get_o.call()
 			world.post_player_offer(bid, job, int(o.get("slots", 0)), float(o.get("wage", default_wage)) + signi(d)))
+
+
+# Granice cen (M3): najniższa cena, za jaką twoi ludzie sprzedadzą, i najwyższa, jaką
+# zapłacą. W tych granicach targują się sami (umiejętność handlu).
+func _build_price_limits(hh: SimHousehold) -> void:
+	_info_box.add_child(HSeparator.new())
+	_info_box.add_child(_label("Granice cen (sprzedaj nie taniej / kupuj nie drożej):", 16, DIM))
+	for g in ["food", "log", "plank", "chair"]:
+		var good: String = g
+		_price_stepper("%s: min" % world.good_label(good), func(): return world.trade.sell_min(hh, good),
+			func(d): world.trade.set_limit(hh, good, "sell_min", world.trade.sell_min(hh, good) + d * PRICE_STEP))
+		_price_stepper("%s: max" % world.good_label(good), func(): return world.trade.buy_max(hh, good),
+			func(d): world.trade.set_limit(hh, good, "buy_max", world.trade.buy_max(hh, good) + d * PRICE_STEP))
+
+
+func _price_stepper(title: String, get_fn: Callable, change_fn: Callable) -> void:
+	var h := HBoxContainer.new()
+	var l := _label(title, 16)
+	l.custom_minimum_size.x = 150
+	h.add_child(l)
+	h.add_child(_button(" − ", func(): change_fn.call(-1), 16))
+	var v := _label("", 17)
+	v.custom_minimum_size.x = 70
+	v.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	h.add_child(v)
+	h.add_child(_button(" + ", func(): change_fn.call(1), 16))
+	_info_box.add_child(h)
+	_info_updaters.append(func(): v.text = "%.1f zł" % float(get_fn.call()))
+
+
+func _build_stall_info(st: SimStall) -> void:
+	if st == null:
+		return
+	var oh: SimHousehold = world.households.get(st.owner)
+	_dyn(func():
+		var ka := world.agent_by_id(st.keeper)
+		var who := ("za ladą: %s" % world.person_of(ka).full_name()) if ka != null and st.is_open() else ("rozłożony, bez opieki!" if not st.packed else "zwinięty")
+		var lines: Array = [who]
+		for g in st.goods:
+			if st.temporary and g in st.buys:
+				continue
+			lines.append("%s: %d szt., nie taniej niż %.1f zł" % [world.good_label(g), st.stock.amount(g), world.trade.sell_min(oh, g)])
+		for g in st.buys:
+			lines.append("skupuje %s: do %.1f zł%s" % [world.good_label(g), world.trade.buy_max(oh, g),
+				(" (jeszcze %d)" % int(st.wants[g])) if st.wants.has(g) else ""])
+		return "\n".join(lines), 17)
+	if st.owner == world.household.id:
+		var own := _label("Twój stragan. Zaznacz osobę i PPM na stragan → „kramarz”. Ceny: panel chaty.", 15, DIM)
+		own.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		own.custom_minimum_size.x = 400
+		_info_box.add_child(own)
 
 
 func _owner_text(b: SimBuilding) -> String:
@@ -990,5 +1047,8 @@ func _stock_text(b: SimBuilding) -> String:
 		"workshop":
 			return "deski %d · krzesła %d" % [b.amount("plank"), b.amount("chair")]
 		"market":
-			return "skup desek %.1f zł · jedzenie %.1f zł" % [world.market.buy_price("plank"), world.market.sell_price("food")]
+			return "otwarte stragany: %d" % world.trade.stalls.values().filter(func(x): return x.is_open()).size()
+		"stall":
+			var st: SimStall = world.trade.stalls.get(b.id)
+			return ("otwarty" if st != null and st.is_open() else "zwinięty") if st != null else ""
 	return ""

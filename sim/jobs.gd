@@ -15,6 +15,7 @@ const JOB_LABELS := {
 	"laborer": "robotnik w polu",
 	"forager": "zbieracz (las)",
 	"overseer": "nadzorca (pilnuje najętych)",
+	"stallkeeper": "kramarz (za ladą)",
 	"thief": "złodziej (targ)",
 }
 
@@ -26,6 +27,8 @@ var work_acts: Array = ["chop", "forage", "labor"]  # czynności, które są pra
 const BASE_WORK_ACTS := ["chop", "forage", "labor"]
 const OVERSEE_OFFSET := Vector2(1.2, 1.2)     # nadzorca staje obok pilnowanego
 const OVERSEE_WAITS := 4.0                    # jak długo stoi przy jednym miejscu
+const POOR_MEALS := 4.0                       # bieda: w skrzyni mniej niż na tyle posiłków
+const FIREWOOD_TRIP := 2                      # ile kłód opału niesie się na raz
 const PAY_QUEUE_SPREAD := 6                  # ilu ludzi stoi obok siebie po wypłatę
 const FREE_SPOT_RADIUS := Vector2(1.5, 4.0)  # wolne: jak daleko od drzwi domu (min, max)
 const FREE_TIME_WAITS := 3.0                  # wolne trwa tyle „czekań”, potem nowy plan
@@ -104,6 +107,8 @@ func desired_kind(a: SimAgent) -> String:
 		return "child"
 	if block == "work" and a.can_work() and a.job != "none":
 		return "work"
+	if block in ["free", "dinner"] and a.job == "stallkeeper" and a.can_work() and a.plan_kind == "work" and not a.steps.is_empty():
+		return "work"   # kramarz stoi za ladą do kolacji
 	return "chore"
 
 
@@ -163,6 +168,11 @@ func release(a: SimAgent) -> void:
 			var t: SimTree = w.tree_by_id(int(parts[1]))
 			if t != null and t.reserved_by == a.id:
 				t.reserved_by = -1
+		elif parts[0] == "stall":
+			# Odejście od lady bez zwinięcia: stragan zostaje rozłożony i bez opieki.
+			var st: SimStall = w.trade.stalls.get(parts[1])
+			if st != null and st.keeper == a.id:
+				st.keeper = -1
 		elif parts[0] == "cell":
 			var f := w.field_by_id(parts[1])
 			if f != null:
@@ -262,6 +272,10 @@ func _plan_homeless(a: SimAgent, kind: String) -> void:
 func _plan_eat_away(a: SimAgent) -> void:
 	var price := float(w.balance["economy"]["meal_away_price"])
 	var p := w.person_of(a)
+	if a.carrying == "food" and a.carrying_qty > 0:
+		_act(a, "eat", 1.5, "je to, co ma przy sobie")
+		_do(a, "eat_carried")
+		return
 	if p.purse >= price or (_hh(a).chest == null and _hh(a).cash >= price):
 		var market: SimBuilding = w.building("market")
 		_walk(a, market.door(), "idzie coś zjeść na targu")
@@ -292,9 +306,9 @@ func _plan_eat(a: SimAgent) -> void:
 		return
 	a.hungry_no_food = true
 	var why := "GŁODNY — pusta spiżarnia"
-	if w.market.building.amount("food") <= 0:
-		why += ", a na targu nie ma jedzenia"
-	elif not _hh(a).can_afford(w.market.sell_price("food")):
+	if w.trade.best_seller(a, "food") == null:
+		why += ", a nikt nie sprzedaje jedzenia"
+	elif _budget(a) < w.trade.ref("food"):
 		why += " i brak pieniędzy"
 	elif w.chore_claims.has(_claim(a, "food")):
 		why += " (ktoś już idzie po jedzenie)"
@@ -412,9 +426,15 @@ func _plan_work(a: SimAgent) -> void:
 			_plan_woodcutter(a)
 		"carrier":
 			if not _plan_carrier(a):
-				_free_time(a, "nie ma nic do noszenia")
+				var mill: SimBuilding = w.building("sawmill")
+				if _hh(a) == w.household and _hh(a).sell_planks and mill.amount("plank") > 0:
+					_free_time(a, "nikt nie skupuje desek po waszej cenie")
+				else:
+					_free_time(a, "nie ma nic do noszenia")
 		"laborer":
 			_plan_laborer(a)
+		"stallkeeper":
+			_plan_stallkeeper(a)
 		"overseer":
 			_plan_oversee(a)
 		"forager":
@@ -583,7 +603,7 @@ func _plan_chore(a: SimAgent) -> bool:
 		return true
 	# Bieda: spiżarnia pustoszeje, a nie ma za co kupić — las jest za darmo.
 	var hh = _hh(a)
-	if _home(a).amount("food") < hh.target_food / 2 and hh.cash < w.market.sell_price("food") * 4.0 \
+	if _home(a).amount("food") < hh.target_food / 2 and hh.cash < w.trade.ref("food") * POOR_MEALS \
 			and w.clock.current_season() != "winter":
 		_plan_forage(a)
 		return true
@@ -600,19 +620,28 @@ func _food_trip(a: SimAgent, urgent: bool) -> bool:
 		want = maxi(want, 1)
 	if want <= 0 or w.chore_claims.has(_claim(a, "food")):
 		return false
-	var cap := int(w.balance["carry"]["food"])
-	var afford := int(floor(_budget(a) / w.market.sell_price("food")))
-	var qty := mini(mini(want, cap), mini(mini(afford, home.space("food")), w.market.building.amount("food")))
-	if qty <= 0:
+	if not _buy_trip(a, "food", mini(want, home.space("food")), home, "idzie kupić jedzenie", "niesie jedzenie do chaty"):
 		return false
 	w.chore_claims[_claim(a, "food")] = a.id
 	a.claims.append("chore:" + _claim(a, "food"))
-	_fetch_coins(a, w.market.sell_price("food") * qty)
-	var market: SimBuilding = w.building("market")
-	_walk(a, market.door(), "idzie na targ kupić jedzenie")
-	_do(a, "buy_food", qty)
-	_walk(a, home.door(), "niesie jedzenie do chaty")
-	_do(a, "deposit", home.id)
+	return true
+
+
+# Zakup na straganie (M4): wybór straganu (cena, droga, sympatia), po pieniądze do
+# skrzyni, jeśli w sakwie za mało, targowanie przy ladzie, towar do `dest`.
+func _buy_trip(a: SimAgent, good: String, want: int, dest: SimBuilding, why_go: String, why_back: String) -> bool:
+	var st := w.trade.best_seller(a, good)
+	if st == null or want <= 0:
+		return false
+	var price := maxf(w.trade.quote(st, a, good), 0.01)
+	var qty := mini(mini(want, int(w.balance["carry"][good])), mini(int(floor(_budget(a) / price)), st.stock.amount(good)))
+	if qty <= 0:
+		return false
+	_fetch_coins(a, price * qty)
+	_walk(a, st.counter(), "%s (%s)" % [why_go, st.building.name])
+	_do(a, "buy_at", { "stall": st.id, "good": good, "qty": qty, "to": dest.id })
+	_walk(a, dest.door(), why_back)
+	_do(a, "deposit", dest.id)
 	return true
 
 
@@ -625,18 +654,12 @@ func _firewood_trip(a: SimAgent) -> bool:
 		return false
 	if w.chore_claims.has(_claim(a, "firewood")):
 		return false
-	var hh = _hh(a)
-	if mill.amount("log") <= 0:
-		# Bez własnego drewna opał trzeba kupić na targu.
-		if _budget(a) < w.market.sell_price("log") * 2.0 or w.market.building.amount("log") <= 0:
+	# Z własnego tartaku bierze tylko ród, do którego tartak należy; inni kupują na straganie.
+	if _hh(a) != w.household or mill.amount("log") <= 0:
+		if not _buy_trip(a, "log", mini(FIREWOOD_TRIP, home.space("log")), home, "idzie kupić opał", "niesie opał do chaty"):
 			return false
 		w.chore_claims[_claim(a, "firewood")] = a.id
 		a.claims.append("chore:" + _claim(a, "firewood"))
-		_fetch_coins(a, w.market.sell_price("log") * 2.0)
-		_walk(a, w.building("market").door(), "idzie kupić opał na targu")
-		_do(a, "buy_firewood", 2)
-		_walk(a, home.door(), "niesie opał do chaty")
-		_do(a, "deposit", home.id)
 		return true
 	w.chore_claims[_claim(a, "firewood")] = a.id
 	a.claims.append("chore:" + _claim(a, "firewood"))
@@ -681,19 +704,79 @@ func _plan_carrier(a: SimAgent) -> bool:
 		return true
 	if _firewood_trip(a):
 		return true
+	var own: Array = w.trade.stalls_of(_hh(a).id).filter(func(x): return not x.temporary)
+	var st: SimStall = own[0] if not own.is_empty() else null
+	# Kupiec (M5): dokupuje do swojego straganu tam, gdzie taniej, niż sam sprzedaje.
+	if st != null and _restock(a, st):
+		return true
+	if _hh(a) != w.household:
+		return false
 	var mill: SimBuilding = w.building("sawmill")
 	var shop: SimBuilding = w.building("workshop")
-	var market: SimBuilding = w.building("market")
-	if shop.amount("chair") > 0 and w.market.wants("chair") + w.traders.wants("chair") > 0:
-		_pickup_and_deliver(a, shop, "chair", market, "niesie krzesła na targ")
+	if shop.amount("chair") > 0 and _sell_or_stock(a, shop, "chair", st):
 		return true
 	if _carpenter_present() and shop.space("plank") > 0 and mill.amount("plank") > 0:
 		_pickup_and_deliver(a, mill, "plank", shop, "niesie deski do stolarni", shop.space("plank"))
 		return true
-	if _hh(a).sell_planks and mill.amount("plank") > 0 and w.market.wants("plank") + w.traders.wants("plank") > 0:
-		_pickup_and_deliver(a, mill, "plank", market, "niesie deski na targ")
+	if _hh(a).sell_planks and mill.amount("plank") > 0 and _sell_or_stock(a, mill, "plank", st):
 		return true
 	return false
+
+
+# Towar z warsztatu: na własny stragan (jeśli jest miejsce), a bez straganu — do skupu
+# tam, gdzie płacą najlepiej (M4). Brak chętnych = towar zostaje w składzie.
+func _sell_or_stock(a: SimAgent, from: SimBuilding, good: String, own: SimStall) -> bool:
+	if own != null and own.deals_in(good) and own.stock.space(good) > 0:
+		_pickup_and_deliver(a, from, good, own.stock, "niesie na swój stragan: %s" % w.good_label(good), own.stock.space(good))
+		return true
+	var buyer := w.trade.best_buyer(a, good)
+	if buyer == null:
+		return false
+	var qty := int(w.balance["carry"][good])
+	_walk(a, from.door(), "idzie po towar: %s" % from.name)
+	_do(a, "pickup", { "b": from.id, "good": good, "qty": qty })
+	_walk(a, buyer.counter(), "niesie na sprzedaż: %s (%s)" % [w.good_label(good), buyer.building.name])
+	_do(a, "sell_at", buyer.id)
+	return true
+
+
+# Zaopatrzenie własnego straganu z cudzych: kupuje, gdy cena pozwala zarobić.
+func _restock(a: SimAgent, st: SimStall) -> bool:
+	var cfg: Dictionary = w.balance["trade"]
+	var h := _hh(a)
+	for good in st.goods:
+		var target := int(cfg["restock_target"].get(good, 0))
+		if st.stock.amount(good) >= target or w.chore_claims.has("restock:%s:%s" % [st.id, good]):
+			continue
+		var src := w.trade.best_seller(a, good)
+		if src == null or src == st or src.stock == st.stock:
+			continue
+		if w.trade.quote(src, a, good) > w.trade.sell_min(h, good) * (1.0 - float(cfg["restock_margin"])):
+			continue
+		if _buy_trip(a, good, mini(target - st.stock.amount(good), st.stock.space(good)), st.stock,
+				"kupuje hurtem na swój stragan", "niesie towar na swój stragan"):
+			w.chore_claims["restock:%s:%s" % [st.id, good]] = a.id
+			a.claims.append("chore:restock:%s:%s" % [st.id, good])
+			return true
+	return false
+
+
+# Kramarz (M2): staje za ladą, rozkłada towar, sprzedaje i skupuje; na koniec dnia zwija.
+func _plan_stallkeeper(a: SimAgent) -> void:
+	var st := w.trade.stall_of_keeper(a)
+	if st == null:
+		_free_time(a, "nie ma straganu")
+		return
+	if st.keeper >= 0 and st.keeper != a.id:
+		_free_time(a, "za ladą stoi już ktoś inny")
+		return
+	_fetch_coins(a, float(w.balance["trade"]["keeper_float"]))
+	# Stragan stoi otwarty także po robocie, do wieczora — wtedy wieś robi zakupy.
+	var left := (float(w.balance["trade"]["stall_close"]) - w.clock.time_of_day()) * w.clock.day_seconds
+	_walk(a, st.building.position, "idzie za ladę: %s" % st.building.name)
+	_do(a, "open_stall", st.id)
+	_act(a, "sell", maxf(left, 1.0), "stoi za ladą: %s" % st.building.name)
+	_do(a, "pack_stall", st.id)
 
 
 func _pickup_and_deliver(a: SimAgent, from: SimBuilding, good: String, to: SimBuilding, why: String, limit := 999) -> void:
@@ -772,12 +855,16 @@ func _plan_deliver_carried(a: SimAgent) -> void:
 			dest = "sawmill" if _home(a).space("log") <= 0 else _home(a).id
 			if a.job == "woodcutter":
 				dest = "sawmill"
-		"plank":
-			dest = "workshop" if (_carpenter_present() and w.building("workshop").space("plank") > 0) else "market"
-			if dest == "market" and w.market.wants("plank") + w.traders.wants("plank") <= 0:
-				dest = "sawmill"   # bez zbytu wraca do składu
-		"chair":
-			dest = "market" if w.market.wants("chair") + w.traders.wants("chair") > 0 else "workshop"
+		"plank", "chair":
+			if a.carrying == "plank" and _carpenter_present() and w.building("workshop").space("plank") > 0:
+				dest = "workshop"
+			else:
+				var buyer := w.trade.best_buyer(a, a.carrying)
+				if buyer != null:
+					_walk(a, buyer.counter(), "niesie na sprzedaż: %s (%s)" % [w.good_label(a.carrying), buyer.building.name])
+					_do(a, "sell_at", buyer.id)
+					return
+				dest = "sawmill" if a.carrying == "plank" else "workshop"   # bez zbytu wraca do składu
 	var b: SimBuilding = w.building(dest)
 	_walk(a, b.door(), "odnosi: %s → %s" % [w.good_label(a.carrying), b.name])
 	_do(a, "deposit", dest)
@@ -867,10 +954,14 @@ func apply(a: SimAgent, step: Dictionary) -> bool:
 			return _fx_field_pickup(a, String(step["arg"]))
 		"take_coins":
 			return _fx_take_coins(a, float(step["arg"]))
-		"buy_food":
-			return _fx_buy_food(a, int(step["arg"]))
-		"buy_firewood":
-			return _fx_buy_firewood(a, int(step["arg"]))
+		"buy_at":
+			return _fx_buy_at(a, step["arg"])
+		"sell_at":
+			return _fx_sell_at(a, String(step["arg"]))
+		"open_stall":
+			return _fx_open_stall(a, String(step["arg"]))
+		"pack_stall":
+			return _fx_pack_stall(a, String(step["arg"]))
 		"chop_done":
 			return _fx_chop_done(a, int(step["arg"]))
 		"produce":
@@ -959,32 +1050,6 @@ func _fx_deposit(a: SimAgent, bid: String) -> bool:
 		_return_coins(a)
 	if a.carrying == "":
 		return true
-	if b.type == "market":
-		# Najpierw na wóz kupca wędrownego (lepsza cena), resztę miejscowemu kupcowi (H1, H3).
-		var rw: Dictionary = w.traders.sell_to_wagon(_hh(a), a.carrying, a.carrying_qty, a.carrying_qualities, w.person_of(a))
-		if int(rw["qty"]) > 0:
-			w.events.float_text(b.door() + Vector2(2, 0), "+%d zł (wóz)" % int(round(float(rw["paid"]))), "money")
-			w.stats["sold_" + a.carrying] = int(w.stats.get("sold_" + a.carrying, 0)) + int(rw["qty"])
-			a.carrying_qty -= int(rw["qty"])
-			a.carrying_qualities = a.carrying_qualities.slice(int(rw["qty"]))
-			if a.carrying_qty <= 0:
-				a.clear_carry()
-				return true
-		var r: Dictionary = w.market.buy_from(_hh(a), a.carrying, a.carrying_qty, a.carrying_qualities, w.person_of(a))
-		var n := int(r["qty"])
-		if n > 0:
-			w.events.float_text(b.door(), "+%d zł" % int(round(float(r["paid"]))), "money")
-			w.stats["sold_" + a.carrying] = int(w.stats.get("sold_" + a.carrying, 0)) + n
-			a.carrying_qty -= n
-			a.carrying_qualities = a.carrying_qualities.slice(n)
-		if a.carrying_qty <= 0:
-			a.clear_carry()
-			return true
-		# Reszty kupiec nie weźmie: odnosi ją tam, skąd wziął, i idzie na wolne.
-		w.events.float_text(b.door(), "kupiec nie bierze: %s" % w.good_label(a.carrying), "info")
-		a.steps.clear()
-		_plan_deliver_carried(a)
-		return true
 	var n := mini(a.carrying_qty, b.space(a.carrying))
 	if n <= 0:
 		return false
@@ -1013,39 +1078,70 @@ func _fx_pickup(a: SimAgent, arg: Dictionary) -> bool:
 	return true
 
 
-func _fx_buy_food(a: SimAgent, qty: int) -> bool:
-	return _buy(a, "food", qty)
-
-
-func _fx_buy_firewood(a: SimAgent, qty: int) -> bool:
-	return _buy(a, "log", qty)
-
-
-# Zakup u kupca za pieniądze gospodarstwa (H2): tylko to, co ma w zapasie.
-func _buy(a: SimAgent, good: String, qty: int) -> bool:
+# Zakup przy ladzie (M4). Bez domu tobołek gospodarstwa jest przy nich: płacą z niego.
+func _fx_buy_at(a: SimAgent, arg: Dictionary) -> bool:
+	var st: SimStall = w.trade.stalls.get(String(arg["stall"]))
 	var p := w.person_of(a)
 	var hh := _hh(a)
-	if p == null:
+	if st == null or p == null:
 		return false
-	# Bez domu tobołek gospodarstwa jest przy nich: płacą z niego jak z sakwy.
 	var bundle := 0.0
 	if hh.chest == null:
 		bundle = maxf(hh.cash, 0.0)
 		hh.cash -= bundle
 		p.purse += bundle
-	var purse0 := p.purse
-	var n := w.market.sell_to(p, good, qty)
-	var spent := purse0 - p.purse
+	var r: Dictionary = w.trade.sell_to(st, a, String(arg["good"]), int(arg["qty"]))
 	if hh.chest == null:
 		var back := minf(bundle, p.purse)
 		p.purse -= back
 		hh.cash += back
-	p.held = minf(p.held, p.purse)
-	if n <= 0:
+		p.held = minf(p.held, p.purse)
+	if int(r["qty"]) <= 0:
 		return false
-	w.events.float_text(w.market.building.door(), "-%d zł" % int(round(spent)), "cost")
-	a.carrying = good
-	a.carrying_qty = n
+	w.events.float_text(st.counter(), "-%d zł" % int(round(float(r["paid"]))), "cost")
+	if String(arg.get("to", "")) != "" and String(arg["to"]) != hh.home_id:
+		a.carry_to = String(arg["to"])
+	return true
+
+
+# Sprzedaż do skupu przy ladzie (M4); czego nie wezmą, odnosi z powrotem.
+func _fx_sell_at(a: SimAgent, stall_id: String) -> bool:
+	var st: SimStall = w.trade.stalls.get(stall_id)
+	if st == null or a.carrying == "":
+		return false
+	var good := a.carrying
+	var r: Dictionary = w.trade.buy_from(st, a, good, a.carrying_qty, a.carrying_qualities)
+	var n := int(r["qty"])
+	if n > 0:
+		w.events.float_text(st.counter(), "+%d zł" % int(round(float(r["paid"]))), "money")
+		w.stats["sold_" + good] = int(w.stats.get("sold_" + good, 0)) + n
+		a.carrying_qty -= n
+		a.carrying_qualities = a.carrying_qualities.slice(n)
+	if a.carrying_qty <= 0:
+		a.clear_carry()
+		return true
+	w.events.float_text(st.counter(), "nie biorą więcej: %s" % w.good_label(good), "info")
+	a.steps.clear()
+	_plan_deliver_carried(a)
+	return true
+
+
+func _fx_open_stall(a: SimAgent, stall_id: String) -> bool:
+	var st: SimStall = w.trade.stalls.get(stall_id)
+	if st == null or (st.keeper >= 0 and st.keeper != a.id):
+		return false
+	st.keeper = a.id
+	st.packed = false
+	a.claims.append("stall:" + stall_id)
+	return true
+
+
+func _fx_pack_stall(a: SimAgent, stall_id: String) -> bool:
+	var st: SimStall = w.trade.stalls.get(stall_id)
+	if st != null and st.keeper == a.id:
+		st.keeper = -1
+		st.packed = true
+	a.claims.erase("stall:" + stall_id)
 	return true
 
 

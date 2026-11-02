@@ -20,6 +20,9 @@ var rent_per_day: float = 0.0
 # mieszkać pod jednym dachem (kąt u sąsiadów), każde ma swoją skrzynię.
 var chests: Dictionary = {}
 
+const DOOR_FRONT := 2.6    # drzwi budynku przed jego środkiem
+const STALL_FRONT := 1.4   # przed ladą straganu
+
 
 func _init(p_id: String, p_name: String, p_type: String, p_pos: Vector2, p_cap: Dictionary) -> void:
 	id = p_id
@@ -59,5 +62,6 @@ func coins() -> float:
 
 
 # Drzwi: punkt przed budynkiem, do którego chodzą ludzie (budynek stoi na środku).
+# Przy straganie to miejsce przed ladą.
 func door() -> Vector2:
-	return position + Vector2(0.0, 2.6)
+	return position + Vector2(0.0, STALL_FRONT if type == "stall" else DOOR_FRONT)
