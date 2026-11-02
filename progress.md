@@ -99,7 +99,7 @@ Pętla gry: ród Wilków (6 osób, 3 pokolenia) w chacie pod lasem. Co 5 dni czy
 
 ## Iteracja 2 — społeczeństwo (następna)
 
-Cel: rodzina przestaje być oderwana od świata. Inne rody żyją z tych samych danych i tym samym kodem, popyt i ceny biorą się z ich pieniędzy i potrzeb, małżonek to ktoś, kogo się zna, a dom to aktywo, które można wynająć, kupić albo zbudować. Decyzje S6–S12 zatwierdzone przez autora (02.11.2026), S9 rozszerzona o kupców wędrownych, S13 dopisana; podział na punkty pisze autor.
+Cel: rodzina przestaje być oderwana od świata. Inne rody żyją z tych samych danych i tym samym kodem, popyt i ceny biorą się z ich pieniędzy i potrzeb, małżonek to ktoś, kogo się zna, a dom to aktywo, które można wynająć, kupić albo zbudować. Decyzje S6–S12 zatwierdzone przez autora (02.11.2026), S9 rozszerzona o kupców wędrownych, S13 dopisana (do potwierdzenia). Podział na punkty niżej (format jak w iteracji 1).
 
 **Zakres towarów:** jedzenie lokalnie (pole → zboże → młyn → mąka → chleb; pole sezonowe), budulec: deski (są) i kamień, opał (jest), praca u kogoś jako relacja (nie towar). Czego okolica nie robi (np. żelazo, narzędzia, sól, sukno), przywożą kupcy wędrowni; nadwyżki wywożą. Woda: studnia jako miejsce w iteracji 3.
 
@@ -114,6 +114,44 @@ Cel: rodzina przestaje być oderwana od świata. Inne rody żyją z tych samych 
 - **S11. Małżeństwo z istniejącymi ludźmi.** Kandydaci to wolni dorośli z innych rodów w okolicy, uszeregowani po więzi (poznali się w pracy, na targu). Bez materializacji z powietrza; brak kandydatów to brak ślubu (szersza okolica przyjdzie z LOD).
 - **S13. Receptury w danych.** Każda produkcja to wpis w `data/recipes.json`: budynek, czynność, wejścia, wyjścia, czas, umiejętność. Piłowanie i stolarka przechodzą z kodu (`_plan_producer`) do danych; młyn, piekarnia, kamieniołom to nowe dane i model, bez nowej logiki. Pole (cykl sezonowy) to osobny mały moduł.
 - **S12. Ludzie z innych rodów w więziach.** Te same `SimBonds` i `SimTogether` dla wszystkich par, także między rodami (przyjaźń, wrogość, sąsiedzi). Siła przynależności liczona per ród od jego roota.
+
+### Faza F — fundamenty świata (refaktor pod wiele rodów)
+
+- [ ] F1 `SimFamily` jako rejestr wszystkich ludzi i rodów: logika doby (wiek, poczęcia, sukcesja) per ród; okna decyzji i koniec gry tylko dla rodu gracza, ród AI wybiera następcę sam → test: dwa rody żyją niezależnie, śmierć roota AI nie pyta gracza.
+- [ ] F2 Gospodarstwa (S6): `SimHousehold` per dom (członkowie, kasa, spiżarnia w domu), `SimJobs` używa domu i kasy gospodarstwa agenta zamiast globalnych → test: dwa gospodarstwa mają osobne kasy i zapasy; odszedły zakłada własne.
+- [ ] F3 Budynek jako aktywo (S7): `owner`, `tenant`, czynsz i płace na dobę do konkretnej osoby/gospodarstwa; dług → eksmisja po N dobach → bezdomność (śpi pod gołym niebem, opisowy powód) → test: czynsz płynie do właściciela, eksmisja i bezdomność bez końca gry.
+- [ ] F4 Receptury w danych (S13): `data/recipes.json`, piłowanie i stolarka przeniesione z kodu → test: łańcuch działa jak wcześniej (sonda: podobny dochód), nowa receptura bez zmian w kodzie.
+
+### Faza G — rody AI
+
+- [ ] G1 Rody startowe w danych (3–4 rody, domy zamiast dekoracji, członkowie, kasa) → wszyscy na mapie z domami → test wczytania i przypisań.
+- [ ] G2 Decyzje AI: wybór pracy według potrzeb i dostępnych miejsc, zakupy jedzenia i opału z własnej kasy, ślub i dzieci tymi samymi regułami → test: 30 dób bez zakleszczeń, każdy agent ma powód, rody AI nie głodują przy normalnych warunkach.
+- [ ] G3 Obcy odróżnieni w świecie (barwy rodu, oznaczenie przy imieniu), panel osoby z innego rodu bez poleceń → zrzut ekranu.
+- [ ] G4 Więzi między rodami (S12): wspólny czas i wspomnienia działają między rodami, siła przynależności liczona per ród od jego roota → test: sąsiedzi pracujący razem się lubią, nie zmienia to ich rodu.
+- [ ] G5 Małżeństwo z istniejącymi ludźmi (S11): kandydaci to wolni dorośli z innych rodów według więzi, kto się przenosi do kogo z danych, AI żeni się też między sobą; koniec materializacji kandydata → test: ślub łączy dwie istniejące osoby, bez kandydatów nie ma ślubu.
+
+### Faza H — gospodarka
+
+- [ ] H1 Kupiec jako osoba (S9): własna kasa i zapas, kupuje tylko, gdy ma pieniądze i zbyt, cena z zapasu i kasy; zastępuje `household.sell` → test: kupiec bez pieniędzy nie kupi, cena spada z zapasem.
+- [ ] H2 Kupujący: gospodarstwa kupują jedzenie i opał u kupca za własne pieniądze → test: biedna okolica nie kupi desek, pieniądze krążą (suma w świecie stała bez importu/eksportu).
+- [ ] H3 Kupcy wędrowni: rozkład w danych, wóz z krawędzi mapy, oferta kupna/sprzedaży z ilością, ceną i terminem, towar donoszony fizycznie, odjazd z towarem → test: dostarczona oferta płaci, przegapiona przepada.
+- [ ] H4 Pole (osobny moduł): siew wiosną, wzrost, żniwa latem, zboże do spichrza; zima bez plonów → test: plon tylko w sezonie, zaniedbane pole daje mniej.
+- [ ] H5 Młyn i piekarnia z receptur: zboże → mąka → chleb, chleb jest jedzeniem → test: łańcuch daje chleb bez nowego kodu produkcji.
+- [ ] H6 Kamieniołom z receptury: kamień jako budulec → test: kamień trafia do składu.
+- [ ] H7 Praca u kogoś: miejsce pracy ma właściciela, zatrudnia ludzi z innych gospodarstw, dniówka na dobę od pracodawcy do sakiewki pracownika; dwór to pracodawca, nie automat → test: płaca przechodzi od pracodawcy, pracodawca bez pieniędzy nie zatrudnia.
+
+### Faza I — budowa i mieszkanie
+
+- [ ] I1 Plac budowy (S10): typ budynku z danych (dom: deski, kamień, praca), materiały donoszone, budowlańcy pracują, gotowy budynek należy do zleceniodawcy → test: dom powstaje po dostarczeniu materiałów i pracy.
+- [ ] I2 Kto buduje: ród AI, gdy ciasno i ma pieniądze; gracz zleca dom w wybranym miejscu (UI) → test + zrzut ekranu.
+- [ ] I3 Tłok i prywatność: za dużo osób na dom → kłótnie (wspomnienia) między współlokatorami; osobny dom → mniej wspólnego czasu sam z siebie → test: ciasny dom daje kłótnie, przestronny nie.
+- [ ] I4 Wyprowadzka w obrębie rodu: dorosły (np. po ślubie) zakłada nowe gospodarstwo rodu w wolnym domu → test: ród ma dwa gospodarstwa, przynależność bez zmian.
+
+### Faza J — interfejs i balans
+
+- [ ] J1 Panel domu: właściciel, mieszkańcy, czynsz, zapasy; panel osoby pokazuje gospodarstwo i sakiewkę → zrzut ekranu.
+- [ ] J2 Panel targu: kupiec, ceny, wozy z ofertami i czasem do odjazdu → zrzut ekranu.
+- [ ] J3 Sonda społeczeństwa: strategie gracza + 60 dób → brak zakleszczeń, pieniądze krążą (nie rosną bez końca), rody AI przeżywają → sonda i test długi.
 
 ## Iteracja 3 — codzienność i ciało
 

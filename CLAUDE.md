@@ -14,7 +14,7 @@ Decyzje architektoniczne są w `docs/adr/`, terminy w `GLOSSARY.md`.
 
 ## Gdzie jesteśmy
 
-Iteracja 1 (dynamika rodu) jest zrobiona i przetestowana przez autora. Następna jest **Iteracja 2 — społeczeństwo** (`progress.md`): decyzje szkieletowe S6–S12 trzeba zatwierdzić z autorem, a podział na punkty pisze autor.
+Iteracja 1 (dynamika rodu) jest zrobiona i przetestowana przez autora. Następna jest **Iteracja 2 — społeczeństwo** (`progress.md`): decyzje S6–S12 zatwierdzone (S13 do potwierdzenia), punkty F1–J3 rozpisane. Następna praca to **Faza F, punkt F1**, i dalej po kolei.
 
 ## Jak pracujemy
 
