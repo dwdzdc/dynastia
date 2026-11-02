@@ -245,6 +245,26 @@ func character_label(c: String) -> String:
 	return String(_people["character"].get(c, {}).get("label", c))
 
 
+# Kolejność na liście rodu: root, małżonek, dzieci, rodzice, rodzeństwo, wnuki,
+# wżenieni, reszta; w obrębie grupy od najstarszych.
+const KIN_ORDER := ["głowa rodu", "żona", "mąż", "córka", "syn", "matka", "ojciec", "siostra", "brat",
+	"wnuczka", "wnuk", "synowa", "zięć", "wżeniona", "wżeniony"]
+
+
+func by_kinship() -> Array:
+	var out := living()
+	var rank := func(p: SimPerson) -> int:
+		var i := KIN_ORDER.find(relation_to_root(p))
+		return i if i >= 0 else KIN_ORDER.size()
+	out.sort_custom(func(x, y):
+		var rx: int = rank.call(x)
+		var ry: int = rank.call(y)
+		if rx != ry:
+			return rx < ry
+		return x.birth_day < y.birth_day)
+	return out
+
+
 func relation_to_root(p: SimPerson) -> String:
 	var r := root()
 	if r == null:
@@ -612,7 +632,7 @@ func resolve_marriage(data: Dictionary, accepted: bool) -> void:
 		a.skills[k] = float(cand["skills"][k])
 	apply_modifiers(s)
 	s.set_meta("stage", stage_of(s))
-	w.note("Ślub! %s i %s %s są małżeństwem. Nowa osoba w chacie." % [p.name, s.name, String(cand["surname"])], "good", a.position)
+	w.note("Ślub! %s i %s %s są małżeństwem. Nowa osoba w rodzinie." % [p.name, s.name, String(cand["surname"])], "good", a.position)
 
 
 # --- Śmierć i sukcesja ---

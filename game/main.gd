@@ -9,6 +9,7 @@ const CAM_PITCH := deg_to_rad(38.0)
 const SKY_DAY := Color(0.55, 0.7, 0.85)
 const SKY_NIGHT := Color(0.06, 0.08, 0.16)
 const TREE_PICK_RADIUS := 1.6   # m od pnia, w którym PPM trafia w drzewo
+const FOLLOW_LERP := 6.0        # jak szybko kamera dogania śledzoną osobę
 
 var world: SimWorld
 var view: Node3D
@@ -17,6 +18,7 @@ var selected_building := ""
 var hover_id := -1
 
 var cam_target := Vector3.ZERO
+var follow_cam := false         # kamera biegnie za zaznaczoną osobą (F)
 var cam_size := 42.0
 var cam_yaw := deg_to_rad(45.0)
 var _yaw_goal := deg_to_rad(45.0)
@@ -109,7 +111,18 @@ func _update_camera(delta: float) -> void:
 		move += right
 	if Input.is_key_pressed(KEY_A) or Input.is_key_pressed(KEY_LEFT):
 		move -= right
+	if move != Vector3.ZERO:
+		follow_cam = false
 	cam_target += move.normalized() * cam_size * 0.9 * delta
+	if follow_cam:
+		var a := world.agent_by_id(selected_id)
+		if a == null or a.status == "dead":
+			follow_cam = false
+		else:
+			var at := a.position
+			if a.hidden and a.inside != "":
+				at = world.building(a.inside).position
+			cam_target = cam_target.lerp(Vector3(at.x, 0, at.y), minf(1.0, delta * FOLLOW_LERP))
 	var ws: Array = world.map["world_size"]
 	cam_target.x = clampf(cam_target.x, -10.0, float(ws[0]) + 10.0)
 	cam_target.z = clampf(cam_target.z, -10.0, float(ws[1]) + 10.0)
@@ -184,6 +197,15 @@ func select_agent(id: int, focus := false) -> void:
 			focus_on(a.position if not a.hidden else world.building(a.inside).position if a.inside != "" else a.position)
 
 
+# Zaznacz głowę rodu i prowadź za nią kamerę.
+func go_to_root() -> void:
+	var r := world.family.root()
+	if r == null:
+		return
+	select_agent(r.agent_id, true)
+	follow_cam = true
+
+
 func set_speed(i: int) -> void:
 	world.clock.set_speed(i)
 
@@ -231,6 +253,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		if _lmb_down and not _dragging and mm.position.distance_to(_press_pos) > 8.0:
 			_dragging = true
 		if _dragging or _mmb_down:
+			follow_cam = false
 			_apply_camera()
 			var g := _ground_at(mm.position)
 			cam_target += _press_ground - g
@@ -265,9 +288,14 @@ func _unhandled_input(event: InputEvent) -> void:
 				hud._help.visible = not hud._help.visible
 			KEY_K:
 				hud.toggle_chronicle()
+			KEY_F:
+				follow_cam = not follow_cam and selected_id >= 0
+			KEY_R:
+				go_to_root()
 			KEY_F3:
 				hud.debug = not hud.debug
 			KEY_ESCAPE:
+				follow_cam = false
 				selected_id = -1
 				selected_building = ""
 				hud._help.visible = false

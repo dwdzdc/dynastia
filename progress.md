@@ -122,6 +122,29 @@ Wyjazdy (`away`) i powroty, pojednanie (okno decyzji), drzewo genealogiczne znan
 - [ ] Wartości w kodzie (render, UI, sim) wyniesione do dobrze nazwanych stałych / `data/*.json`.
 - [ ] Później: półotwarte budynki albo podgląd wnętrza po kliknięciu, żeby toczyć grę w środku.
 
+## Uwagi z playtestu iteracji 1 (02.11.2026)
+
+Zrobione od razu:
+- [x] Kamera za osobą (F, przycisk w panelu), „Pokaż głowę rodu” (R), większa korona roota.
+- [x] Lista rodu po pokrewieństwie do roota (głowa, małżonek, dzieci, rodzice, rodzeństwo…) z opisem relacji.
+- [x] „Nowa osoba w rodzinie”, nie „w chacie” (dom to jeden z wielu, ród jest kotwicą).
+
+Największy ból: **abstrakcyjność, brak społeczeństwa.** Rodzina jest oderwana od świata, brak silnych potrzeb indywidualnych i społecznych (budowa domów, budynków), małżonek materializuje się z powietrza. → kandydat na następną iterację (patrz „Dalej” 1–2).
+
+Do omówienia i zaplanowania:
+- [ ] Targ bez stałego popytu: deski kupują konkretne rody, które ich potrzebują (np. budują chatę). Podaż i popyt, logistyka.
+- [ ] Więcej łańcuchów jak w Cultures (ruda → żelazo → miecz, zboże → mąka → chleb). Obecny drewno → deski → sprzedaż autor lubi.
+- [ ] Doświadczenie w zawodzie widoczne jak w Cultures (mechanika już jest: `skills`, `eff_per_level`; brakuje czytelności/progresji).
+- [ ] Zróżnicowany rytm dnia jak w RimWorldzie: różne pory snu i pracy, dojście do domu trwa — kolacja nie może być „wszyscy natychmiast w domu”.
+- [ ] Kontrola poczęć: przełącznik „starają się o dziecko / nie” zmienia szansę (nigdy 0% ani 100%), wartości w danych.
+- [ ] Prywatność i tłok: wielopokoleniowy dom daje bliskość, ale i konflikty; za blisko — kłótnie, za daleko — oddalenie. Szukać balansu (osobne domy).
+- [ ] Wrażliwość na temperaturę i ubiór (zimą nie w sukienkach).
+- [ ] Opłaty dzienne zamiast co K dni: czynsz, wypłaty pracowników itd.
+- [ ] Trupy i pamięć: cmentarze, pomniki.
+- [ ] Rozwój biznesu (kolejne tartaki) — dopiero gdy świat ma realny popyt; teraz pieniądze nie mają na co iść.
+- [ ] Ludzie AI muszą być odróżnialni od „swoich” w świecie.
+- Zostaje jak jest: małe dziecko biega koło chaty (jak w Cultures).
+
 ## Otwarte pytania (z `intro` §15)
 
 - Mechanika sporu o spadek.

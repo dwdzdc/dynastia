@@ -35,6 +35,10 @@ var _carry: Node3D
 var _tool: Node3D
 var _ring: MeshInstance3D
 var _crown: MeshInstance3D
+
+const CROWN_RADIUS := 0.24     # korona nad głową roota: większa, żeby było go widać z daleka
+const CROWN_HEIGHT := 0.42
+const CROWN_Y := 2.3
 var _t := 0.0
 var _last_carry := "-"
 var _hair_color: Color
@@ -87,10 +91,10 @@ func setup(a: SimAgent, p: SimPerson) -> void:
 	_ring.visible = false
 	add_child(_ring)
 
-	_crown = Gfx3D.cone(0.13, 0.22, Color(1.0, 0.8, 0.15), 5)
+	_crown = Gfx3D.cone(CROWN_RADIUS, CROWN_HEIGHT, Color(1.0, 0.8, 0.15), 5)
 	(_crown.material_override as StandardMaterial3D).emission_enabled = true
 	(_crown.material_override as StandardMaterial3D).emission = Color(1.0, 0.75, 0.1)
-	_crown.position = Vector3(0, 2.15, 0)
+	_crown.position = Vector3(0, CROWN_Y, 0)
 	_crown.visible = false
 	_pivot.add_child(_crown)
 

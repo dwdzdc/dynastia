@@ -201,7 +201,9 @@ func _build_family() -> void:
 	p.add_child(v)
 	_family_title = _label("", 22, Color(1.0, 0.85, 0.45))
 	v.add_child(_family_title)
-	v.add_child(_label("kliknij osobę, by zaznaczyć i pokazać", 15, DIM))
+	var go := _button("♛ Pokaż głowę rodu (R)", func(): main.go_to_root(), 17)
+	v.add_child(go)
+	v.add_child(_label("kliknij osobę, by zaznaczyć · F: kamera za osobą", 15, DIM))
 	_family_box = VBoxContainer.new()
 	_family_box.add_theme_constant_override("separation", 4)
 	v.add_child(_family_box)
@@ -211,7 +213,7 @@ func _update_family() -> void:
 	var fam := world.family
 	var r := fam.root()
 	_family_title.text = "Ród %s%s" % [fam.dynasty, ("  ·  głowa: " + r.name) if r != null else ""]
-	var living := fam.living()
+	var living := fam.by_kinship()
 	var sig := ",".join(living.map(func(p): return str(p.agent_id)))
 	if sig != _family_sig:
 		_family_sig = sig
@@ -233,7 +235,7 @@ func _update_family() -> void:
 			continue
 		var stage := fam.stage_of(p)
 		var job := "dziecko" if stage == "child" else String(SimJobs.JOB_LABELS.get(a.job, a.job))
-		var mark := "♛ " if p.id == fam.root_id else ""
+		var mark := "♛ GŁOWA · " if p.id == fam.root_id else (fam.relation_to_root(p) + " · ")
 		var extra := ""
 		if p.pregnant_left >= 0.0:
 			extra = " · w ciąży"
@@ -439,6 +441,9 @@ func _build_person_info(a: SimAgent) -> void:
 	_info_updaters.append(func():
 		rel.visible = a.controlled
 		rel.text = "Anuluj rozkazy (%d w kolejce)" % a.steps.filter(func(st): return st["t"] != "do").size())
+	var fol := _button("", func(): main.follow_cam = not main.follow_cam, 16)
+	_info_box.add_child(fol)
+	_info_updaters.append(func(): fol.text = "Kamera: przestań śledzić (F)" if main.follow_cam else "Kamera: śledź tę osobę (F)")
 	var tip := _label("PPM: idź / zetnij drzewo · Shift+PPM: dopisz do kolejki\nPo wykonaniu rozkazów sam wraca do swojej pracy.", 14, DIM)
 	tip.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	tip.custom_minimum_size.x = 400
@@ -760,7 +765,7 @@ STEROWANIE
 LPM — zaznacz osobę / budynek       PPM — rozkaz: idź / zetnij drzewo (Shift = do kolejki)
 Przeciągnij LPM / ŚPM, WASD, dwa palce — przesuń kamerę       Kółko / szczypanie — zoom
 Q / E — obrót kamery       SPACJA — pauza       1–4 — tempo       TAB — następna osoba       ESC — odznacz
-K — kronika rodu       F3 — tryb debug (ukryte liczby)
+K — kronika rodu       F — kamera za zaznaczoną osobą       R — pokaż głowę rodu       F3 — debug
 
 KOLORY UBRAŃ: zielony drwal · pomarańczowy tracz · niebieski stolarz · żółty nosiciel
 fioletowy zbieracz · szary dniówka · czarny złodziej · beżowy bez przydziału. Czerwony „!” = problem (kliknij, by zobaczyć jaki).""", 17)
