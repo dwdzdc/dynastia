@@ -226,6 +226,11 @@ func pay_to(to: String, amount: float) -> void:
 	if to.begins_with("b:") and buildings.has(to.substr(2)):
 		pay_owner(buildings[to.substr(2)], amount)
 		return
+	if to.begins_with("home:"):
+		var oh := household_at(to.substr(5))
+		if oh != null:
+			oh.earn(amount)
+			return
 	var h: SimHousehold = null
 	match to:
 		"tavern":
@@ -241,6 +246,25 @@ func pay_to(to: String, amount: float) -> void:
 		h = household_at(String(balance["economy"]["authority_home"]))
 	if h != null:
 		h.earn(amount)
+
+
+# Las i ziemia mają właściciela (S27, T4): gospodarstwo z domu wskazanego w mapie.
+func forest_owner() -> SimHousehold:
+	return household_at(String(map["forest"].get("owner_home", "")))
+
+
+func land_owner() -> SimHousehold:
+	return household_at(String(map.get("land_owner_home", "")))
+
+
+# Opłata od pnia: kto rąbie w cudzym lesie, płaci właścicielowi (z kasy rodu,
+# a brak idzie w dług wobec niego).
+func pay_stumpage(a: SimAgent, logs: int) -> void:
+	var owner := forest_owner()
+	var h := household_of(a)
+	if owner == null or owner == h or logs <= 0:
+		return
+	h.pay_or_debt(float(balance["economy"]["stumpage_per_log"]) * logs, "home:" + owner.home_id)
 
 
 # Wszystkie pieniądze świata: skrzynie, sakwy (także osób w drodze) i kasy miast okolicy.
@@ -625,6 +649,16 @@ func commission(kind: String, at: Vector2, to: Variant = null, owner: SimHouseho
 		if clearance > 0.0 and b.position.distance_to(pos) < clearance:
 			note("Za blisko innego budynku — wybierz inne miejsce.", "warn", null)
 			return ""
+	# Działka pod budowę (T4): płaci się właścicielowi ziemi, chyba że to własna ziemia.
+	var plot := float(balance["economy"]["plot_price"].get(kind, 0.0))
+	var lo := land_owner()
+	if plot > 0.0 and lo != null and lo != owner:
+		if owner.cash < plot:
+			if owner == household:
+				note("Za mało pieniędzy na działkę pod budowę (%d zł dla właściciela ziemi)." % int(plot), "warn", null)
+			return ""
+		owner.pay(plot)
+		lo.earn(plot)
 	var id := "site_%d" % _next_site
 	_next_site += 1
 	var mats: Dictionary = cfg["materials"]

@@ -93,6 +93,7 @@ func _run_all() -> void:
 	_test_enterprises()
 	_test_ai_runs_enterprise()
 	_test_ai_founds_enterprise()
+	_test_land_owners()
 	_test_theft_process()
 	_test_world_deterministic()
 	_test_world_30_days_autonomous()
@@ -1669,6 +1670,25 @@ func _test_ai_founds_enterprise() -> void:
 	site["b"].add("plank", int(w.site_cfg(site)["materials"]["plank"]))
 	w.build_work(sid, 99999.0)
 	check("the finished sawmill is their enterprise", w.enterprise_building(rich.id, "sawmill") != null)
+
+
+# T4 (S27): las i ziemia mają właściciela — wyrąb kosztuje opłatę od pnia, budowa
+# wymaga kupienia działki; pieniądze trafiają do właściciela.
+func _test_land_owners() -> void:
+	var w = _new_world()
+	var est = w.estate_owner()
+	check("forest and land belong to the manor", w.forest_owner() == est and w.land_owner() == est)
+	var a = w.agent_by_id(w.family.root().agent_id)
+	var t = w.nearest_tree(a.position)
+	var e0: float = est.cash
+	var h0: float = w.household.cash + w.household.debt * -1.0
+	w.jobs._fx_chop_done(a, t.id)
+	check("chopping a log pays the forest owner", est.cash > e0 or w.household.debt > 0.0)
+	w.household.cash = 0.0
+	check("no money for the plot: no building site", w.commission("house", Vector2(40, 62)) == "")
+	w.household.cash = 100.0
+	var e1: float = est.cash
+	check("buying the plot pays the landowner", w.commission("house", Vector2(40, 62)) != "" and est.cash > e1)
 
 
 func _test_theft_process() -> void:

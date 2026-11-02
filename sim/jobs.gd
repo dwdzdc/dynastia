@@ -1427,6 +1427,7 @@ func _fx_chop_done(a: SimAgent, tree_id: int) -> bool:
 		t.regrow_left = float(w.balance["trees"]["regrow_days"]) * w.clock.day_seconds
 	a.carrying = "log"
 	a.carrying_qty += 1
+	w.pay_stumpage(a, 1)   # las ma właściciela (T4)
 	_gain_skill(a, "chop", float(_cfg["chop_seconds"]))
 	w.roll_accident(a, "chop")
 	return true

@@ -188,7 +188,7 @@ Pętla gry: ród Wilków (6 osób, 3 pokolenia) w chacie pod lasem. Co 5 dni czy
 - [x] T1 Przedsięwzięcie jako byt (S24), tartak gracza przepięty → test: łańcuch jak dziś.
 - [x] T2 AI prowadzi przedsięwzięcie (najmuje, kupuje wejścia, sprzedaje, zamyka przy stratach) → test.
 - [x] T3 AI zakłada przedsięwzięcie z katalogu, gdy ceny dają zysk → test: drogie deski → ktoś stawia tartak.
-- [ ] T4 Las i działki mają właściciela (S27) → test.
+- [x] T4 Las i działki mają właściciela (S27) → test.
 - [ ] U1 Miasto-agregat (S25) z danych → test: bez handlu braki i rosnące ceny.
 - [ ] U2 Wóz jako przewóz między miastem a wsią, skończona kasa, czas drogi → test: suma pieniędzy świata stała.
 - [ ] U3 Wyjazd z wioski do miasta (kupiec znika za krawędzią, wraca z towarem, ryzyko), także dla gracza.
