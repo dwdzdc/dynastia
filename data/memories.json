@@ -5,6 +5,7 @@
     "grew_up_with": {"weight": 25.0, "half_life_days": 30.0, "permanent": false, "text": "dorastał(a) razem z {with}"},
     "married": {"weight": 35.0, "half_life_days": 30.0, "permanent": false, "text": "ślub z {with}"},
     "wedding": {"weight": 50.0, "half_life_days": 0.0, "permanent": true, "text": "ślub z {with}"},
+    "child_born": {"weight": 30.0, "half_life_days": 0.0, "permanent": true, "text": "narodziny: {with}"},
     "worked_together": {"weight": 2.0, "half_life_days": 8.0, "permanent": false, "text": "pracowali razem: {place}"},
     "meal_together": {"weight": 1.5, "half_life_days": 6.0, "permanent": false, "text": "kolacja razem"},
     "evening_together": {"weight": 1.5, "half_life_days": 6.0, "permanent": false, "text": "wieczór razem"},
@@ -14,6 +15,14 @@
     "ordered_against_will": {"weight": -4.0, "half_life_days": 12.0, "permanent": false, "text": "{with} kazał(a) wbrew woli"},
     "quarrel": {"weight": -6.0, "half_life_days": 10.0, "permanent": false, "text": "kłótnia z {with}"}
   },
+  "start": {
+    "parent_to_child": ["raised_child"],
+    "child_to_parent": ["raised_by"],
+    "siblings": ["grew_up_with"],
+    "spouses": ["wedding", "married"]
+  },
+  "on_birth": {"parent_to_child": ["child_born"]},
+  "on_wedding": {"spouses": ["wedding", "married"]},
   "stage_weight_mult": {"child": 1.6, "teen": 1.25, "adult": 1.0, "elder": 1.0},
   "character_mods": {
     "pamietliwy": {"half_life_mult": {"negative": 2.5}},

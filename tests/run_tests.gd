@@ -50,6 +50,7 @@ func _run_all() -> void:
 	_test_lineage_start()
 	_test_bonds_asymmetric_and_fading()
 	_test_memories_character_mods()
+	_test_start_bonds()
 	_test_world_deterministic()
 	_test_world_30_days_autonomous()
 	_test_economy_chain_produces_income()
@@ -365,6 +366,34 @@ func _test_memories_character_mods() -> void:
 	var kid_m: Dictionary = b.remember(kid.id, SimBonds.act("saw"), "work_liked")
 	var adult_m: Dictionary = b.remember(maria.id, SimBonds.act("saw"), "work_liked")
 	check("children feel memories more strongly", float(kid_m["weight"]) > float(adult_m["weight"]))
+
+
+func _test_start_bonds() -> void:
+	var w = _new_world()
+	var f = w.family
+	var ok := true
+	var pairs := 0
+	for c in f.living():
+		for pid in [c.mother_id, c.father_id]:
+			if pid < 0:
+				continue
+			pairs += 1
+			if w.bonds.value(c.id, SimBonds.person(pid)) <= 0.0 or w.bonds.value(pid, SimBonds.person(c.id)) <= 0.0:
+				ok = false
+	check("children and parents start with positive bonds both ways", ok and pairs >= 7)
+	var jan = f.root()
+	check("spouses start bonded", w.bonds.value(jan.id, SimBonds.person(jan.spouse_id)) > 0.0)
+	var piotr = null
+	var zofia = null
+	for p in f.living():
+		if p.name == "Piotr":
+			piotr = p
+		if p.name == "Zofia":
+			zofia = p
+	check("siblings start bonded", w.bonds.value(piotr.id, SimBonds.person(zofia.id)) > 0.0)
+	var maria = f.persons[jan.spouse_id]
+	var gran = f.persons[jan.mother_id]
+	check("in-law has no bond from the past", w.bonds.memories(maria.id, SimBonds.person(gran.id)).is_empty())
 
 
 func _state_sig(w) -> String:

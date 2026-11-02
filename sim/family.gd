@@ -86,8 +86,36 @@ func setup_start() -> void:
 			p.unions.append({ "spouse": s.id, "start": now, "end": -1.0 })
 	for id in persons:
 		generation_of[id] = 0 if persons[id].mother_id < 0 else 1
+	_seed_start_bonds()
 	for id in persons:
 		apply_modifiers(persons[id])
+
+
+# Przeszłość rodziny startowej jako wspomnienia (wychowanie, rodzeństwo, małżeństwo),
+# rodzaje z memories.json → start.
+func _seed_start_bonds() -> void:
+	var cfg: Dictionary = w.memories["start"]
+	for id in _sorted_ids():
+		var p: SimPerson = persons[id]
+		for pid in [p.mother_id, p.father_id]:
+			if pid >= 0:
+				_remember_all(pid, p.id, cfg["parent_to_child"])
+				_remember_all(p.id, pid, cfg["child_to_parent"])
+		if p.spouse_id >= 0:
+			_remember_all(p.id, p.spouse_id, cfg["spouses"])
+		for oid in _sorted_ids():
+			var o: SimPerson = persons[oid]
+			if o.id != p.id and _siblings(p, o):
+				_remember_all(p.id, o.id, cfg["siblings"])
+
+
+func _remember_all(from: int, to: int, kinds: Array) -> void:
+	for k in kinds:
+		w.bonds.remember(from, SimBonds.person(to), String(k), [to])
+
+
+func _siblings(a: SimPerson, b: SimPerson) -> bool:
+	return (a.mother_id >= 0 and a.mother_id == b.mother_id) or (a.father_id >= 0 and a.father_id == b.father_id)
 
 
 func _new_id() -> int:
@@ -373,6 +401,9 @@ func _give_birth(mother: SimPerson) -> void:
 		a.needs["food"] = float(_fam["newborn_food"])
 		apply_modifiers(child)
 		child.set_meta("stage", "child")
+		for par in [mother, father]:
+			if par != null and par.alive():
+				_remember_all(par.id, child.id, w.memories["on_birth"]["parent_to_child"])
 		var trait_txt := ""
 		if not child.traits.is_empty():
 			trait_txt = " (%s)" % ", ".join(child.traits.map(func(t): return trait_label(t)))
@@ -505,6 +536,8 @@ func resolve_marriage(data: Dictionary, accepted: bool) -> void:
 	s.unions.append({ "spouse": p.id, "start": w.clock.now(), "end": -1.0 })
 	persons[s.id] = s
 	lineage_of(p).add(s)
+	_remember_all(p.id, s.id, w.memories["on_wedding"]["spouses"])
+	_remember_all(s.id, p.id, w.memories["on_wedding"]["spouses"])
 	generation_of[s.id] = int(generation_of.get(p.id, 0))
 	var from: SimBuilding = w.building("n1")
 	var a: SimAgent = w.spawn_agent(s, from.door())
