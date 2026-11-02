@@ -2,6 +2,10 @@
 
 Stan: uzgodnione w rozmowie z autorem (02.11.2026). To jest rdzeń gry i ma być przemyślany, zanim powstanie kod. Tam, gdzie ten dokument różni się od `intro` §5, obowiązuje ten dokument.
 
+## Kontekst: wiele epok
+
+Gra jest wieloepokowa: średniowiecze, rewolucja przemysłowa, nowoczesność. Epoka może się zmieniać w trakcie gry (nauka i odkrycia z `intro` §9). Wszystko, co zależy od epoki (środki kontaktu, zawody, prawo, rytuały, reguły dziedziczenia), siedzi w danych epoki, a model rodu jest od niej niezależny (`intro` §11).
+
 ## Zasada nadrzędna
 
 Gra jest o rodzie, a ród ma koszt. Nie może być tak jak w Bannerlordzie, gdzie można mieć ród na 1000 osób, nie pamiętać kto jest kim, a wszyscy zostają wierni. Koszt utrzymania rodu nie jest prostym licznikiem. Wynika z wyborów gracza: na kogo idzie skończony czas ludzi w świecie.
@@ -71,7 +75,7 @@ Kto odpada, przede wszystkim **wychodzi spod kontroli gracza**. Może wejść do
 - Odejść można też nie przez zaniedbanie, a przez to, kim się jest: syn ambitny albo ciekawy świata wyjeżdża za granicę spełniać marzenia.
 - **Wyjazd daleko** (za granicę, na studia do odległego miasta) nie jest od razu odejściem. Osoba ma status **nieobecny** (`away`): jest poza mapą, poza kontrolą i nie jest symulowana szczegółowo. Dalej jest w rodzie.
 - Ten status to wyjątek od zasady „unikamy abstrakcji”. Nie ma sensu symulować życia na drugim końcu świata.
-- **Więź nieobecnego też słabnie** bez kontaktu (odwiedziny, listy). Po latach bez kontaktu przestaje to być ta sama więź, a nieobecny w końcu odpada i staje się własnym rodem.
+- **Więź nieobecnego też słabnie** bez kontaktu. Sposoby kontaktu to dane epoki: odwiedziny i listy w średniowieczu, telefon w nowoczesności. Kod nie zakłada konkretnych środków. Po latach bez kontaktu przestaje to być ta sama więź, a nieobecny w końcu odpada i staje się własnym rodem.
 - **Powrót**: jeśli wciąż jest w rodzie, wraca do domu bez rytuału. Jeśli już odpadł, wraca przez rytuał pojednania (decyzja gracza w oknie). W obu przypadkach wraca bogatszy w doświadczenia: umiejętności, pieniądze, znajomości, wspomnienia.
 
 ## Decyzje gracza przy rytuałach
@@ -92,6 +96,8 @@ Kto odpada, przede wszystkim **wychodzi spod kontroli gracza**. Może wejść do
   - **preferencje**: co lubi i czego nie znosi, wynikające z charakteru, losowych cech i wspomnień (z informacją skąd);
   - **cechy (traity)**;
   - **charakter**.
+- **Cechy** to właściwości wrodzone lub nabyte: silny, chorowity, zręczny, kulawy po wypadku. Wpływają na to, co ktoś umie i jak mu idzie.
+- **Charakter** to temperament: lojalny, porywczy, pamiętliwy, ambitny, ciekawski. Wpływa na to, jak ktoś przeżywa zdarzenia i więzi, i co go pcha (np. do wyjazdu).
 - Wartości liczbowe (więzi, siła przynależności) pozostają ukryte.
 
 ## Dzieci
