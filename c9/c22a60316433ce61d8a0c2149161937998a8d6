@@ -1,0 +1,25 @@
+sim/family.gd
+  s_01663f7cfcc9df::t_8e02a86b858ce5 89,94-120,404-406,539-540
+tests/run_tests.gd
+  s_01663f7cfcc9df::t_8e02a86b858ce5 53,371-396
+data/memories.json
+  s_01663f7cfcc9df::t_8e02a86b858ce5 8,18-25
+progress.md
+  ai_agent 68
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "c9c22a60316433ce61d8a0c2149161937998a8d6",
+  "prompts": {},
+  "sessions": {
+    "s_01663f7cfcc9df": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0628b2b4-7b30-464d-a1f4-7ea1e2566c94",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Dawid Dziedzic <24682682+dwdzdc@users.noreply.github.com>"
+    }
+  }
+}
