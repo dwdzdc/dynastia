@@ -344,7 +344,7 @@ func _build_person_info(a: SimAgent) -> void:
 	var title := _label("%s%s %s" % ["♛ " if p.id == fam.root_id else "", p.name, p.surname], 26, Color(1.0, 0.85, 0.45))
 	_info_box.add_child(title)
 	_dyn(func():
-		var rel := fam.relation_to_root(p) if not world.is_independent(a) else "odszedł z rodu"
+		var rel := fam.relation_to_root(p) if fam.is_ours(p) else "ród " + fam.lineage_of(p).name
 		return "%s · %d lat · %s" % [rel, int(fam.age_of(p)), fam.stage_label(p)], 17, DIM)
 	if debug:
 		_dyn(func(): return "[debug] siła %.2f · sakiewka %.1f zł · dni słabości %d" % [
@@ -399,7 +399,11 @@ func _build_person_info(a: SimAgent) -> void:
 
 	_info_box.add_child(HSeparator.new())
 	if world.is_independent(a):
-		var gone := _label("Odszedł z rodu i żyje po swojemu (%s). Nie wydasz mu poleceń. Co się stało — w kronice (K)." % world.home_of(a).name, 17, DIM)
+		var where := world.home_of(a).name if world.home_of(a) != null else "bez domu"
+		var txt := "Nie należy do twojego rodu (%s, %s). Żyje po swojemu — nie wydasz mu poleceń." % [fam.lineage_of(p).name, where]
+		if p.mother_id >= 0 and fam.is_ours(fam.persons[p.mother_id]) or p.father_id >= 0 and fam.is_ours(fam.persons[p.father_id]):
+			txt += " Odszedł z rodu — co się stało, jest w kronice (K)."
+		var gone := _label(txt, 17, DIM)
 		gone.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		gone.custom_minimum_size.x = 400
 		_info_box.add_child(gone)
@@ -857,12 +861,16 @@ func _draw_overlay() -> void:
 			continue
 		var p := world.person_of(a)
 		var sp := _screen(a.position, 2.6)
-		if a.alert or a.hungry_no_food:
+		if (a.alert or a.hungry_no_food) and world.family.is_ours(p):
 			_overlay.draw_circle(sp + Vector2(0, -10), 12, Color(0.85, 0.15, 0.1))
 			_overlay.draw_arc(sp + Vector2(0, -10), 12, 0, TAU, 20, Color(1, 1, 1), 2)
 			_text(sp + Vector2(0, -3), "!", 18, Color(1, 1, 1))
+		var ours := world.family.is_ours(p)
 		if main.selected_id == a.id or main.hover_id == a.id or (zoom_ok and main.cam_size < 30.0):
-			_text(sp + Vector2(0, -26 if (a.alert or a.hungry_no_food) else -6), p.name, 16, Color(1, 1, 1))
+			# Obcy z nazwiskiem i w barwie swojego rodu, swoi samym imieniem na biało.
+			var label := p.name if ours else p.full_name()
+			var col := Color(1, 1, 1) if ours else AgentView.band_color(p.lineage_id, false).lightened(0.45)
+			_text(sp + Vector2(0, -26 if (a.alert or a.hungry_no_food) else -6), label, 16 if ours else 14, col)
 	# Kolejka rozkazów zaznaczonej osoby: linia przez kolejne cele marszu.
 	var sel := world.agent_by_id(main.selected_id)
 	if sel != null and sel.controlled and not sel.hidden:

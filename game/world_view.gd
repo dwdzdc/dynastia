@@ -319,7 +319,8 @@ func refresh(delta: float, selected_id: int, night: float) -> void:
 	for id in agent_views:
 		var v = agent_views[id]
 		var p: SimPerson = v.person
-		v.refresh(delta, world.family.stage_of(p), id == selected_id, p.id == root_id)
+		v.refresh(delta, world.family.stage_of(p), id == selected_id, p.id == root_id,
+			AgentView.band_color(p.lineage_id, world.family.is_ours(p)))
 
 
 func tree_at(pos: Vector2, radius: float) -> SimTree:

@@ -35,10 +35,18 @@ var _carry: Node3D
 var _tool: Node3D
 var _ring: MeshInstance3D
 var _crown: MeshInstance3D
+var _band: MeshInstance3D
 
 const CROWN_RADIUS := 0.24     # korona nad głową roota: większa, żeby było go widać z daleka
 const CROWN_HEIGHT := 0.42
 const CROWN_Y := 2.3
+# Opaska na głowie w barwach rodu (G3): twoi mają złotą, obcy kolor swojego rodu.
+const OUR_BAND := Color(1.0, 0.8, 0.2)
+const LINEAGE_BANDS := [Color(0.25, 0.45, 0.85), Color(0.75, 0.2, 0.2), Color(0.3, 0.65, 0.35),
+	Color(0.55, 0.3, 0.7), Color(0.15, 0.6, 0.65), Color(0.8, 0.45, 0.15)]
+const BAND_RADIUS := 0.27
+const BAND_HEIGHT := 0.11
+const BAND_Y := 1.74
 var _t := 0.0
 var _last_carry := "-"
 var _hair_color: Color
@@ -97,6 +105,9 @@ func setup(a: SimAgent, p: SimPerson) -> void:
 	_crown.position = Vector3(0, CROWN_Y, 0)
 	_crown.visible = false
 	_pivot.add_child(_crown)
+	_band = Gfx3D.cylinder(BAND_RADIUS, BAND_HEIGHT, OUR_BAND, -1.0, 12)
+	_band.position = Vector3(0, BAND_Y, 0)
+	_pivot.add_child(_band)
 
 
 func _limb(at: Vector3, r: float, length: float, color: Color) -> Node3D:
@@ -109,7 +120,11 @@ func _limb(at: Vector3, r: float, length: float, color: Color) -> Node3D:
 	return pivot
 
 
-func refresh(delta: float, stage: String, selected: bool, is_root: bool) -> void:
+static func band_color(lineage_id: int, ours: bool) -> Color:
+	return OUR_BAND if ours else LINEAGE_BANDS[lineage_id % LINEAGE_BANDS.size()]
+
+
+func refresh(delta: float, stage: String, selected: bool, is_root: bool, band: Color) -> void:
 	visible = agent.status == "active" and not agent.hidden
 	if not visible:
 		return
@@ -132,6 +147,7 @@ func refresh(delta: float, stage: String, selected: bool, is_root: bool) -> void
 	Gfx3D.set_color(_hair, GREY_HAIR if stage == "elder" else _hair_color)
 	_ring.visible = selected
 	_crown.visible = is_root
+	Gfx3D.set_color(_band, band)
 	_update_carry()
 	_animate()
 
