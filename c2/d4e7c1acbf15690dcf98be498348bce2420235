@@ -1,0 +1,9 @@
+docs/design/vision.md
+  ai_agent 9
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "c2d4e7c1acbf15690dcf98be498348bce2420235",
+  "prompts": {}
+}
