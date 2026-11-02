@@ -51,6 +51,11 @@ func _initialize() -> void:
 	print("  śluby: %d, narodziny: %d, śmierci: %d" % [w.chronicle.of_kind("wedding").size(), w.chronicle.of_kind("birth").size(), w.chronicle.of_kind("death").size()])
 	print("  dorośli zamknięci w domu w godzinach pracy: %.1f%%" % (100.0 * float(idle_samples) / maxf(1.0, float(samples))))
 	print("  pieniądze świata (z miastami): %.0f zł" % w.money_total())
+	var causes := {}
+	for p in w.family.persons.values():
+		if not p.alive() and p.death_cause != "":
+			causes[p.death_cause] = int(causes.get(p.death_cause, 0)) + 1
+	print("  przyczyny śmierci: %s" % str(causes))
 	print("  awanse i upadki: %d, sprzedaże majątku: %d, budowy: %d" % [w.chronicle.of_kind("rank").size(), w.chronicle.of_kind("sale").size(), w.chronicle.of_kind("built").size()])
 	for e in w.chronicle.of_kind("rank") + w.chronicle.of_kind("sale") + w.chronicle.of_kind("built"):
 		print("    d%d %s" % [int(e["day"]), e["text"]])

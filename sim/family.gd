@@ -632,8 +632,10 @@ func after_talk(p: SimPerson, q: SimPerson, compat: float) -> void:
 			w.events.float_text(a.position, "prezent dla: %s" % q.name, "info")
 
 
-# Raz na dobę: pary zakochane w sobie nawzajem dochodzą do rozmowy rodzin (N5).
+# Raz na dobę: pary zakochane w sobie nawzajem dochodzą do rozmowy rodzin (N5);
+# a kto długo żyje sam, temu rodzina albo swatka szuka pary z rozsądku (S32).
 func _check_courtships() -> void:
+	_matchmaking()
 	var r := _romance()
 	for p in all_living():
 		if p.has_meta("engaged") or not can_marry(p):
@@ -644,6 +646,31 @@ func _check_courtships() -> void:
 			continue
 		if love(p, q) < float(r["propose_love"]) or love(q, p) < float(r["propose_love"]) or not could_court(p, q):
 			continue
+		_families_talk(p, q)
+
+
+# Swatanie (S32, X2): wolny dorosły, który od dawna nie ma pary ani wzajemnego uczucia,
+# dostaje propozycję z rozsądku — kogoś wolnego z innego rodu, najlepiej znajomego.
+# Rodziny rozmawiają jak przy romansie (mezalians wymaga zgody, gracz decyduje o swoich).
+func _matchmaking() -> void:
+	var m: Dictionary = w.balance["matchmaking"]
+	var adult_from := stage_start("adult")
+	for p in all_living():
+		if p.has_meta("engaged") or not can_marry(p) or p.sex != "m":
+			continue
+		if days_lived(p) - adult_from < float(m["single_days"]):
+			continue
+		var love_id := beloved(p)
+		if love_id >= 0 and beloved(persons[love_id]) == p.id:
+			continue   # mają się ku sobie — niech romans dojdzie do końca sam
+		if not w.rng.chance(float(m["chance_per_day"])):
+			continue
+		var cands := marriage_candidates(p).filter(func(c): return days_lived(c) - adult_from >= 0.0)
+		if cands.is_empty():
+			continue
+		var q: SimPerson = cands[0]
+		if is_ours(p) or is_ours(q):
+			w.note("Swatka proponuje: %s i %s (ród %s)." % [p.name, q.name, lineage_of(q if is_ours(p) else p).name], "info", null)
 		_families_talk(p, q)
 
 

@@ -98,6 +98,7 @@ func _run_all() -> void:
 	_test_trip_to_town()
 	_test_standing()
 	_test_ai_falls()
+	_test_matchmaking()
 	_test_theft_process()
 	_test_world_deterministic()
 	_test_world_30_days_autonomous()
@@ -1778,6 +1779,28 @@ func _test_ai_falls() -> void:
 	w.ai._sell_when_broke()
 	check("a broke lineage sells an asset to someone who can pay", t2.owner_id != lid or w.building("t3").owner_id != lid)
 	check("the sale pays down the debt", bed.debt < 999.0)
+
+
+# X2 (S32): kto długo żyje sam, temu swatka znajduje parę z rozsądku — bez romansu.
+func _test_matchmaking() -> void:
+	var w = _new_world()
+	var f = w.family
+	w.balance["matchmaking"]["chance_per_day"] = 1.0
+	w.balance["romance"]["mesalliance_gap"] = 99999.0
+	var single = null
+	for p in f.all_living():
+		if not f.is_ours(p) and p.sex == "m" and f.can_marry(p) and not f.marriage_candidates(p).filter(func(c): return not f.is_ours(c)).is_empty():
+			single = p
+			break
+	if single == null:
+		check("there is a single AI man to match", false)
+		return
+	single.birth_day -= 20.0
+	for c in f.marriage_candidates(single):
+		if f.is_ours(c):
+			c.set_meta("engaged", true)
+	f._matchmaking()
+	check("a long-single adult is married by matchmaking, no romance needed", single.spouse_id >= 0)
 
 
 func _test_theft_process() -> void:
