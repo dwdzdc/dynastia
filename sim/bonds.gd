@@ -68,12 +68,16 @@ func memories(from: int, target: String) -> Array:
 	return bonds.get(_key(from, target), [])
 
 
+# Dryf (B4): samo blaknięcie prowadzi ku „obcy” (0), ale nie zmienia znaku tego,
+# co ustaliły zdarzenia — wrogość wymaga zdarzenia, nie upływu czasu.
 func value(from: int, target: String) -> float:
 	var p: SimPerson = w.family.persons.get(from)
 	var sum := 0.0
+	var raw := 0.0
 	for m: Dictionary in memories(from, target):
 		sum += faded(p, m)
-	return sum
+		raw += float(m["weight"])
+	return maxf(sum, 0.0) if raw >= 0.0 else minf(sum, 0.0)
 
 
 # Bieżąca waga wspomnienia: trwałe nie blakną, reszta zanika wykładniczo

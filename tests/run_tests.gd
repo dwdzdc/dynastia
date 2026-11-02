@@ -54,6 +54,7 @@ func _run_all() -> void:
 	_test_together_builds_bonds()
 	_test_dinner_gathers_family()
 	_test_activity_bonds_child_and_accident()
+	_test_drift_never_below_stranger()
 	_test_world_deterministic()
 	_test_world_30_days_autonomous()
 	_test_economy_chain_produces_income()
@@ -491,6 +492,34 @@ func _test_activity_bonds_child_and_accident() -> void:
 	w.remember_accident(aj, "saw", "severe")
 	check("after witnessing an accident the child dislikes the sawmill", w.bonds.value(kuba.id, saw) < 0.0)
 	check("victim remembers the accident permanently", w.bonds.value(jan.id, saw) < 0.0)
+
+
+func _test_drift_never_below_stranger() -> void:
+	var w = _new_world()
+	var f = w.family
+	var jan = f.root()
+	var piotr = null
+	for p in f.living():
+		if p.name == "Piotr":
+			piotr = p
+	var target := SimBonds.person(jan.id)
+	var start: float = w.bonds.value(piotr.id, target)
+	var day0: int = w.clock.day_index()
+	w.clock.set_time(day0 + 60, 0.5)
+	var later: float = w.bonds.value(piotr.id, target)
+	check("isolated person's bond drifts toward stranger", later < start * 0.5 and later >= 0.0)
+	# Pamiętliwy: kłótnia blaknie wolniej niż wspólna praca, ale bez nowego zdarzenia nie ma wrogości.
+	w.bonds.bonds.clear()
+	piotr.character = ["pamietliwy"]
+	w.clock.set_time(day0, 0.5)
+	w.bonds.remember(piotr.id, target, "worked_together", [jan.id], 5.0)
+	w.bonds.remember(piotr.id, target, "quarrel", [jan.id])
+	var ok := true
+	for d in 40:
+		w.clock.set_time(day0 + d, 0.5)
+		if w.bonds.value(piotr.id, target) < 0.0:
+			ok = false
+	check("fading never turns a friendly bond hostile", ok)
 
 
 func _state_sig(w) -> String:
