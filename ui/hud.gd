@@ -49,6 +49,7 @@ var _top_date: Label
 var _top_speed: Array = []
 var _top_res: RichTextLabel
 var _family_title: Label
+var _family_word: Label
 var _family_panel: PanelContainer
 var _build_panel: PanelContainer
 var _menu: PopupMenu
@@ -219,6 +220,10 @@ func _build_family() -> void:
 	p.add_child(v)
 	_family_title = _label("", 22, Color(1.0, 0.85, 0.45))
 	v.add_child(_family_title)
+	_family_word = _label("", 15, DIM)
+	_family_word.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_family_word.custom_minimum_size.x = FAMILY_W - 24
+	v.add_child(_family_word)
 	var go := _button("♛ Pokaż głowę rodu (R)", func(): main.go_to_root(), 17)
 	v.add_child(go)
 	v.add_child(_label("kliknij osobę, by zaznaczyć · F: kamera za osobą", 15, DIM))
@@ -297,7 +302,8 @@ func _update_family() -> void:
 		return
 	var fam := world.family
 	var r := fam.root()
-	_family_title.text = "Ród %s%s" % [fam.dynasty, ("  ·  głowa: " + r.name) if r != null else ""]
+	_family_title.text = "Ród %s · %s%s" % [fam.dynasty, world.standing.rank_label(fam.player_lineage()), ("  ·  głowa: " + r.name) if r != null else ""]
+	_family_word.text = "Mówią o was: " + ", ".join(world.standing.describe(fam.player_lineage()))
 	var living := fam.by_kinship()
 	var sig := ",".join(living.map(func(p): return str(p.agent_id)))
 	if sig != _family_sig:

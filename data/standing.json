@@ -1,0 +1,63 @@
+{
+  "building_value": {
+    "home": 150.0,
+    "decor_house": 100.0,
+    "decor_town": 200.0,
+    "manor": 600.0,
+    "sawmill": 120.0,
+    "workshop": 100.0,
+    "tavern": 150.0,
+    "market": 0.0,
+    "stall": 20.0,
+    "default": 50.0
+  },
+  "ranks": [
+    {
+      "id": "poor",
+      "label": "biedota",
+      "credit": 40.0
+    },
+    {
+      "id": "householder",
+      "label": "gospodarze",
+      "wealth": 120.0,
+      "credit": 120.0
+    },
+    {
+      "id": "master",
+      "label": "mistrzowie i kupcy",
+      "wealth": 350.0,
+      "owns": [
+        "sawmill",
+        "workshop",
+        "stall"
+      ],
+      "credit": 250.0
+    },
+    {
+      "id": "gentry",
+      "label": "ziemianie",
+      "wealth": 800.0,
+      "land": true,
+      "opinion": 0.0,
+      "credit": 500.0
+    }
+  ],
+  "words": {
+    "rich": "zamożni",
+    "modest": "żyją skromnie",
+    "poor": "biedni",
+    "rich_above": 400.0,
+    "poor_below": 60.0,
+    "liked": "lubiani we wsi",
+    "disliked": "źle o nich mówią",
+    "unknown": "mało kto ich zna",
+    "liked_above": 4.0,
+    "disliked_below": -4.0,
+    "craft": "znani z dobrej roboty",
+    "craft_above": 5.0,
+    "enterprise": "mają własny warsztat",
+    "land": "mają ziemię",
+    "office": "trzymają urząd sołtysa"
+  }
+}

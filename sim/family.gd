@@ -647,31 +647,9 @@ func _check_courtships() -> void:
 		_families_talk(p, q)
 
 
-# Pozycja rodu (S19): pieniądze w skrzyniach, budynki i to, co myślą o nim inni.
+# Pozycja rodu (S19 → S28): majątek i opinia ludzi, liczone w SimStanding.
 func standing(l: SimLineage) -> float:
-	var r := _romance()
-	var cash := 0.0
-	var mem := living_members(l.id)
-	var hh := {}
-	for p: SimPerson in mem:
-		hh[p.household_id] = true
-	for hid in hh:
-		var h: SimHousehold = w.households.get(hid)
-		if h != null:
-			cash += maxf(h.cash, 0.0) - h.debt
-	var owned := 0
-	for b: SimBuilding in w.buildings.values():
-		if b.owner_kind == "lineage" and b.owner_id == l.id:
-			owned += 1
-	var opinion := 0.0
-	var n := 0
-	for o in all_living():
-		if o.lineage_id == l.id:
-			continue
-		for m: SimPerson in mem:
-			opinion += w.bonds.value(o.id, SimBonds.person(m.id))
-			n += 1
-	return cash + float(r["standing_building"]) * owned + float(r["standing_opinion"]) * (opinion / maxf(1.0, float(n)))
+	return w.standing.wealth(l) + float(_romance()["standing_opinion"]) * w.standing.opinion(l)
 
 
 # Rodziny się dogadują: przy dużej różnicy pozycji (mezalians) wyżej stojący ród musi

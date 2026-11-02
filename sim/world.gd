@@ -23,6 +23,7 @@ var together: SimTogether
 var talk: SimTalk
 var crime: SimCrime
 var trips: SimTrips
+var standing: SimStanding
 var ai: SimAI
 var trade: SimTrade
 var traders: SimTraders
@@ -105,6 +106,7 @@ func _init(seed: int, p_balance: Dictionary, p_map: Dictionary, p_people: Dictio
 	traders = SimTraders.new(self, p_traders)
 	contracts = SimContracts.new(self, balance["contracts"])
 	trips = SimTrips.new(self, p_traders["trips"])
+	standing = SimStanding.new(self, DataLoader.load_json("res://data/standing.json"))
 	ai.new_day()   # rody AI od razu rozdzielają role (kramarz, nadzorca, praca)
 	for p in family.living():
 		p.set_meta("stage", family.stage_of(p))
@@ -245,9 +247,20 @@ func pay_to(to: String, amount: float) -> void:
 					h = households.get(st.owner)
 					break
 	if h == null:
-		h = household_at(String(balance["economy"]["authority_home"]))
+		h = authority()
 	if h != null:
 		h.earn(amount)
+
+
+# Urząd (V2): grzywny, kaucje i pieniądze bez właściciela trafiają do sołtysa — ród,
+# który stoi najwyżej; na starcie (i bez nikogo) pan na włościach z danych.
+func authority() -> SimHousehold:
+	var l: SimLineage = standing.office_holder() if standing != null else null
+	if l != null and l.root_id >= 0 and family.persons.has(l.root_id):
+		var h: SimHousehold = households.get(family.persons[l.root_id].household_id)
+		if h != null:
+			return h
+	return household_at(String(balance["economy"]["authority_home"]))
 
 
 # Las i ziemia mają właściciela (S27, T4): gospodarstwo z domu wskazanego w mapie.
@@ -1321,6 +1334,7 @@ func _new_day() -> void:
 	contracts.settle_day()
 	together.end_day()
 	traders.new_day()
+	standing.new_day()
 	ai.new_day()
 	family.new_day()
 	bonds.prune()
@@ -1384,8 +1398,8 @@ func pay_owner(b: SimBuilding, amount: float) -> void:
 			if r != null and households.has(r.household_id):
 				households[r.household_id].earn(amount)
 				return
-	# Właściciel nieznany albo nie żyje: pieniądze bierze pan na włościach (S22).
-	var auth := household_at(String(balance["economy"]["authority_home"]))
+	# Właściciel nieznany albo nie żyje: pieniądze bierze urząd (S22, V2).
+	var auth := authority()
 	if auth != null:
 		auth.earn(amount)
 

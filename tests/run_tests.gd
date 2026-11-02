@@ -96,6 +96,7 @@ func _run_all() -> void:
 	_test_land_owners()
 	_test_towns()
 	_test_trip_to_town()
+	_test_standing()
 	_test_theft_process()
 	_test_world_deterministic()
 	_test_world_30_days_autonomous()
@@ -1738,6 +1739,27 @@ func _test_trip_to_town() -> void:
 	w.trips.tick()
 	check("back on the map after the road", a.status == "active" and not w.trips.on_trip(a))
 	check("money of the world is conserved by the trip", absf(w.money_total() - m0) < 0.01)
+
+
+# V1–V2 (S28): pozycja rodu z wielu walut — widoczna opisowo; szczebel daje kredyt,
+# a najwyżej stojący ród trzyma urząd sołtysa i dostaje grzywny.
+func _test_standing() -> void:
+	var w = _new_world()
+	var f = w.family
+	var wilk = f.player_lineage()
+	var est_l = f.lineage_of(f.persons[w.estate_owner().members[0]])
+	check("the manor's lineage stands higher than the village poor", w.standing.rank(est_l) > w.standing.rank(f.lineage_of(f.persons[w.household_at("n2").members[0]])))
+	check("people describe a lineage in words", w.standing.describe(wilk).size() >= 2)
+	check("the highest lineage holds the office and gets the fines", w.standing.office_holder() == est_l)
+	var off = w.authority()
+	var c0: float = off.cash
+	w.pay_to("authority", 5.0)
+	check("fines go to the office holder", is_equal_approx(off.cash, c0 + 5.0))
+	var r0: int = w.standing.rank(wilk)
+	w.household.cash += 2000.0
+	check("wealth lifts the lineage up the ranks", w.standing.rank(wilk) > r0)
+	w.standing.new_day()
+	check("a higher rank gives more credit", w.household.debt_limit >= float(w.standing._cfg["ranks"][r0]["credit"]))
 
 
 func _test_theft_process() -> void:
