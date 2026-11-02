@@ -336,7 +336,7 @@
     "forage_when_cash_below": 10.0,
     "max_foragers": 2,
     "default_job": "laborer",
-    "wealthy_cash_per_adult": 60.0
+    "wealthy_cash_per_adult": 60.0, "input_jobs": {"log": "woodcutter"}, "enterprise_min_cash": 15.0, "enterprise_wage": 8.0, "input_margin_keep": 0.9
   },
   "construction": {"builders": 2, "build_seconds": 30.0, "carry_planks": 4},
   "housing": {"price": {"home": 220.0, "decor_house": 150.0, "decor_town": 320.0}, "rent_upfront_days": 2},

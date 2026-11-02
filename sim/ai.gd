@@ -28,7 +28,10 @@ func new_day() -> void:
 			workers.append(a)
 		# Bez klas (S20): kogo stać, ten nie najmuje się do cudzej roboty — żyje z majątku,
 		# płaci, nadzoruje, bywa. Decyduje skrzynia, nie rola w danych.
+		var ent_jobs := enterprise_jobs(h)
 		if not workers.is_empty() and h.cash / float(workers.size()) >= float(cfg["wealthy_cash_per_adult"]):
+			# Bogaty właściciel warsztatów najmuje do nich ludzi (T2).
+			_post_enterprise_offers(h, ent_jobs)
 			# Role z majątku: kramarz za ladą własnego straganu (M2), zaopatrzeniowiec, gdy
 			# stragan skupuje i dokupuje (kupiec, M5), nadzorca, gdy mają najętych (L6).
 			var roles: Array = []
@@ -46,6 +49,9 @@ func new_day() -> void:
 				_assign(wa, job)
 				wa.workplace = own[0].id if job == "stallkeeper" else ""
 			continue
+		_post_enterprise_offers(h, [])
+		# Biedniejszy właściciel warsztatu (T2): domownicy najpierw do swojej roboty.
+		var own_jobs: Array = ent_jobs.duplicate()
 		var home: SimBuilding = w.buildings.get(h.home_id)
 		var hungry := home != null and home.amount("food") < int(cfg["forage_when_food_below"]) \
 			and h.cash < float(cfg["forage_when_cash_below"])
@@ -66,6 +72,12 @@ func new_day() -> void:
 				w.contracts.quit(p, "")
 				_assign(a, "carrier")
 				shop_run = false
+				continue
+			if not own_jobs.is_empty():
+				w.contracts.quit(p, "")
+				var oj: Dictionary = own_jobs.pop_front()
+				_assign(a, String(oj["job"]))
+				a.workplace = ""
 				continue
 			if not w.contracts.of_worker(p.id).is_empty():
 				continue
@@ -99,8 +111,31 @@ func set_prices() -> void:
 				continue
 			var shortage := _shortage(h, home, g)
 			var surplus := _surplus(h, g)
-			w.trade.set_limit(h, g, "buy_max", r * float(tc["ai_buy_max"]) * (1.0 + float(tc["need_price"]) * shortage))
+			var bmax := r * float(tc["ai_buy_max"]) * (1.0 + float(tc["need_price"]) * shortage)
+			# Wsad do własnego warsztatu: najwyżej tyle, żeby wyrób się jeszcze opłacał (T2).
+			var be := _input_break_even(h, g)
+			if be > 0.0:
+				bmax = be
+			w.trade.set_limit(h, g, "buy_max", bmax)
 			w.trade.set_limit(h, g, "sell_min", r * float(tc["ai_sell_min"]) * (1.0 - float(tc["glut_price"]) * surplus))
+
+
+# Cena wsadu, przy której warsztat rodu wychodzi jeszcze na swoje (0 = to nie wsad).
+func _input_break_even(h: SimHousehold, g: String) -> float:
+	for e: Dictionary in w.enterprises.values():
+		if int(e["owner"]) != h.id:
+			continue
+		for r: Dictionary in w.jobs.recipes.values():
+			if String(r["type"]) != e["type"] or not r["inputs"].has(g):
+				continue
+			var out := 0.0
+			for o in r["outputs"]:
+				out += float(r["outputs"][o]) * w.trade.ref(o)
+			var qty := 0.0
+			for i in r["inputs"]:
+				qty += float(r["inputs"][i])
+			return out / maxf(qty, 1.0) * float(w.balance["ai"]["input_margin_keep"])
+	return 0.0
 
 
 # Brak 0..1: jak bardzo czegoś brakuje w domu względem tego, co dom chce mieć.
@@ -132,6 +167,72 @@ func _surplus(h: SimHousehold, g: String) -> float:
 		if cap > 0.0:
 			best = maxf(best, clampf(float(st.stock.amount(g)) / cap, 0.0, 1.0))
 	return best
+
+
+# Jakie stanowiska są dziś potrzebne w warsztatach rodu (T2): zawód z receptury,
+# dostawca surowca z danych (np. kłody — drwal) i tragarz, który sprzedaje wyroby
+# i dokupuje wsad. Warsztat, który się nie opłaca albo zawalony towarem, stoi.
+func enterprise_jobs(h: SimHousehold) -> Array:
+	var cfg: Dictionary = w.balance["ai"]
+	var out: Array = []
+	for e: Dictionary in w.enterprises.values():
+		if int(e["owner"]) != h.id or not operating(h, e["b"]):
+			continue
+		var b: SimBuilding = e["b"]
+		for r: Dictionary in w.jobs.recipes.values():
+			if String(r["type"]) != b.type:
+				continue
+			out.append({ "job": String(r["job"]), "place": b.id })
+			for g in r["inputs"]:
+				if cfg["input_jobs"].has(g):
+					out.append({ "job": String(cfg["input_jobs"][g]), "place": b.id })
+	if not out.is_empty():
+		out.append({ "job": "carrier", "place": "" })
+	return out
+
+
+# Czy warsztat ma sens dziś pracować: wyroby są warte więcej niż wsad, jest gdzie
+# je składać, a w skrzyni starcza na wsad i dniówki.
+func operating(h: SimHousehold, b: SimBuilding) -> bool:
+	var cfg: Dictionary = w.balance["ai"]
+	if h.cash < float(cfg["enterprise_min_cash"]):
+		return false
+	for r: Dictionary in w.jobs.recipes.values():
+		if String(r["type"]) != b.type:
+			continue
+		var margin := 0.0
+		for g in r["outputs"]:
+			margin += float(r["outputs"][g]) * w.trade.ref(g)
+			if b.space(g) < int(r["outputs"][g]):
+				return false
+		for g in r["inputs"]:
+			margin -= float(r["inputs"][g]) * w.trade.ref(g)
+		return margin > 0.0
+	return false
+
+
+func _post_enterprise_offers(h: SimHousehold, jobs_needed: Array) -> void:
+	var wage := float(w.balance["ai"]["enterprise_wage"])
+	var slots := {}
+	for jn: Dictionary in jobs_needed:
+		if jn["place"] == "":
+			continue
+		var k: String = "%s|%s" % [jn["place"], jn["job"]]
+		slots[k] = int(slots.get(k, 0)) + 1
+	for e: Dictionary in w.enterprises.values():
+		if int(e["owner"]) != h.id:
+			continue
+		for r: Dictionary in w.jobs.recipes.values():
+			if String(r["type"]) != e["type"]:
+				continue
+			var jobs_here: Array = [String(r["job"])]
+			for g in r["inputs"]:
+				if w.balance["ai"]["input_jobs"].has(g):
+					jobs_here.append(String(w.balance["ai"]["input_jobs"][g]))
+			for jb in jobs_here:
+				var n := int(slots.get("%s|%s" % [e["b"].id, jb], 0))
+				n = mini(n, int(floor(h.cash / maxf(wage, 1.0))))
+				w.contracts.post(h.id, e["b"].id, jb, n, wage)
 
 
 func _assign(a: SimAgent, job: String) -> void:

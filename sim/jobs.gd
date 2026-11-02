@@ -32,6 +32,7 @@ const BUILD_RADIUS := 2.2                     # budowlańcy krążą wokół pla
 const THIEF_OFFSET := Vector2(0.8, 0.9)       # złodziej staje obok celu, nie na nim
 const LOVE_OFFSET := Vector2(1.5, 0.8)        # zakochany staje obok tej drugiej osoby
 const REPAIR_SPOT := Vector2(1.8, -0.6)       # gdzie staje ten, kto łata chatę
+const SUPPLY_CYCLES := 3                      # na ile cykli pracy kupuje się wsad do warsztatu
 const POOR_MEALS := 4.0                       # bieda: w skrzyni mniej niż na tyle posiłków
 const FIREWOOD_TRIP := 2                      # ile kłód opału niesie się na raz
 const PAY_QUEUE_SPREAD := 6                  # ilu ludzi stoi obok siebie po wypłatę
@@ -830,6 +831,8 @@ func _plan_carrier(a: SimAgent) -> bool:
 	# Kupiec (M5): dokupuje do swojego straganu tam, gdzie taniej, niż sam sprzedaje.
 	if st != null and _restock(a, st):
 		return true
+	if _supply_enterprise(a):
+		return true
 	var mill := _own(a, "sawmill")
 	var shop := _own(a, "workshop")
 	if shop != null and shop.amount("chair") > 0 and _sell_or_stock(a, shop, "chair", st):
@@ -839,6 +842,41 @@ func _plan_carrier(a: SimAgent) -> bool:
 		return true
 	if mill != null and _hh(a).sell_planks and mill.amount("plank") > 0 and _sell_or_stock(a, mill, "plank", st):
 		return true
+	return false
+
+
+# Wsad do własnego warsztatu (T2), którego ród sam nie wytwarza (np. deski do stolarni
+# bez tartaku): kupuje, póki wyrób jest wart więcej niż wsad.
+func _supply_enterprise(a: SimAgent) -> bool:
+	var hh := _hh(a)
+	for e: Dictionary in w.enterprises.values():
+		if int(e["owner"]) != hh.id:
+			continue
+		var b: SimBuilding = e["b"]
+		for r: Dictionary in w.jobs.recipes.values():
+			if String(r["type"]) != b.type:
+				continue
+			for g in r["inputs"]:
+				if w.balance["ai"]["input_jobs"].has(g) or _own_supplies(hh, g):
+					continue
+				var need := int(r["inputs"][g]) * SUPPLY_CYCLES - b.amount(g)
+				if need <= 0 or w.chore_claims.has("supply:%s:%s" % [b.id, g]):
+					continue
+				if _buy_trip(a, g, mini(need, b.space(g)), b, "kupuje wsad do warsztatu: %s" % w.good_label(g), "niesie wsad do: %s" % b.name):
+					w.chore_claims["supply:%s:%s" % [b.id, g]] = a.id
+					a.claims.append("chore:supply:%s:%s" % [b.id, g])
+					return true
+	return false
+
+
+# Czy ród sam wytwarza dany towar w którymś warsztacie.
+func _own_supplies(hh: SimHousehold, good: String) -> bool:
+	for e: Dictionary in w.enterprises.values():
+		if int(e["owner"]) != hh.id:
+			continue
+		for r: Dictionary in w.jobs.recipes.values():
+			if String(r["type"]) == e["type"] and r["outputs"].has(good):
+				return true
 	return false
 
 

@@ -91,6 +91,7 @@ func _run_all() -> void:
 	_test_wear_and_repair()
 	_test_prices_from_stock()
 	_test_enterprises()
+	_test_ai_runs_enterprise()
 	_test_theft_process()
 	_test_world_deterministic()
 	_test_world_30_days_autonomous()
@@ -1609,6 +1610,41 @@ func _test_enterprises() -> void:
 	var prod: Array = worker.steps.filter(func(s): return s["t"] == "do" and s["fn"] == "produce")
 	check("another household's sawyer works in their own sawmill", not prod.is_empty() and prod[0]["arg"]["b"] == "mill2")
 	check("player's sawmill is foreign to them, theirs to the player", w.is_foreign(b) and not w.is_foreign(w.building("sawmill")))
+
+
+# T2: ród AI prowadzi warsztat — obsadza go swoimi albo najmuje, dokupuje wsad,
+# którego sam nie wytwarza, a bez pieniędzy warsztat stoi.
+func _test_ai_runs_enterprise() -> void:
+	var w = _new_world()
+	var kos = w.household_at("n1")
+	var shop := SimBuilding.new("shop2", "Stolarnia Kosów", "workshop", Vector2(30, 52), w.balance["storage"]["workshop"])
+	w.buildings[shop.id] = shop
+	w.add_enterprise(shop, kos.id)
+	kos.cash = 40.0
+	w.ai.new_day()
+	var jobs: Array = kos.members.map(func(pid): return w.agent_by_id(w.family.persons[pid].agent_id).job)
+	check("modest owner puts own people to work in the workshop", "carpenter" in jobs)
+	var st = _stall_ready(w, "stall_bednarz")
+	st.stock.add("plank", 10)
+	w.ai.set_prices()
+	w.trade.set_limit(w.households[st.owner], "plank", "sell_min", 3.5)
+	var carrier = null
+	for pid in kos.members:
+		var a = w.agent_by_id(w.family.persons[pid].agent_id)
+		if a.can_work() and a.job != "carpenter":
+			carrier = a
+	carrier.steps.clear()
+	check("workshop without own sawmill buys planks as input", w.jobs._supply_enterprise(carrier)
+		and carrier.steps.any(func(x): return x["t"] == "do" and x["fn"] == "buy_at" and x["arg"]["to"] == "shop2"))
+	var rich = w.estate_owner()
+	var mill := SimBuilding.new("mill3", "Tartak dworski", "sawmill", Vector2(88, 50), w.balance["storage"]["sawmill"])
+	w.buildings[mill.id] = mill
+	w.add_enterprise(mill, rich.id)
+	w.ai.new_day()
+	check("wealthy owner hires people for the sawmill", not w.contracts.find_offer(rich.id, "mill3", "sawyer").is_empty()
+		and int(w.contracts.find_offer(rich.id, "mill3", "sawyer")["slots"]) > 0)
+	kos.cash = 0.0
+	check("no money: the workshop stands idle", not w.ai.operating(kos, shop))
 
 
 func _test_theft_process() -> void:
