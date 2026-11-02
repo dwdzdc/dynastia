@@ -97,21 +97,35 @@ Pętla gry: ród Wilków (6 osób, 3 pokolenia) w chacie pod lasem. Co 5 dni czy
 - [x] E3 Podgląd kroniki (osobny panel, klawisz) → zrzut ekranu.
 - [x] E4 Tryb debug (F3): ukryte liczby (więzi, siła) widoczne dla dewelopera → zrzut ekranu.
 
-### Iteracja 2 (później)
+## Iteracja 2 — społeczeństwo (następna)
 
-Wyjazdy (`away`) i powroty, pojednanie (okno decyzji), drzewo genealogiczne znanych osób, pełniejsze rody AI, zapis/odczyt gry.
+Cel: rodzina przestaje być oderwana od świata. Inne rody żyją z tych samych danych i tym samym kodem, popyt i ceny biorą się z ich pieniędzy i potrzeb, małżonek to ktoś, kogo się zna, a dom to aktywo, które można wynająć, kupić albo zbudować. Decyzje szkieletowe S6–S12 czekają na zatwierdzenie (niżej); podział na punkty pisze autor.
 
-## Dalej (po dynamice rodu)
+### Decyzje szkieletowe (propozycja, do zatwierdzenia)
 
-1. [ ] Społeczeństwo: kilka rodów w pełni symulowanych z tych samych danych; targ, praca i lokum jako relacje z konkretnymi ludźmi (kupiec ustala ceny, popyt z pieniędzy kupujących).
-2. [ ] Budynki jako aktywa (0..n), wynajem od konkretnej osoby, eksmisja i bezdomność.
-3. [ ] Zapis/odczyt (serializacja `SimWorld` do JSON, wersjonowana).
+- **S6. Gospodarstwo jako byt świata.** `SimHousehold { id, home_id, members, cash }`, wiele w świecie; ród ma ich 0..n. Kasa wspólna należy do gospodarstwa, nie do rodu. Sakiewki osób (S5) zostają. Odszedły zakłada własne gospodarstwo.
+- **S7. Budynek jako aktywo.** `SimBuilding.owner` (osoba, ród albo nikt) i `tenant` (gospodarstwo). Czynsz i płace liczone **na dobę**, płacone konkretnej osobie lub gospodarstwu. Eksmisja przy długu, bezdomność jako stan, nie koniec gry.
+- **S8. Rody AI pełne.** Kilka rodów startowych z danych, z ciałami na mapie, tym samym `SimFamily`/`SimBonds`/`SimJobs` co gracz. Gracz to tylko ród, któremu przypisano „player”. Różnią się decyzjami (AI wybiera prace, śluby, zakupy), nie modelem. Ich ludzie są w świecie wyraźnie odróżnieni od twoich.
+- **S9. Rynek jako ludzie.** Kupiec to osoba z rodu kupieckiego z własną kasą i zapasem. Kupuje tylko, gdy ma pieniądze i zbyt; cena zależy od jego zapasu i kasy. Popyt mają konkretni kupujący (jedzenie, deski na budowę). Wymiana z „miastem za mapą” (import/eksport w danych) jako zawór, żeby mała okolica się nie zakleszczyła.
+- **S10. Budowa.** Plac budowy jako byt: typ budynku z danych, lista materiałów i ilość pracy. Na razie tylko dom. Ród AI buduje, gdy jest za ciasno i ma pieniądze; gracz może zlecić budowę w wybranym miejscu. Tłok i prywatność wpływają na więzi (za ciasno: kłótnie, osobno: rzadszy wspólny czas).
+- **S11. Małżeństwo z istniejącymi ludźmi.** Kandydaci to wolni dorośli z innych rodów w okolicy, uszeregowani po więzi (poznali się w pracy, na targu). Bez materializacji z powietrza; brak kandydatów to brak ślubu (szersza okolica przyjdzie z LOD).
+- **S12. Ludzie z innych rodów w więziach.** Te same `SimBonds` i `SimTogether` dla wszystkich par, także między rodami (przyjaźń, wrogość, sąsiedzi). Siła przynależności liczona per ród od jego roota.
+
+## Iteracja 3 — codzienność i ciało
+
+Zróżnicowany rytm dnia jak w RimWorldzie (różne pory snu i pracy, droga do domu trwa, kolacja nie jest natychmiastowa), temperatura i ubiór, kontrola poczęć (przełącznik, szanse w danych, nigdy 0 i 100%), cmentarze i pomniki, czytelna progresja doświadczenia, płeć jako składnik naśladowania dorosłych (`goals.md`).
+
+## Dalej
+
+1. [ ] Więcej łańcuchów produkcji (ruda → żelazo → narzędzia, zboże → mąka → chleb) i rozwój interesu (kolejne warsztaty, pracownicy) — sens dopiero przy realnym popycie z iteracji 2.
+2. [ ] Wyjazdy (`away`) i powroty, pojednanie (okno decyzji), drzewo genealogiczne znanych osób.
+3. [ ] Zapis/odczyt (serializacja `SimWorld` do JSON, wersjonowana) — po ustabilizowaniu modelu społeczeństwa.
 4. [ ] Zlecenia na obiektach jako warstwa nad wykonawcą kroków.
 5. [ ] Drogi jako mechanika (koszt ruchu, sezon, noc) i magazyn.
-6. [ ] Scenariusz „odludzie”.
-7. [ ] LOD i rody w tle, materializacja osób spoza okolicy.
-8. [ ] Epoki jako dane i zmiana epoki w trakcie gry (nauka).
-9. [ ] Cele z `docs/design/goals.md`: zagrożenia (zwierzęta, przestępcy, obrona, pożary), zaginięcia i porwania z powrotem po latach, ścieżki kariery, płeć jako czynnik naśladowania dorosłych (tradycja), budowanie, ziemia i pracownicy, mapa proceduralna, wybór epoki/miejsca/rodziny na starcie.
+6. [ ] Zagrożenia, zaginięcia i porwania, ścieżki kariery (`goals.md`).
+7. [ ] Scenariusz „odludzie”, mapa proceduralna, wybór epoki/miejsca/rodziny na starcie.
+8. [ ] LOD i rody w tle, materializacja osób spoza okolicy.
+9. [ ] Epoki jako dane i zmiana epoki w trakcie gry (nauka).
 
 ## Uwagi autora do wdrożenia (02.11.2026)
 
