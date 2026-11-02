@@ -44,17 +44,16 @@ func sample(dt: float) -> void:
 
 # Koniec doby: pary z wystarczającym czasem dostają wspomnienie, skalowane czasem.
 func end_day() -> void:
-	var min_s := float(_cfg["min_seconds"])
-	var full_s := float(_cfg["full_seconds"])
 	for key: String in seconds:
 		var s: float = seconds[key]
-		if s < min_s:
-			continue
 		var parts := key.split("|")
+		var ctx: Dictionary = _cfg["contexts"][parts[2]]
+		if s < float(ctx.get("min_seconds", _cfg["min_seconds"])):
+			continue
 		var a := int(parts[0])
 		var b := int(parts[1])
-		var kind := String(_cfg["contexts"][parts[2]]["kind"])
-		var scale := minf(1.0, s / full_s)
+		var kind := String(ctx["kind"])
+		var scale := minf(1.0, s / float(ctx.get("full_seconds", _cfg["full_seconds"])))
 		w.bonds.remember(a, SimBonds.person(b), kind, [b], scale, parts[3])
 		w.bonds.remember(b, SimBonds.person(a), kind, [a], scale, parts[3])
 	seconds.clear()

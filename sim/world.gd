@@ -333,8 +333,8 @@ func _behave(a: SimAgent, dt: float) -> void:
 	if a.controlled and a.steps.is_empty():
 		a.controlled = false   # kolejka rozkazów wykonana — wraca do autopilota
 	var want := jobs.desired_kind(a)
-	var early_meal := a.plan_kind == "eat" and want in ["work", "chore", "child"]
-	if want != a.plan_kind and not early_meal and a.interruptible():
+	var early_meal := a.plan_kind == "eat" and want in ["work", "chore", "child", "dinner"]
+	if want != a.plan_kind and not early_meal and a.interruptible(want == "dinner"):
 		jobs.replan(a)
 	elif a.steps.is_empty():
 		jobs.replan(a)

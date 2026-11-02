@@ -34,6 +34,8 @@ func block_at(tod: float) -> String:
 		return "sleep"
 	if tod >= float(s["work_start"]) and tod < float(s["work_end"]):
 		return "work"
+	if tod >= float(s["dinner_start"]) and tod < float(s["dinner_end"]):
+		return "dinner"
 	return "free"
 
 
@@ -49,6 +51,8 @@ func desired_kind(a: SimAgent) -> String:
 	var block := block_at(w.clock.time_of_day())
 	if block == "sleep" or a.needs["sleep"] < float(w.balance["needs"]["sleep"]["low"]):
 		return "sleep"
+	if block == "dinner":
+		return "dinner"
 	if a.is_child:
 		return "child"
 	if block == "work" and a.can_work() and a.job != "none":
@@ -80,6 +84,8 @@ func replan(a: SimAgent) -> void:
 			_go_inside(a, w.home(), "sleep", 4.0, "śpi")
 		"child":
 			_plan_child(a)
+		"dinner":
+			_plan_dinner(a)
 		"work":
 			_plan_work(a)
 		"chore":
@@ -157,6 +163,19 @@ func _plan_eat(a: SimAgent) -> void:
 		why += " (ktoś już idzie po jedzenie)"
 	_walk(a, home.door(), why)
 	_act(a, "wait", float(_cfg["wait_seconds"]), why, home.id, true)
+
+
+# Kolacja: ród schodzi się do chaty i siedzi razem przy stole do końca bloku (B2).
+# Je tylko ten, kto jest choć trochę głodny; przy pustej spiżarni siedzą przy pustym stole.
+func _plan_dinner(a: SimAgent) -> void:
+	var home: SimBuilding = w.home()
+	var left := (float(w.balance["schedule"]["dinner_end"]) - w.clock.time_of_day()) * w.clock.day_seconds
+	_walk(a, home.door(), "wraca do chaty na kolację")
+	_do(a, "dinner")
+	var why := "je kolację z rodziną"
+	if home.amount("food") <= 0:
+		why = "siedzi z rodziną przy pustym stole"
+	_act(a, "dine", maxf(left, float(_cfg["wait_seconds"])), why, home.id)
 
 
 func _plan_child(a: SimAgent) -> void:
@@ -450,6 +469,9 @@ func apply(a: SimAgent, step: Dictionary) -> bool:
 	match String(step["fn"]):
 		"eat":
 			return _fx_eat(a)
+		"dinner":
+			_fx_dinner(a)
+			return true
 		"deposit":
 			return _fx_deposit(a, String(step["arg"]))
 		"pickup":
@@ -475,6 +497,14 @@ func _fx_eat(a: SimAgent) -> bool:
 		return false
 	a.needs["food"] = minf(100.0, a.needs["food"] + float(w.balance["needs"]["food"]["meal"]))
 	return true
+
+
+func _fx_dinner(a: SimAgent) -> void:
+	if a.dinner_day == w.clock.day_index():
+		return
+	a.dinner_day = w.clock.day_index()
+	if a.needs["food"] < float(w.balance["needs"]["food"]["dinner_eat_below"]):
+		_fx_eat(a)
 
 
 func _fx_deposit(a: SimAgent, bid: String) -> bool:

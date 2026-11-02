@@ -11,6 +11,8 @@ class_name SimAgent
 extends RefCounted
 
 
+const WORK_ACTS := ["chop", "saw", "craft", "forage"]
+
 var id: int
 var person_id: int = -1
 var position: Vector2 = Vector2.ZERO
@@ -43,6 +45,7 @@ var inside: String = ""             # id budynku, w którym jest
 var controlled: bool = false
 var hungry_no_food: bool = false
 var cold: bool = false
+var dinner_day: int = -1            # doba ostatniej kolacji przy wspólnym stole
 
 # Modyfikatory od warstwy tożsamości
 var is_child: bool = false
@@ -96,12 +99,16 @@ func current_step() -> Dictionary:
 
 
 # Krok, który można przerwać bez utraty wykonanej pracy.
-func interruptible() -> bool:
+# `drop_work`: czy wolno też przerwać rozpoczętą robotę (np. na kolację) — postęp czynności przepada.
+func interruptible(drop_work := false) -> bool:
 	if steps.is_empty():
 		return true
 	var s: Dictionary = steps[0]
 	if s["t"] == "walk":
 		return true
 	if s["t"] == "act":
-		return String(s["act"]) in ["wait", "rest", "sleep", "labor", "play", "idle"]
+		var act := String(s["act"])
+		if drop_work and act in WORK_ACTS:
+			return true
+		return act in ["wait", "rest", "sleep", "labor", "play", "idle", "dine"]
 	return false

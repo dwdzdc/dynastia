@@ -107,6 +107,8 @@
   "schedule": {
     "work_start": 0.27,
     "work_end": 0.75,
+    "dinner_start": 0.76,
+    "dinner_end": 0.82,
     "sleep": 0.87,
     "wake": 0.25
   },
@@ -118,7 +120,8 @@
       "start": [
         70.0,
         95.0
-      ]
+      ],
+      "dinner_eat_below": 85.0
     },
     "sleep": {
       "decay_day": 70.0,

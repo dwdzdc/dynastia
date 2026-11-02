@@ -70,7 +70,7 @@ Pętla gry: ród Wilków (6 osób, 3 pokolenia) w chacie pod lasem. Co 5 dni czy
 ### Faza B — czas razem
 
 - [x] B1 Wykrywanie wspólnego czasu: te same miejsce i czynność (praca, posiłek, wieczór) → licznik par → na koniec doby wspomnienie („pracowali razem w tartaku”) → test: dwoje w tartaku zyskuje więź, rozdzieleni nie.
-- [ ] B2 Wspólny posiłek wieczorny: blok kolacji, ród schodzi się w domu → okazja do czasu razem → test: obecni przy kolacji mają wspomnienie.
+- [x] B2 Wspólny posiłek wieczorny: blok kolacji, ród schodzi się w domu → okazja do czasu razem → test: obecni przy kolacji mają wspomnienie.
 - [ ] B3 Wspomnienia o czynnościach: praca tworzy więź z czynnością (wypadek mocno na minus, praca z lubianą osobą na plus); dzieci przeżywają mocniej → test: dziecko w tartaku z ojcem lubi tartak, po wypadku nie.
 - [ ] B4 Dryf: brak kontaktu blaknie ku „obcy”, nigdy niżej bez zdarzenia → test: izolowany traci więź, ale nie schodzi poniżej podłogi.
 

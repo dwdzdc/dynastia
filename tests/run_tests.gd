@@ -52,6 +52,7 @@ func _run_all() -> void:
 	_test_memories_character_mods()
 	_test_start_bonds()
 	_test_together_builds_bonds()
+	_test_dinner_gathers_family()
 	_test_world_deterministic()
 	_test_world_30_days_autonomous()
 	_test_economy_chain_produces_income()
@@ -432,6 +433,33 @@ func _test_together_builds_bonds() -> void:
 		w.together.sample(1.0)
 	w.together.end_day()
 	check("far apart outdoors is not together", w.bonds.memories(maria.id, SimBonds.person(jan.id)).is_empty())
+
+
+func _test_dinner_gathers_family() -> void:
+	var w = _bond_world()
+	var s: Dictionary = w.balance["schedule"]
+	# Jedna pełna doba, potem zatrzymanie w środku kolacji następnej.
+	_run_days_auto(w, 1.0)
+	var mid := (float(s["dinner_start"]) + float(s["dinner_end"])) * 0.5
+	var target: float = float(w.clock.day_index()) + mid
+	_run_days_auto(w, target - w.clock.now())
+	var dining := 0
+	var active := 0
+	for p in w.family.living():
+		var a = w.agent_by_id(p.agent_id)
+		if a.status == "active" and not a.disabled():
+			active += 1
+			if a.activity == "dine":
+				dining += 1
+	check("family gathers for dinner (%d/%d at the table)" % [dining, active], dining >= active - 1 and dining >= 2)
+	w.bonds.bonds.clear()
+	_run_days_auto(w, 1.0 - mid + 0.01)
+	var jan = w.family.root()
+	var had := false
+	for m in w.bonds.memories(jan.id, SimBonds.person(jan.spouse_id)):
+		if m["kind"] == "meal_together":
+			had = true
+	check("those at dinner have a shared-meal memory", had)
 
 
 func _state_sig(w) -> String:

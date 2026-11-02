@@ -29,7 +29,7 @@
     "full_seconds": 150.0,
     "contexts": {
       "work": {"acts": ["chop", "saw", "craft", "labor", "forage"], "kind": "worked_together"},
-      "meal": {"acts": ["eat", "dine"], "kind": "meal_together"},
+      "meal": {"acts": ["eat", "dine"], "kind": "meal_together", "min_seconds": 10.0, "full_seconds": 25.0},
       "evening": {"acts": ["rest", "play"], "kind": "evening_together"}
     }
   },
