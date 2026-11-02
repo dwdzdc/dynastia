@@ -13,7 +13,7 @@ Decyzje architektoniczne są w `docs/adr/`, terminy w `GLOSSARY.md`.
 
 ## Gdzie jesteśmy
 
-Grywalny przekrój pionowy jest gotowy, ale za bardzo przypomina grę o osadzie. Trwa **Iteracja 1 — dynamika rodu** (`progress.md`). Decyzje szkieletowe S1–S5 są zatwierdzone przez autora. Następna praca to **Faza 0, punkt 0.1**, i dalej po kolei.
+**Iteracja 1 — dynamika rodu** (`progress.md`) jest zaimplementowana w całości (fazy 0, A–E) i czeka na test rozgrywki autora. Przed iteracją 2 zbierz jego uwagi i popraw balans (`data/memories.json`, `balance.json` → `belonging`, `will`).
 
 ## Jak pracujemy
 
