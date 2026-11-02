@@ -1,0 +1,26 @@
+progress.md
+  ai_agent 89
+sim/bonds.gd
+  s_01663f7cfcc9df::t_57061964e8b218 136-167
+tests/run_tests.gd
+  s_01663f7cfcc9df::t_57061964e8b218 63,674-684,686
+  s_01663f7cfcc9df::t_ffa715cf9d6394 685
+data/memories.json
+  s_01663f7cfcc9df::t_57061964e8b218 40-45
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "e205820b8dd6e58e81f66c5245138086f781462b",
+  "prompts": {},
+  "sessions": {
+    "s_01663f7cfcc9df": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0628b2b4-7b30-464d-a1f4-7ea1e2566c94",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Dawid Dziedzic <24682682+dwdzdc@users.noreply.github.com>"
+    }
+  }
+}
