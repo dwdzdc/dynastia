@@ -160,6 +160,8 @@ Pętla gry: ród Wilków (6 osób, 3 pokolenia) w chacie pod lasem. Co 5 dni czy
 
 - [x] Q1 Panele: dom (skrzynia, mieszkańcy), stragan, osoba (sakwa, umowa) → zrzuty.
 - [ ] Q2 Sonda wsi na 60 dób: brak zakleszczeń, pieniądze krążą, rody AI przeżywają, ludzie widocznie pracują.
+  - Sonda: `godot --headless -s res://tools/probe_village.gd -- <dni> <seed>`. Stan (seed 1, 30 dób, 02.11.2026): ludzie 22 → 20, pieniądze w okolicy 1123 → 1678 zł (nie wyciekają), dorośli zamknięci w domu w godzinach pracy 1,6%, Wilkowie na autopilocie 70 → 298 zł.
+  - **Otwarte (do decyzji z autorem):** biedne rody AI (Kos, Sowa, Nowak) od pierwszych dób mają dług za czynsz i około 20. doby lądują pod gołym niebem; pieniądze zbierają się u dworu (czynsz + sprzedaż jedzenia), a praca w polu jest sezonowa. Kandydaci: praca zimą (młocka, opał dla dworu), ogródki przy chatach, czynsz w naturze albo odrabiany, dwór wydający nadwyżki (budowy, służba).
 
 ## Iteracja 2 — społeczeństwo (wstrzymana w połowie)
 

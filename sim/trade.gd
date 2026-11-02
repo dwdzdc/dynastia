@@ -141,6 +141,9 @@ func best_buyer(seller: SimAgent, good: String) -> SimStall:
 		var oh: SimHousehold = w.households.get(st.owner)
 		if oh == null or buy_max(oh, good) < sell_min(sh, good):
 			continue
+		# Stały stragan skupuje tylko do swojego zapasu (zbyt), a nie bez końca.
+		if not st.temporary and st.stock.amount(good) >= int(_cfg["restock_target"].get(good, 0)):
+			continue
 		var ka := w.agent_by_id(st.keeper)
 		var keeper_cash := w.person_of(ka).purse if ka != null and w.person_of(ka) != null else 0.0
 		if keeper_cash < sell_min(sh, good):
