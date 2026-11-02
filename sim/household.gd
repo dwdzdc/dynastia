@@ -1,6 +1,8 @@
 # SimHousehold — gospodarstwo domowe (S6): kto mieszka razem i ma wspólną kasę.
 # Gotówka, dług, cele zapasów i reputacja rzemieślnicza. Ceny i targ: SimMarket.
 # Spiżarnia i opał leżą w zapasie budynku domu (`home_id`). Ród ma 0..n gospodarstw.
+# Pieniądze (S14) leżą w skrzyni w domu (`chest`); `cash` to tylko podgląd skrzyni.
+# Bez dachu nad głową gospodarstwo nosi je w tobołku.
 class_name SimHousehold
 extends RefCounted
 
@@ -9,7 +11,16 @@ var id: int
 var home_id: String
 var members: Array = []              # id osób
 
-var cash: float
+var chest: SimBuilding = null        # budynek ze skrzynią gospodarstwa (dom)
+var _bundle := 0.0                   # pieniądze bez domu: tobołek
+var cash: float:
+	get:
+		return float(chest.chests.get(id, 0.0)) if chest != null else _bundle
+	set(v):
+		if chest != null:
+			chest.chests[id] = v
+		else:
+			_bundle = v
 var debt: float = 0.0
 var debt_interest: float             # na dobę
 var debt_limit: float
@@ -36,6 +47,15 @@ func _init(p_id: int, p_home: String, eco: Dictionary, start_cash: float) -> voi
 	target_food = int(eco["default_target_food"])
 	target_firewood = int(eco["default_target_firewood"])
 	_rep_decay = float(eco["reputation_decay_day"])
+
+
+# Przeprowadzka: skrzynia jedzie z gospodarstwem (null = tobołek, bez domu).
+func set_chest(b: SimBuilding) -> void:
+	var c := cash
+	if chest != null:
+		chest.chests.erase(id)
+	chest = b
+	cash = c
 
 
 func can_afford(amount: float) -> bool:

@@ -114,7 +114,7 @@ Pętla gry: ród Wilków (6 osób, 3 pokolenia) w chacie pod lasem. Co 5 dni czy
 ### Faza K — skarbiec i sakwy
 
 - [x] K0 „Nosiciel” → „tragarz” w danych, UI i dokumentach → grep pusty.
-- [ ] K1 Skrzynia (S14): kasa gospodarstwa jako `coin` w domu → test: suma pieniędzy w świecie stała; gracz widzi monety na etykiecie domu.
+- [x] K1 Skrzynia (S14): kasa gospodarstwa jako `coin` w domu → test: suma pieniędzy w świecie stała; gracz widzi monety na etykiecie domu.
 - [ ] K2 Zakup przez sakwę: brak w sakwie → najpierw dom i skrzynia, płaci z sakwy, reszta zostaje na okazję albo wraca → test: bez pieniędzy w sakwie i bez wizyty w domu nie kupi; gracz widzi, jak ktoś zagląda do chaty przed targiem.
 - [ ] K3 Zarobek do sakwy, oddanie do skrzyni to czynność w domu; ile oddaje i ile wydaje na siebie zależy od siły (D1 w świecie) → test: oddalający się oddaje mniej, zadbany oddaje mimo pełnej sakwy.
 

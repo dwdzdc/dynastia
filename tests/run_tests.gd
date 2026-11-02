@@ -72,6 +72,7 @@ func _run_all() -> void:
 	_test_bonds_across_lineages()
 	_test_marriage_with_existing_people()
 	_test_merchant_is_a_person()
+	_test_money_in_chest()
 	_test_buyers_pay_from_own_money()
 	_test_traveling_traders()
 	_test_estate_pays_wages()
@@ -986,6 +987,27 @@ func _money(w) -> float:
 	for p in w.family.persons.values():
 		s += p.purse
 	return s
+
+
+# K1 (S14): kasa gospodarstwa leży w skrzyni w domu; przeprowadzka zabiera skrzynię,
+# eksmisja zostawia tobołek; dwa gospodarstwa pod jednym dachem mają osobne skrzynie.
+func _test_money_in_chest() -> void:
+	var w = _new_world()
+	var h = w.household
+	var home = w.home()
+	var m0: float = _money(w)
+	check("household cash lies in the home chest", h.chest == home and is_equal_approx(float(home.chests[h.id]), h.cash))
+	h.cash -= 10.0
+	check("spending from household empties the chest", is_equal_approx(float(home.chests[h.id]), h.cash))
+	var cash: float = h.cash
+	w.evict(h)
+	check("evicted household carries money in a bundle", h.chest == null and is_equal_approx(h.cash, cash) and not home.chests.has(h.id))
+	var free = w.free_house()
+	w.move_household(h, free)
+	check("moving in puts the chest in the new house", h.chest == free and is_equal_approx(float(free.chests[h.id]), cash))
+	var other = w.new_household(free.id, 5.0)
+	check("two households under one roof keep separate chests", is_equal_approx(other.cash, 5.0) and is_equal_approx(h.cash, cash))
+	check("money is conserved by moving chests", absf(_money(w) - 5.0 - (m0 - 10.0)) < 0.001)
 
 
 func _test_buyers_pay_from_own_money() -> void:

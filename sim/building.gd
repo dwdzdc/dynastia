@@ -16,6 +16,9 @@ var chair_qualities: Array = []  # jakość każdego krzesła w zapasie (FIFO)
 var owner_kind: String = "none"
 var owner_id: int = -1
 var rent_per_day: float = 0.0
+# Skrzynie (S14): id gospodarstwa -> pieniądze w jego skrzyni. Kilka gospodarstw może
+# mieszkać pod jednym dachem (kąt u sąsiadów), każde ma swoją skrzynię.
+var chests: Dictionary = {}
 
 
 func _init(p_id: String, p_name: String, p_type: String, p_pos: Vector2, p_cap: Dictionary) -> void:
@@ -46,6 +49,13 @@ func take(good: String, qty: int) -> int:
 	var n := mini(qty, amount(good))
 	stock[good] = amount(good) - n
 	return n
+
+
+func coins() -> float:
+	var s := 0.0
+	for hid in chests:
+		s += float(chests[hid])
+	return s
 
 
 # Drzwi: punkt przed budynkiem, do którego chodzą ludzie (budynek stoi na środku).

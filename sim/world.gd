@@ -67,6 +67,7 @@ func _init(seed: int, p_balance: Dictionary, p_map: Dictionary, p_people: Dictio
 			Vector2(float(b["x"]), float(b["y"])), cap)
 		nb.rent_per_day = float(balance["economy"]["rent_per_day"].get(t, 0.0))
 		buildings[b["id"]] = nb
+	household.set_chest(home())
 	var eco: Dictionary = balance["economy"]
 	home().add("food", int(eco["start_food"]))
 	home().add("log", int(eco["start_firewood"]))
@@ -146,6 +147,7 @@ func new_household(home_id: String, cash: float) -> SimHousehold:
 	var h := SimHousehold.new(_next_household, home_id, balance["economy"], cash)
 	_next_household += 1
 	households[h.id] = h
+	h.set_chest(buildings.get(home_id))
 	return h
 
 
@@ -832,6 +834,7 @@ func pay_owner(b: SimBuilding, amount: float) -> void:
 
 func move_household(h: SimHousehold, b: SimBuilding) -> void:
 	h.home_id = b.id if b != null else ""
+	h.set_chest(b)
 	h.evict_days = 0
 	for pid in h.members:
 		var a := agent_by_id(family.persons[pid].agent_id)
