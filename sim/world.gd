@@ -768,10 +768,14 @@ func _finish_site(site_id: String) -> void:
 	b.rent_per_day = float(balance["economy"]["rent_per_day"].get(b.type, 0.0))
 	if bool(cfg.get("enterprise", false)):
 		add_enterprise(b, int(site["household"]))
-	# Ród AI bez dachu wprowadza się od razu do tego, co postawił (X5).
+	# Ród AI bez dachu wprowadza się od razu do tego, co postawił (X5); ród w ciasnym
+	# domu wyprowadza do nowego dorosłą parę albo dorosłego (X6, wyprowadzka w rodzie).
 	var sh: SimHousehold = households.get(int(site["household"]))
-	if b.type in HOUSE_TYPES and sh != null and sh != household and sh.home_id == "":
-		move_household(sh, b)
+	if b.type in HOUSE_TYPES and sh != null and sh != household:
+		if sh.home_id == "":
+			move_household(sh, b)
+		else:
+			_split_household(sh, b)
 	note("Budowa skończona: %s należy do rodu %s." % [b.name, lname], "good" if int(site["household"]) == household.id else "info", b.door())
 	chronicle.add(clock.now(), "built", "Zbudowany: %s." % b.name, [], int(site["lineage"]))
 
@@ -795,6 +799,35 @@ func send_on_trip(agent_id: int, town_id: String) -> bool:
 		return false
 	note("%s wyrusza na wyprawę do: %s." % [person_of(a).name, town.name], "info", a.position)
 	return true
+
+
+# Wyprowadzka w obrębie rodu: dorosły (nie głowa) z małżonkiem zakłada gospodarstwo
+# w nowym domu, z częścią skrzyni na start.
+func _split_household(h: SimHousehold, b: SimBuilding) -> void:
+	var root_id := -1
+	var l := family.lineage_of(family.persons[h.members[0]])
+	if l != null:
+		root_id = l.root_id
+	var mover: SimPerson = null
+	for pid in h.members:
+		var p: SimPerson = family.persons[pid]
+		if p.alive() and p.id != root_id and family.stage_of(p) == "adult" and not p.attached:
+			mover = p
+			break
+	if mover == null:
+		return
+	var nh := new_household(b.id, 0.0)
+	var share := h.cash * float(balance["ai"]["split_cash_share"])
+	h.cash -= share
+	nh.cash = share
+	join_household(mover, nh)
+	if mover.spouse_id >= 0 and family.persons[mover.spouse_id].household_id == h.id:
+		join_household(family.persons[mover.spouse_id], nh)
+	for pid in nh.members:
+		var a := agent_by_id(family.persons[pid].agent_id)
+		if a != null:
+			jobs.replan(a)
+	chronicle.add(clock.now(), "move", "%s wyprowadza się na swoje do nowego domu (%s)." % [mover.name, b.name], nh.members, mover.lineage_id)
 
 
 # Gracz jako pracodawca (L4): oferta pracy w swoim warsztacie (ile osób, za ile).

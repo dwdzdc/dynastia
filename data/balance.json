@@ -337,7 +337,7 @@
     "forage_when_cash_below": 10.0,
     "max_foragers": 2,
     "default_job": "laborer",
-    "wealthy_cash_per_adult": 60.0, "input_jobs": {"log": "woodcutter"}, "enterprise_min_cash": 15.0, "enterprise_wage": 8.0, "input_margin_keep": 0.9, "found_cash": 200.0, "found_when_stock_below": 0.3, "fire_sale_mult": 0.6
+    "wealthy_cash_per_adult": 60.0, "input_jobs": {"log": "woodcutter"}, "enterprise_min_cash": 15.0, "enterprise_wage": 8.0, "input_margin_keep": 0.9, "found_cash": 120.0, "crowded_members": 6, "split_cash_share": 0.3, "found_when_stock_below": 0.3, "fire_sale_mult": 0.6
   },
   "construction": {"builders": 2, "build_seconds": 30.0, "carry_planks": 4},
   "housing": {"price": {"home": 220.0, "decor_house": 150.0, "decor_town": 320.0}, "rent_upfront_days": 2},

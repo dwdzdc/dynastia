@@ -20,6 +20,7 @@ func new_day() -> void:
 	post_offers()
 	set_prices()
 	found_enterprises()
+	_build_homes()
 	_merchant_trips()
 	_sell_when_broke()
 	for h: SimHousehold in w.households.values():
@@ -83,7 +84,7 @@ func new_day() -> void:
 				w.contracts.quit(p, "")
 				var oj: Dictionary = own_jobs.pop_front()
 				_assign(a, String(oj["job"]))
-				a.workplace = ""
+				a.workplace = String(oj["place"]) if oj["job"] == "builder" else ""
 				continue
 			if not w.contracts.of_worker(p.id).is_empty():
 				continue
@@ -299,6 +300,22 @@ func found_enterprises() -> void:
 				break
 
 
+# Dom, gdy ciasno (X6): ród AI z wieloma ludźmi pod jednym dachem i pieniędzmi na
+# działkę i deski zleca budowę obok; po budowie para wyprowadza się na swoje.
+func _build_homes() -> void:
+	var cfg: Dictionary = w.balance["ai"]
+	var hb: Dictionary = w.buildables["house"]
+	var cost := float(w.balance["economy"]["plot_price"].get("house", 0.0)) + float(hb["materials"]["plank"]) * w.trade.ref("plank")
+	for h: SimHousehold in w.households.values():
+		if h == w.household or h.home_id == "" or h.members.size() < int(cfg["crowded_members"]) or h.cash < cost:
+			continue
+		if w.sites.values().any(func(s): return int(s["household"]) == h.id):
+			continue
+		var at := _free_spot_near(w.buildings[h.home_id].position, float(hb["clearance"]))
+		if at.x != INF and w.commission("house", at, null, h) != "":
+			w.note("Ród %s buduje nowy dom — ciasno im." % w.family.lineage_of(w.family.persons[h.members[0]]).name, "info", at)
+
+
 # Czy wyrobu tego typu warsztatu brakuje na rynku: kupiec ma mało, a nikt go nie robi.
 func _scarce_output(type: String) -> bool:
 	var tc: Dictionary = w.balance["trade"]
@@ -361,7 +378,13 @@ func enterprise_jobs(h: SimHousehold) -> Array:
 			for g in r["inputs"]:
 				if cfg["input_jobs"].has(g):
 					out.append({ "job": String(cfg["input_jobs"][g]), "place": b.id })
-	if not out.is_empty():
+	# Własna budowa (X6): ktoś przy niej pracuje, a tragarz donosi materiał.
+	for sid in w.sites:
+		if int(w.sites[sid]["household"]) == h.id:
+			out.append({ "job": "builder", "place": sid })
+			out.append({ "job": "carrier", "place": "" })
+			break
+	if not out.is_empty() and not out.any(func(x): return x["job"] == "carrier"):
 		out.append({ "job": "carrier", "place": "" })
 	return out
 

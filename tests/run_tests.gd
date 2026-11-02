@@ -101,6 +101,7 @@ func _run_all() -> void:
 	_test_matchmaking()
 	_test_migration()
 	_test_shelter()
+	_test_ai_builds_home()
 	_test_theft_process()
 	_test_world_deterministic()
 	_test_world_30_days_autonomous()
@@ -1850,6 +1851,37 @@ func _test_shelter() -> void:
 	site["b"].add("log", 4)
 	w.build_work(sid, 99999.0)
 	check("finished shack becomes their home", h.home_id == sid and w.buildings[sid].type == "shack")
+
+
+# X6 (S33): ciasno i są pieniądze → ród AI buduje dom; po budowie para z rodu
+# wyprowadza się na swoje.
+func _test_ai_builds_home() -> void:
+	var w = _new_world()
+	var h = w.household_at("n1")
+	h.cash = 500.0
+	w.balance["ai"]["crowded_members"] = 2
+	w.ai._build_homes()
+	var sid := ""
+	for k in w.sites:
+		if int(w.sites[k]["household"]) == h.id and w.sites[k]["kind"] == "house":
+			sid = k
+	check("crowded household with money commissions a house", sid != "")
+	if sid == "":
+		return
+	var adult = null
+	for pid in h.members:
+		var p = w.family.persons[pid]
+		if w.family.stage_of(p) != "adult" or p.attached:
+			continue
+		if w.family.lineage_of(p).root_id != p.id:
+			adult = p
+	if adult == null:
+		adult = w.family.persons[h.members[h.members.size() - 1]]
+		adult.birth_day -= 20.0
+	var site: Dictionary = w.sites[sid]
+	site["b"].add("plank", 30)
+	w.build_work(sid, 99999.0)
+	check("someone from the lineage moves out into the new house", w.household_at(sid) != null and w.household_at(sid) != h)
 
 
 func _test_theft_process() -> void:

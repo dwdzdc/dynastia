@@ -833,6 +833,8 @@ func _plan_carrier(a: SimAgent) -> bool:
 		return true
 	if _supply_enterprise(a):
 		return true
+	if _supply_site(a):
+		return true
 	var mill := _own(a, "sawmill")
 	var shop := _own(a, "workshop")
 	if shop != null and shop.amount("chair") > 0 and _sell_or_stock(a, shop, "chair", st):
@@ -866,6 +868,28 @@ func _supply_enterprise(a: SimAgent) -> bool:
 					w.chore_claims["supply:%s:%s" % [b.id, g]] = a.id
 					a.claims.append("chore:supply:%s:%s" % [b.id, g])
 					return true
+	return false
+
+
+# Materiał na własną budowę (X6): deski z własnego tartaku albo kupione.
+func _supply_site(a: SimAgent) -> bool:
+	var hh := _hh(a)
+	for sid in w.sites:
+		var site: Dictionary = w.sites[sid]
+		if int(site["household"]) != hh.id:
+			continue
+		var b: SimBuilding = site["b"]
+		if b.space("plank") <= 0 or w.chore_claims.has("site:" + sid):
+			continue
+		var want := mini(int(w.balance["construction"]["carry_planks"]) * SUPPLY_CYCLES, b.space("plank"))
+		var mill := _own(a, "sawmill")
+		if mill != null and mill.amount("plank") > 0:
+			_pickup_and_deliver(a, mill, "plank", b, "niesie deski na budowę", want)
+		elif not _buy_trip(a, "plank", want, b, "kupuje deski na budowę", "niesie deski na budowę"):
+			continue
+		w.chore_claims["site:" + sid] = a.id
+		a.claims.append("chore:site:" + sid)
+		return true
 	return false
 
 
