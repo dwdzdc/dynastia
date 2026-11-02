@@ -22,6 +22,14 @@ var agents: Array = []           # SimAgent (także zmarli — status "dead")
 var chore_claims: Dictionary = {}  # "food"/"firewood" -> agent id
 var stats: Dictionary = {}
 
+const START_AFTER_WAKE := 0.02           # gra startuje chwilę po pobudce (część doby)
+const TREE_PLACE_TRIES := 4000            # limit prób rozmieszczenia drzew
+const CHOP_SPOT := Vector2(0.9, 0.4)      # gdzie staje drwal względem pnia
+const SAWMILL_DROP := Vector2(-1.5, 0.0)  # gdzie zostawia kłodę względem drzwi tartaku
+const MAX_STEPS_PER_TICK := 8             # bezpiecznik pętli kroków w jednym ticku
+const AT_TARGET_EPS := 0.05               # odległość uznawana za „już na miejscu”
+const MOVE_EPS := 0.001
+
 var _tree_index: Dictionary = {}
 var _next_agent := 1
 var _last_day := 0
@@ -33,7 +41,7 @@ func _init(seed: int, p_balance: Dictionary, p_map: Dictionary, p_people: Dictio
 	map = p_map
 	people = p_people
 	clock = SimClock.new(balance)
-	clock.set_time(0, float(balance["schedule"]["wake"]) + 0.02)
+	clock.set_time(0, float(balance["schedule"]["wake"]) + START_AFTER_WAKE)
 	rng = SimRng.new(seed)
 	events = SimEvents.new()
 	household = SimHousehold.new(balance["economy"])
@@ -65,7 +73,7 @@ func _generate_trees() -> void:
 	var tr := SimRng.new(SimRng.hash3(int(balance["world_seed"]), 0, "trees"))
 	var spacing := float(tc["min_spacing"])
 	var tries := 0
-	while trees.size() < int(tc["count"]) and tries < 4000:
+	while trees.size() < int(tc["count"]) and tries < TREE_PLACE_TRIES:
 		tries += 1
 		var p := Vector2(float(f["x"]) + tr.next_float(0.0, float(f["w"])), float(f["y"]) + tr.next_float(0.0, float(f["h"])))
 		var ok := true
@@ -144,7 +152,8 @@ func spawn_agent(p: SimPerson, at: Vector2) -> SimAgent:
 	_next_agent += 1
 	a.person_id = p.id
 	a.position = at
-	a.needs["food"] = rng.next_float(70.0, 95.0)
+	var fr: Array = balance["needs"]["food"]["start"]
+	a.needs["food"] = rng.next_float(float(fr[0]), float(fr[1]))
 	p.agent_id = a.id
 	agents.append(a)
 	return a
@@ -202,10 +211,10 @@ func manual_chop(agent_id: int, tree_id: int, append := false) -> void:
 	t.reserved_by = a.id
 	a.claims.append("tree:%d" % t.id)
 	var chop_secs := jobs._dur(a, "chop", float(balance["jobs"]["chop_seconds"])) * float(balance["jobs"]["manual_chop_mult"])
-	a.steps.append({ "t": "walk", "to": t.position + Vector2(0.9, 0.4), "why": "idzie ściąć wskazane drzewo" })
+	a.steps.append({ "t": "walk", "to": t.position + CHOP_SPOT, "why": "idzie ściąć wskazane drzewo" })
 	a.steps.append({ "t": "act", "act": "chop", "left": chop_secs, "why": "rąbie wskazane drzewo (ręcznie, szybciej)", "inside": "", "alert": false })
 	a.steps.append({ "t": "do", "fn": "chop_done", "arg": t.id })
-	a.steps.append({ "t": "walk", "to": building("sawmill").door() + Vector2(-1.5, 0.0), "why": "niesie kłodę do tartaku" })
+	a.steps.append({ "t": "walk", "to": building("sawmill").door() + SAWMILL_DROP, "why": "niesie kłodę do tartaku" })
 	a.steps.append({ "t": "do", "fn": "deposit", "arg": "sawmill" })
 
 
@@ -291,13 +300,13 @@ func _body(a: SimAgent, days: float) -> void:
 	if a.cold and a.hidden and a.inside_home():
 		dmg += float(h["cold_damage_day"])
 	if a.sick_days > 0.0:
-		dmg += float(h["sick_damage_day"]) * (float(h["sick_fatal_vulnerable_mult"]) if a.sick_mult > 1.2 else 1.0)
+		dmg += float(h["sick_damage_day"]) * (float(h["sick_fatal_vulnerable_mult"]) if a.sick_mult > float(h["sick_vulnerable_above"]) else 1.0)
 		a.sick_days = maxf(0.0, a.sick_days - days)
 	if a.injured_days > 0.0:
 		a.injured_days = maxf(0.0, a.injured_days - days)
 	if dmg > 0.0:
 		a.health -= dmg * days
-	elif a.needs["food"] > 20.0:
+	elif a.needs["food"] > float(h["regen_min_food"]):
 		a.health = minf(100.0, a.health + float(h["regen_day"]) * a.regen_mult * days)
 	if a.health <= 0.0:
 		var cause := "zmarł z głodu"
@@ -323,7 +332,7 @@ func _behave(a: SimAgent, dt: float) -> void:
 	elif a.steps.is_empty():
 		jobs.replan(a)
 	var guard := 0
-	while not a.steps.is_empty() and guard < 8:
+	while not a.steps.is_empty() and guard < MAX_STEPS_PER_TICK:
 		guard += 1
 		var s: Dictionary = a.steps[0]
 		match String(s["t"]):
@@ -337,7 +346,7 @@ func _behave(a: SimAgent, dt: float) -> void:
 				continue
 			"walk":
 				var to: Vector2 = s["to"]
-				if a.position.distance_to(to) < 0.05:
+				if a.position.distance_to(to) < AT_TARGET_EPS:
 					a.steps.pop_front()
 					continue
 				_walk(a, s, dt)
@@ -354,15 +363,16 @@ func _walk(a: SimAgent, s: Dictionary, dt: float) -> void:
 	a.idle_reason = String(s["why"])
 	a.alert = false
 	var to: Vector2 = s["to"]
-	var spd := float(balance["movement"]["child_speed"] if a.is_child else balance["movement"]["speed"])
+	var mv: Dictionary = balance["movement"]
+	var spd := float(mv["child_speed"] if a.is_child else mv["speed"])
 	spd *= a.speed_mult
 	if a.carrying == "log":
-		spd *= 0.8
-	if a.health < 40.0:
-		spd *= 0.7
+		spd *= float(mv["log_carry_mult"])
+	if a.health < float(mv["weak_health"]):
+		spd *= float(mv["weak_mult"])
 	var step := spd * dt
 	var d := a.position.distance_to(to)
-	if d > 0.001:
+	if d > MOVE_EPS:
 		a.facing = (to - a.position) / d
 	if d <= maxf(step, float(balance["movement"]["arrive_radius"]) * 0.5):
 		a.position = to
@@ -399,8 +409,8 @@ func roll_accident(a: SimAgent, act: String) -> void:
 	if not r.has(key):
 		return
 	var p := float(r[key]) * a.accident_mult
-	p *= maxf(0.25, 1.0 - float(r["skill_accident_reduction"]) * a.skill(act))
-	if clock.light_factor() < 0.5:
+	p *= maxf(float(r["skill_reduction_floor"]), 1.0 - float(r["skill_accident_reduction"]) * a.skill(act))
+	if clock.light_factor() < float(r["dark_light_below"]):
 		p *= float(r["dark_accident_mult"])
 	if not rng.chance(p):
 		return
@@ -554,7 +564,7 @@ func _debt_jail() -> void:
 	a.status = "jailed"
 	a.hidden = true
 	a.jail_days = float(balance["economy"]["debt_jail_days"])
-	var forgiven := household.debt * 0.5
+	var forgiven := household.debt * float(balance["economy"]["debt_jail_forgive"])
 	household.debt -= forgiven
 	note("Straż zabrała %s do aresztu za długi rodu (%d dni). Połowa długu umorzona." % [p.name, int(a.jail_days)], "critical", building("jail").door())
 	ask_ok("Areszt za długi", "Dług przekroczył %d zł. Straż zabrała %s do aresztu na %d dni.\nPołowa długu umorzona, reszta (%d zł) zostaje." % [

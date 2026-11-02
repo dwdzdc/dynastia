@@ -88,12 +88,21 @@
       "elder": 0.65
     },
     "old_age_death_per_day": 0.01,
-    "old_age_growth_per_day": 1.15
+    "old_age_growth_per_day": 1.15,
+    "sick_mult": {
+      "child": 1.4,
+      "teen": 1.0,
+      "adult": 1.0,
+      "elder": 1.4
+    }
   },
   "movement": {
     "speed": 4.0,
     "child_speed": 3.0,
-    "arrive_radius": 0.6
+    "arrive_radius": 0.6,
+    "log_carry_mult": 0.8,
+    "weak_health": 40.0,
+    "weak_mult": 0.7
   },
   "schedule": {
     "work_start": 0.27,
@@ -105,7 +114,11 @@
     "food": {
       "decay_day": 100.0,
       "low": 35.0,
-      "meal": 75.0
+      "meal": 75.0,
+      "start": [
+        70.0,
+        95.0
+      ]
     },
     "sleep": {
       "decay_day": 70.0,
@@ -126,7 +139,9 @@
       2,
       5
     ],
-    "sick_fatal_vulnerable_mult": 1.6
+    "sick_fatal_vulnerable_mult": 1.6,
+    "sick_vulnerable_above": 1.2,
+    "regen_min_food": 20.0
   },
   "skills": {
     "xp_per_work_second": 0.012,
@@ -208,7 +223,8 @@
       "winter": 2.5
     },
     "default_target_food": 20,
-    "default_target_firewood": 6
+    "default_target_firewood": 6,
+    "debt_jail_forgive": 0.5
   },
   "risk": {
     "chop_accident": 0.003,
@@ -225,7 +241,9 @@
     "severe": {
       "damage": 50.0,
       "days": 6
-    }
+    },
+    "skill_reduction_floor": 0.25,
+    "dark_light_below": 0.5
   },
   "family": {
     "max_children": 7,
@@ -233,13 +251,15 @@
     "birth_child_death": 0.07,
     "birth_risk_age_mult": 2.0,
     "birth_risk_low_health_mult": 2.0,
+    "birth_risk_low_health": 50.0,
     "max_household": 12,
     "marry_chance_per_day": 0.3,
     "marry_from": {
       "stage": "adult",
       "day": 0.0
     },
-    "spouse_age_spread_days": 6.0,
+    "spouse_younger_days": 6.0,
+    "spouse_older_days": 3.0,
     "spouse_oldest": {
       "stage": "adult",
       "day": 35.0
@@ -257,6 +277,8 @@
       "day": 20.0
     },
     "conceive_per_day": 0.23,
+    "conceive_weak_health": 40.0,
+    "conceive_weak_mult": 0.3,
     "pregnancy_days": 3.0,
     "start_age_jitter_days": 0.8,
     "spouse_candidate": {
@@ -268,7 +290,9 @@
         "chop": 2.5,
         "saw": 2.0
       }
-    }
+    },
+    "boy_chance": 0.5,
+    "newborn_food": 80.0
   },
   "crime": {
     "steal_seconds": 50.0,

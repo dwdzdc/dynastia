@@ -58,7 +58,7 @@ Pętla gry: ród Wilków (6 osób, 3 pokolenia) w chacie pod lasem. Co 5 dni czy
 
 - [x] 0.1 Czas jak w Simsach: długości procesów w dobach w danych (ciąża ~3, etapy życia osobno) → `balance.json` bez przeliczania z „lat” → testy cyklu życia.
 - [x] 0.2 Cechy kontra charakter: `people.json` dzieli `traits` (silny, chorowity…) i `character` (lojalny, porywczy, pamiętliwy, ambitny, ciekawski) → obie listy przy osobie → test wczytania i dziedziczenia.
-- [ ] 0.3 Wartości z kodu do nazwanych stałych i danych w plikach, których dotyka iteracja → brak liczb w środku logiki → przegląd.
+- [x] 0.3 Wartości z kodu do nazwanych stałych i danych w plikach, których dotyka iteracja → brak liczb w środku logiki → przegląd. (`family.gd`, `world.gd`; `jobs.gd` przy D4, `hud.gd` przy E1.)
 
 ### Faza A — fundamenty danych
 

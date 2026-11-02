@@ -19,6 +19,10 @@ var _stages: Array              # etapy życia z danych, w kolejności
 var _stage_start := {}          # id etapu -> przeżyte doby na jego początku
 var _next_id := 1
 
+const SPAWN_SPREAD_X := 2.0             # rozrzut miejsca startu przy drzwiach chaty
+const SPAWN_DEPTH := Vector2(0.5, 2.5)  # odległość przed drzwiami (min, max)
+const SUCCESSION_OPTIONS := 5           # ilu kandydatów pokazuje okno sukcesji
+
 
 func _init(world: SimWorld, people: Dictionary) -> void:
 	w = world
@@ -49,7 +53,7 @@ func setup_start() -> void:
 		p.blood = not p.attached
 		by_key[String(spec["key"])] = p
 		persons[p.id] = p
-		var a: SimAgent = w.spawn_agent(p, w.home().door() + Vector2(w.rng.next_float(-2, 2), w.rng.next_float(0.5, 2.5)))
+		var a: SimAgent = w.spawn_agent(p, w.home().door() + Vector2(w.rng.next_float(-SPAWN_SPREAD_X, SPAWN_SPREAD_X), w.rng.next_float(SPAWN_DEPTH.x, SPAWN_DEPTH.y)))
 		a.job = String(spec.get("job", "none"))
 		for s in spec.get("skills", {}):
 			a.skills[s] = float(spec["skills"][s])
@@ -198,7 +202,7 @@ func apply_modifiers(p: SimPerson) -> void:
 	a.speed_mult = 1.0
 	a.accident_mult = 1.0
 	a.quality_bonus = 0.0
-	a.sick_mult = 1.4 if st in ["child", "elder"] else 1.0
+	a.sick_mult = float(_aging["sick_mult"].get(st, 1.0))
 	a.regen_mult = 1.0
 	for t in p.traits:
 		var td: Dictionary = _people["traits"].get(t, {})
@@ -271,8 +275,8 @@ func _roll_conception(p: SimPerson) -> void:
 	if a == null or a.status != "active":
 		return
 	var c := float(_fam["conceive_per_day"])
-	if a.hungry_no_food or a.health < 40.0:
-		c *= 0.3
+	if a.hungry_no_food or a.health < float(_fam["conceive_weak_health"]):
+		c *= float(_fam["conceive_weak_mult"])
 	if w.rng.chance(c):
 		p.pregnant_left = float(_fam["pregnancy_days"])
 		w.note("%s spodziewa się dziecka." % p.name, "good", a.position)
@@ -294,11 +298,11 @@ func _give_birth(mother: SimPerson) -> void:
 	var risk := 1.0
 	if days_lived(mother) >= life_day(_fam["birth_risk_from"]):
 		risk *= float(_fam["birth_risk_age_mult"])
-	if ma != null and ma.health < 50.0:
+	if ma != null and ma.health < float(_fam["birth_risk_low_health"]):
 		risk *= float(_fam["birth_risk_low_health_mult"])
 	var child := SimPerson.new()
 	child.id = _new_id()
-	child.sex = "m" if w.rng.chance(0.5) else "f"
+	child.sex = "m" if w.rng.chance(float(_fam["boy_chance"])) else "f"
 	child.name = _pick_name(child.sex)
 	child.surname = dynasty
 	child.birth_day = w.clock.now()
@@ -327,7 +331,7 @@ func _give_birth(mother: SimPerson) -> void:
 		w.ask_ok("Poród", "Dziecko %s i %s nie przeżyło porodu." % [mother.name, father.name if father else "?"])
 	else:
 		var a: SimAgent = w.spawn_agent(child, where)
-		a.needs["food"] = 80.0
+		a.needs["food"] = float(_fam["newborn_food"])
 		apply_modifiers(child)
 		child.set_meta("stage", "child")
 		var trait_txt := ""
@@ -403,8 +407,7 @@ func _roll_courtship(p: SimPerson) -> void:
 func _materialize_candidate(p: SimPerson) -> Dictionary:
 	var rng := SimRng.new(SimRng.hash3(int(w.balance["world_seed"]), p.id * 1000 + int(w.clock.day_index()), "spouse"))
 	var sex := "f" if p.sex == "m" else "m"
-	var spread := float(_fam["spouse_age_spread_days"])
-	var age_days := clampf(days_lived(p) + rng.next_float(-spread, spread * 0.5),
+	var age_days := clampf(days_lived(p) + rng.next_float(-float(_fam["spouse_younger_days"]), float(_fam["spouse_older_days"])),
 		life_day(_fam["marry_from"]), life_day(_fam["spouse_oldest"]))
 	var cc: Dictionary = _fam["spouse_candidate"]
 	var traits: Array = []
@@ -528,7 +531,7 @@ func _succession(dead: SimPerson) -> void:
 		return
 	root_id = -1
 	var opts: Array = []
-	for c in cands.slice(0, 5):
+	for c in cands.slice(0, SUCCESSION_OPTIONS):
 		opts.append({ "label": "%s, lat %d (%s)" % [c.name, int(age_of(c)), stage_label(c)], "value": c.id })
 	w.events.ask("succession", "Śmierć głowy rodu",
 		"%s %s nie żyje (%s).\nKto poprowadzi ród %s?" % [dead.name, dead.surname, dead.death_cause, dynasty],
