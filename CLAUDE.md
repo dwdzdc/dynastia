@@ -15,7 +15,11 @@ Decyzje architektoniczne są w `docs/adr/`, terminy w `GLOSSARY.md`.
 
 ## Gdzie jesteśmy
 
-Iteracja 1 (dynamika rodu) jest zrobiona i przetestowana przez autora. Następna jest **Iteracja 2 — społeczeństwo** (`progress.md`): zrobione F1–F4, G1–G5, H1–H3 i H7a; reszta wstrzymana po playteście. **Iteracja 2b** (wieś, która żyje) zrobiona i czeka na playtest. **Bieżąca: Iteracja 3 — gospodarka bez gracza** (plan i decyzje S22–S29 w `progress.md`, zatwierdzone), od T0. Testy trwają ok. 2 min (kilkudziesięciu agentów).
+- Iteracje 1, 2b (wieś, która żyje), 3 (gospodarka bez gracza) i 3b X1–X7 (świat, który trwa) są zrobione; autor jeszcze ich nie playtestował.
+- **Bieżące: Iteracja 3b, punkt X8** (`progress.md`): świat bez gracza już nie wymiera (sonda 200 dób: ludność 17 → 82), ale wieś biednieje — pieniądze płyną do miast (zwłaszcza Górzyn z mennicą), a rody AI nie mają kapitału na warsztaty.
+- **Następny krok czeka na decyzję autora**, jak pieniądze z miast mają wracać do wsi: (a) miasta kupują to, co wieś ma (zboże, kłody, praca sezonowa w mieście) — rekomendacja Claude'a; (b) kredyt na start warsztatu; (c) mennica płaci producentom. Zapytaj autora, zanim cokolwiek zmienisz.
+- Zasady z rozmów (w `docs/design/vision.md`): świat nie zależy od gracza (game over gracza ≠ koniec świata; sonda `solo` to kryterium), monety tylko z procesu, Port Royale/X4 jako wzór, wiele dróg sukcesu (`intro` §7), menu budowy jak w Cultures.
+- Pomiar: `godot --headless -s res://tools/probe_village.gd -- <dni> <seed> solo` (100 dób ≈ 25 min, 200 ≈ 50 min — puszczaj w tle). Testy trwają ok. 2–3 min.
 
 ## Jak pracujemy
 
@@ -27,8 +31,9 @@ Iteracja 1 (dynamika rodu) jest zrobiona i przetestowana przez autora. Następna
 
 ## Komendy
 
-- Testy (headless, ok. 15 s): `godot --headless --script res://tests/run_tests.gd`
-- Sonda balansu: `godot --headless -s res://tools/probe.gd -- <dni> <seed> <strategia>` (strategie są w pliku)
+- Testy (headless, ok. 2–3 min): `godot --headless --script res://tests/run_tests.gd`
+- Sonda balansu rodu gracza: `godot --headless -s res://tools/probe.gd -- <dni> <seed> <strategia>` (strategie są w pliku)
+- Sonda całej wsi: `godot --headless -s res://tools/probe_village.gd -- <dni> <seed> [solo]`
 - Zrzuty ekranu (wymaga wyświetlacza): `SHOT_DIR=<katalog> godot --audio-driver Dummy -s res://tools/screenshot.gd`. Sprawdzaj nimi każdą zmianę wizualną.
 - Odśwież cache klas po dodaniu `class_name`: `godot --headless --import`
 
