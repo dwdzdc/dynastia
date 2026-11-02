@@ -1,0 +1,21 @@
+data/balance.json
+  s_bb6b65b605000f::t_1916ede5627de9 353
+sim/jobs.gd
+  s_bb6b65b605000f::t_875529cab29747 666-672
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "7b67eace7690a534665f92fda99fa3f312be105e",
+  "prompts": {},
+  "sessions": {
+    "s_bb6b65b605000f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "8bc32a82-6b1e-41ef-8272-8f242d268239",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Dawid Dziedzic <24682682+dwdzdc@users.noreply.github.com>"
+    }
+  }
+}
