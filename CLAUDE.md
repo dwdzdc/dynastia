@@ -8,6 +8,7 @@ Gra w Godot 4.7 (GDScript): ród próbujący przetrwać i wybić się w społecz
 2. `docs/design/family-dynamics.md`: model rodu (więzi, przynależność, uwaga, kronika). Rdzeń gry.
    `docs/design/goals.md`: cele długoterminowe (jeszcze nie do roboty, ale nie blokuj ich modelem).
    `docs/design/living-village.md`: ustalenia po playteście iteracji 2 i zasada „proces w świecie zamiast abstrakcyjnej funkcji”.
+   `docs/design/wzorce-cultures.md`: jak naprawdę działa Cultures (z instrukcji i recenzji). Autor chce wiele elementów jak w Cultures: czytaj to, zanim cokolwiek „jak w Cultures” zrobisz. Czego tam nie ma, o to pytaj autora, nie zgaduj.
 3. `progress.md`: stan, plan bieżącej iteracji (z decyzjami szkieletowymi) i kolejka dalszych kroków.
 4. `intro`: pierwotny szkic (model danych, architektura, MVP). Ważny tam, gdzie powyższe go nie nadpisują.
 
