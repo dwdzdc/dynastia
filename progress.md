@@ -97,7 +97,7 @@ Pętla gry: ród Wilków (6 osób, 3 pokolenia) w chacie pod lasem. Co 5 dni czy
 - [x] E3 Podgląd kroniki (osobny panel, klawisz) → zrzut ekranu.
 - [x] E4 Tryb debug (F3): ukryte liczby (więzi, siła) widoczne dla dewelopera → zrzut ekranu.
 
-## Iteracja 2b — wieś, która żyje (BIEŻĄCA, przed resztą iteracji 2)
+## Iteracja 2b — wieś, która żyje (zrobiona)
 
 Źródło: `docs/design/living-village.md` (playtest i rozmowa 02.11.2026). Reszta iteracji 2 wstrzymana; H4 (pole) i H7 (praca u kogoś) wchodzą tu jako L, I1/I2 jako O2. Zasada: każdy skutek wynika z procesu w świecie, każdy punkt ma w weryfikacji „co gracz zobaczy”.
 
@@ -199,7 +199,31 @@ Pętla gry: ród Wilków (6 osób, 3 pokolenia) w chacie pod lasem. Co 5 dni czy
   - Wynik (seed 1, 02.11.2026, `tools/probe_village.gd -- 100 1`): ród gracza bez decyzji wygasa w 59. dobie (koniec sondy). Do tego czasu ludzi 22 → 9 (6 narodzin, 21 śmierci, około 23 lat życia), Wilkowie awansowali na „mistrzów i kupców” (6. doba), Nowakowie podupadli i sprzedali karczmę Bednarzom (18. doba), sołectwo przeszło na Bednarzy, pieniędzy we wsi przybyło (994 → 1957 zł), żadnej budowy AI.
   - **Otwarte:** (1) demografia — za mało ślubów i dzieci względem śmierci ze starości, biedne rody bez dachu się nie rozmnażają; (2) biedne rody AI dalej bez domu (problem z Q2); (3) AI nie zbudowało niczego (progi `found_cash` i braku towaru za wysokie albo nikt nie spełnia warunku).
 
-## Iteracja 3b — świat, który trwa (BIEŻĄCA)
+## Iteracja 4 — czytelny interfejs (BIEŻĄCA)
+
+Źródło: rozmowa z autorem 03.11.2026. Panel po prawej był jedną długą listą wszystkiego (zapasy domu, ceny, najem, wakaty), a ceny straganu ustawiało się w oknie domu. Wzór: okna Cultures (`docs/design/wzorce-cultures.md` §2): osobne okno dla każdej sprawy. Czytelność ma największy wpływ na grywalność.
+
+### Decyzje szkieletowe (zatwierdzone przez autora 03.11.2026)
+
+- **S40. Układ ekranu:** górny pasek (meldunki, data, tempo, monety), pionowy pasek po lewej (Budowa, Ród, Kronika, Ludzie, Statystyki, Pomoc), karta zaznaczenia w prawym dolnym rogu, okna tematów: zawsze jedno naraz, zamykane Esc albo ✕.
+- **S41. Karta zaznaczenia jest krótka:** stan osoby albo budynku, przyciski „pokaż” (dom, praca, małżonek) i przyciski okien tematów. Ustawienia są tylko w oknach tematów, przy rzeczy, do której należą. Dom to majątek: w jego oknie nic, co dotyczy całego rodu.
+- **S42. Stragan sam ustala, co sprzedaje, co skupuje i po ile** (nadpisuje granice gospodarstwa). Granice gospodarstwa to odtąd zasady zakupów rodu (ile twoi ludzie zapłacą u innych), w oknie Ród.
+- **S43. Meldunki zamiast dziennika:** chorągiewki w górnym pasku, najechanie pokazuje treść, klik pokazuje miejsce kamerą. Całość w kronice.
+- **S44. Kod:** `ui/ui_kit.gd` (wspólne kolory i kontrolki), `ui/topic_window.gd` (rama okna), okna w `ui/windows/`. `hud.gd` tylko składa ekran.
+
+### Punkty
+
+- [ ] I1 Rama okna i rozbicie `hud.gd` (S44) → testy + zrzut bez zmian zachowania.
+- [ ] I2 Układ ekranu (S40): odchudzony górny pasek, pasek po lewej, Budowa / Ród / Kronika / Pomoc jako okna tematów → zrzut.
+- [ ] I3 Karta zaznaczenia (S41) i okna tematów: osoba (Praca, Wspomnienia, Preferencje, Cechy), budynek (Magazyn, Ludzie, Zapasy) → zrzut.
+- [ ] I4 Stragan: okno „Towar i ceny” (S42) → test sim + zrzut.
+- [ ] I5 Meldunki (S43) → zrzut.
+- [ ] I6 Okno Ludzie: lista wszystkich z filtrami (bezrobotni, bezdomni, głodni, chorzy, nasi) → zrzut.
+- [ ] I7 Podświetlenie powiązań pod kursorem: osoba → dom i praca, budynek → jego ludzie → zrzut.
+- [ ] I8 Statystyki: ludność, ceny i budynki w czasie → test + zrzut.
+- [ ] I9 Pomoc i narzędzie zrzutów pod nowy układ.
+
+## Iteracja 3b — świat, który trwa (wstrzymana na X8: czeka na decyzję o powrocie pieniędzy do wsi)
 
 Źródło: `docs/design/vision.md` (świat nie zależy od gracza). Sonda W pokazała, że wieś bez decyzji gracza wymiera.
 
