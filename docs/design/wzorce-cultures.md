@@ -2,6 +2,28 @@
 
 Baza wiedzy o grach Cultures dla kolejnych sesji. Autor grał w nie w dzieciństwie i chce, żeby wiele elementów Dynastii działało „jak w Cultures”. Ten plik zastępuje zgadywanie: zanim powołasz się na Cultures, sprawdź tutaj. Stan na 2026-11-03.
 
+## Ustalenia z autorem (2026-11-03): co bierzemy, a co nie
+
+Autor grał przede wszystkim w **8. cud świata** (8th Wonder of the World). Gdy opis C1 i 8. cudu się różni, wzorem jest 8. cud.
+
+Bierzemy:
+- **PPM kontekstowy.** Zaznaczona osoba + PPM na budynek daje akcje tego miejsca („zatrudnij się jako tragarz”…). Menu nie musi być okrągłe.
+- **Tragarze przypisani do budynku**, a nie wolni tragarze rodu.
+- **Drogi przyspieszają chodzenie**, ale nie są obowiązkowe.
+
+Nie bierzemy (u nas jest inaczej):
+- Rodzinne ikony i podświetlenia w oknie osadnika zastępuje drzewo genealogiczne znanych osób (`family-dynamics.md`).
+- Cztery potrzeby C1: na razie pomijamy.
+- Kobiety bez zawodu: u nas kobiety mają zawody.
+- Śluby tylko z rozkazu gracza: u nas osoba ma własną agendę (jak w Simsach), gracz nie zawsze decyduje.
+- Wybór płci dziecka przez gracza: u nas płeć losuje się sama.
+- Dom na parę z jednym dzieckiem: u nas dom mieści dowolnie wiele osób w dowolnym układzie (na razie).
+- Flagi stanu rodziny przed domem.
+- Brak śmierci ze starości: u nas ludzie umierają ze starości.
+- Nauka przez dyplom mistrza i odblokowywanie zawodów: u nas nauka działa inaczej, na razie bez zmian.
+- Brak pieniędzy: u nas są monety.
+- Drogowskazy i „znany obszar”.
+
 Oznaczenia:
 - ✅ potwierdzone: z podanego źródła, najczęściej z oficjalnego podręcznika.
 - ❓ niepewne: jedno słabe źródło (poradnik fanowski, recenzja) albo wniosek.
