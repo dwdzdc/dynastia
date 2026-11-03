@@ -1,0 +1,9 @@
+docs/design/wzorce-cultures.md
+  ai_agent 5-26
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "34c6e67b6937872a8cd0ef7f7d14602b2a19117a",
+  "prompts": {}
+}
