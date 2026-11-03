@@ -924,7 +924,6 @@ func _sell_or_stock(a: SimAgent, from: SimBuilding, good: String, own: SimStall)
 # Zaopatrzenie własnego straganu z cudzych: kupuje, gdy cena pozwala zarobić.
 func _restock(a: SimAgent, st: SimStall) -> bool:
 	var cfg: Dictionary = w.balance["trade"]
-	var h := _hh(a)
 	for good in st.goods:
 		var target := int(cfg["restock_target"].get(good, 0))
 		if st.stock.amount(good) >= target or w.chore_claims.has("restock:%s:%s" % [st.id, good]):
@@ -932,7 +931,7 @@ func _restock(a: SimAgent, st: SimStall) -> bool:
 		var src := w.trade.best_seller(a, good)
 		if src == null or src == st or src.stock == st.stock:
 			continue
-		if w.trade.quote(src, a, good) > w.trade.sell_min(h, good) * (1.0 - float(cfg["restock_margin"])):
+		if w.trade.quote(src, a, good) > w.trade.stall_sell_min(st, good) * (1.0 - float(cfg["restock_margin"])):
 			continue
 		if _buy_trip(a, good, mini(target - st.stock.amount(good), st.stock.space(good)), st.stock,
 				"kupuje hurtem na swój stragan", "niesie towar na swój stragan"):

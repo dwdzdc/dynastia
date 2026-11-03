@@ -45,9 +45,11 @@ var _next_site := 1
 var agents: Array = []           # SimAgent (także zmarli — status "dead")
 var chore_claims: Dictionary = {}  # "food:<gosp.>"/"firewood:<gosp.>" -> agent id
 var stats: Dictionary = {}
+var history: Array = []          # dzienny zapis okolicy do statystyk (I8): { day, people, houses, empty_houses, cash, towns, prices }
 
 const SITE_CLEARANCE := 6.0   # plac budowy nie może stać bliżej innego budynku
 const FOREST_JOBS := ["woodcutter", "forager"]   # co można robić w lesie (PPM na las)
+const HISTORY_DAYS := 400       # ile dób pamięta zapis statystyk
 const HOUSE_TYPES := ["home", "decor_house", "decor_town", "manor", "shack"]  # budynki, w których można mieszkać
 const START_AFTER_WAKE := 0.02           # gra startuje chwilę po pobudce (część doby)
 const TREE_PLACE_TRIES := 4000            # limit prób rozmieszczenia drzew
@@ -916,6 +918,29 @@ func release_manual(agent_id: int) -> void:
 	jobs.replan(a)
 
 
+# Komendy gracza dla handlu (S42): zasady zakupów rodu i ustawienia własnego straganu.
+func set_household_limit(good: String, key: String, value: float) -> void:
+	trade.set_limit(household, good, key, value)
+
+
+func set_stall_price(stall_id: String, good: String, key: String, value: float) -> void:
+	var st: SimStall = trade.stalls.get(stall_id)
+	if st != null and st.owner == household.id:
+		trade.set_stall_price(st, good, key, value)
+
+
+# Czy stragan sprzedaje / skupuje dany towar.
+func set_stall_trade(stall_id: String, good: String, list: String, on: bool) -> void:
+	var st: SimStall = trade.stalls.get(stall_id)
+	if st == null or st.owner != household.id or not list in ["goods", "buys"]:
+		return
+	var arr: Array = st.goods if list == "goods" else st.buys
+	if on and not good in arr:
+		arr.append(good)
+	elif not on:
+		arr.erase(good)
+
+
 # Komenda gracza: dziecko ma chodzić za tą osobą (D5); -1 = wraca do własnej sympatii.
 func set_follow(agent_id: int, person_id: int) -> void:
 	var a := agent_by_id(agent_id)
@@ -1329,8 +1354,44 @@ func kill(a: SimAgent, cause: String) -> void:
 			"" if p.sex == "m" else "a", age])
 
 
+# Zapis stanu okolicy na początek doby (I8): ludność, domy, pieniądze, miasta, ceny.
+func _record_history(day: int) -> void:
+	var cash := 0.0
+	for h: SimHousehold in households.values():
+		cash += h.cash
+	var people := 0
+	for p: SimPerson in family.persons.values():
+		if p.alive():
+			people += 1
+			cash += p.purse
+	var houses := 0
+	var empty := 0
+	for b: SimBuilding in buildings.values():
+		if b.type in HOUSE_TYPES and not b.type.begins_with("decor"):
+			houses += 1
+			if household_at(b.id) == null:
+				empty += 1
+	var towns := {}
+	for t: SimTown in traders.towns.values():
+		towns[t.name] = t.population
+	var prices := {}
+	for g in balance["trade"]["ref"]:
+		var sum := 0.0
+		var n := 0
+		for st: SimStall in trade.stalls.values():
+			if st.deals_in(g) and not st.temporary:
+				sum += trade.stall_sell_min(st, g)
+				n += 1
+		if n > 0:
+			prices[g] = sum / n
+	history.append({ "day": day, "people": people, "houses": houses, "empty_houses": empty, "cash": cash, "towns": towns, "prices": prices })
+	if history.size() > HISTORY_DAYS:
+		history.pop_front()
+
+
 func _new_day() -> void:
 	var day := clock.day_index()
+	_record_history(day)
 	var season := clock.current_season()
 	# Opał: każdy zamieszkany dom zużywa drewno, zwłaszcza zimą.
 	var need := float(balance["economy"]["firewood_per_day"].get(season, 0.0))

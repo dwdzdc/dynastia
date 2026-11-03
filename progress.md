@@ -213,15 +213,17 @@ Pętla gry: ród Wilków (6 osób, 3 pokolenia) w chacie pod lasem. Co 5 dni czy
 
 ### Punkty
 
-- [ ] I1 Rama okna i rozbicie `hud.gd` (S44) → testy + zrzut bez zmian zachowania.
-- [ ] I2 Układ ekranu (S40): odchudzony górny pasek, pasek po lewej, Budowa / Ród / Kronika / Pomoc jako okna tematów → zrzut.
-- [ ] I3 Karta zaznaczenia (S41) i okna tematów: osoba (Praca, Wspomnienia, Preferencje, Cechy), budynek (Magazyn, Ludzie, Zapasy) → zrzut.
-- [ ] I4 Stragan: okno „Towar i ceny” (S42) → test sim + zrzut.
-- [ ] I5 Meldunki (S43) → zrzut.
-- [ ] I6 Okno Ludzie: lista wszystkich z filtrami (bezrobotni, bezdomni, głodni, chorzy, nasi) → zrzut.
-- [ ] I7 Podświetlenie powiązań pod kursorem: osoba → dom i praca, budynek → jego ludzie → zrzut.
-- [ ] I8 Statystyki: ludność, ceny i budynki w czasie → test + zrzut.
-- [ ] I9 Pomoc i narzędzie zrzutów pod nowy układ.
+- [x] I1 Rama okna i rozbicie `hud.gd` (S44) → testy + zrzut bez zmian zachowania.
+- [x] I2 Układ ekranu (S40): odchudzony górny pasek, pasek po lewej, Budowa / Ród / Kronika / Pomoc jako okna tematów → zrzut.
+- [x] I3 Karta zaznaczenia (S41) i okna tematów: osoba (Praca, Wspomnienia, Preferencje, Cechy), budynek (Magazyn, Ludzie, Zapasy) → zrzut.
+- [x] I4 Stragan: okno „Towar i ceny” (S42) → test sim + zrzut.
+- [x] I5 Meldunki (S43) → zrzut.
+- [x] I6 Okno Ludzie: lista wszystkich z filtrami (bezrobotni, bezdomni, głodni, chorzy, nasi) → zrzut.
+- [x] I7 Podświetlenie powiązań pod kursorem: osoba → dom i praca, budynek → jego ludzie → zrzut.
+- [x] I8 Statystyki: ludność, ceny i budynki w czasie → test + zrzut.
+- [x] I9 Pomoc i narzędzie zrzutów pod nowy układ.
+- [ ] I10 Playtest autora: co dalej jest nieczytelne → poprawki.
+- Uwagi z wykonania (03.11.2026): dziennik zdarzeń zniknął z ekranu — ważne wpisy (ostrzeżenia, sukcesy) są chorągiewkami przez dobę; pełny dziennik jest w kronice, zakładka „Zdarzenia”. Zasady zakupów rodu to osobne okno z przycisku w oknie Ród. Ceny straganu bez własnych ustawień biorą granice gospodarstwa właściciela, więc rody AI handlują jak dotąd.
 
 ## Iteracja 3b — świat, który trwa (wstrzymana na X8: czeka na decyzję o powrocie pieniędzy do wsi)
 

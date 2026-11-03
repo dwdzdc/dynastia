@@ -73,6 +73,8 @@ func _run_all() -> void:
 	_test_marriage_with_existing_people()
 	_test_talk_and_romance()
 	_test_stall_trade()
+	_test_stall_own_prices()
+	_test_history_recorded()
 	_test_field_cycle()
 	_test_money_in_chest()
 	_test_buy_through_purse()
@@ -1098,6 +1100,33 @@ func _test_stall_trade() -> void:
 	check("the merchant buys cheap and sells dear", w.trade.buy_max(oh, "plank") < w.trade.sell_min(oh, "plank"))
 	w.person_of(w.agent_by_id(st.keeper)).purse = 0.0
 	check("keeper without money buys nothing", w.trade.best_buyer(buyer, "plank") == null or w.trade.best_buyer(buyer, "plank") != st)
+
+
+# S42: stragan ma własne ceny i listę towarów; granice gospodarstwa to zasady zakupów rodu.
+func _test_stall_own_prices() -> void:
+	var w = _new_world()
+	var st = w.trade.add_stall(w.home(), w.home(), w.household.id, ["food"])
+	var hh_min: float = w.trade.sell_min(w.household, "food")
+	check("stall without own price falls back to household limit", absf(w.trade.stall_sell_min(st, "food") - hh_min) < 0.001)
+	w.set_stall_price(st.id, "food", "sell_min", 2.5)
+	check("own stall price is used at the stall", absf(w.trade.stall_sell_min(st, "food") - 2.5) < 0.001)
+	check("stall price leaves the family's shopping rule alone", absf(w.trade.sell_min(w.household, "food") - hh_min) < 0.001)
+	w.set_stall_trade(st.id, "plank", "buys", true)
+	w.set_stall_trade(st.id, "food", "goods", false)
+	check("stall buys and sells what the player ticks", "plank" in st.buys and not st.deals_in("food"))
+	var foreign = w.trade.stalls["stall_bednarz"]
+	var before: float = w.trade.stall_sell_min(foreign, "food")
+	w.set_stall_price(foreign.id, "food", "sell_min", 99.0)
+	w.set_stall_trade(foreign.id, "food", "goods", false)
+	check("player cannot set someone else's stall", absf(w.trade.stall_sell_min(foreign, "food") - before) < 0.001 and foreign.deals_in("food"))
+
+
+# I8: każda doba dopisuje stan okolicy do statystyk.
+func _test_history_recorded() -> void:
+	var w = _new_world()
+	_run_days_auto(w, 2.2)
+	check("history has a row per day with people and prices", w.history.size() >= 2
+		and int(w.history[-1]["people"]) > 0 and w.history[-1]["prices"].has("food"))
 
 
 func _money(w) -> float:

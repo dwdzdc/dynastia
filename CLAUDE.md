@@ -17,8 +17,8 @@ Decyzje architektoniczne są w `docs/adr/`, terminy w `GLOSSARY.md`.
 ## Gdzie jesteśmy
 
 - Iteracje 1, 2b (wieś, która żyje), 3 (gospodarka bez gracza) i 3b X1–X7 (świat, który trwa) są zrobione; autor jeszcze ich nie playtestował.
-- **Bieżące: Iteracja 3b, punkt X8** (`progress.md`): świat bez gracza już nie wymiera (sonda 200 dób: ludność 17 → 82), ale wieś biednieje — pieniądze płyną do miast (zwłaszcza Górzyn z mennicą), a rody AI nie mają kapitału na warsztaty.
-- **Następny krok czeka na decyzję autora**, jak pieniądze z miast mają wracać do wsi: (a) miasta kupują to, co wieś ma (zboże, kłody, praca sezonowa w mieście) — rekomendacja Claude'a; (b) kredyt na start warsztatu; (c) mennica płaci producentom. Zapytaj autora, zanim cokolwiek zmienisz.
+- **Bieżące: Iteracja 4 — czytelny interfejs** (`progress.md`, decyzje S40–S44): układ jak w Cultures (pasek po lewej, karta zaznaczenia w prawym dolnym rogu, jedno okno sprawy naraz, meldunki-chorągiewki), stragan sam ustala towar i ceny. I1–I9 zrobione; czeka na playtest autora (I10). Kod UI: `ui/ui_kit.gd`, `ui/topic_window.gd`, okna w `ui/windows/`. Nowe ustawienie = nowe małe okno przy rzeczy, do której należy, nie kolejny wiersz w karcie.
+- Wstrzymane: Iteracja 3b X8 — wieś bez gracza biednieje (pieniądze płyną do miast). Czeka na decyzję autora, jak pieniądze z miast mają wracać do wsi: (a) miasta kupują to, co wieś ma — rekomendacja Claude'a; (b) kredyt na start warsztatu; (c) mennica płaci producentom. Rozmawiając z autorem, opisuj problem słowami, nie kodami punktów.
 - Zasady z rozmów (w `docs/design/vision.md`): świat nie zależy od gracza (game over gracza ≠ koniec świata; sonda `solo` to kryterium), monety tylko z procesu, Port Royale/X4 jako wzór, wiele dróg sukcesu (`intro` §7), menu budowy jak w Cultures.
 - Pomiar: `godot --headless -s res://tools/probe_village.gd -- <dni> <seed> solo` (100 dób ≈ 25 min, 200 ≈ 50 min — puszczaj w tle). Testy trwają ok. 2–3 min.
 

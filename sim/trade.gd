@@ -35,7 +35,7 @@ func buy_max(h: SimHousehold, good: String, quality: float = 0.0) -> float:
 
 
 func _limit(h: SimHousehold, good: String, key: String) -> float:
-	var p: Dictionary = h.prices.get(good, {})
+	var p: Dictionary = h.prices.get(good, {}) if h != null else {}
 	if p.has(key):
 		return float(p[key])
 	return ref(good) * float(_cfg["default_" + key])
@@ -49,6 +49,27 @@ func set_limit(h: SimHousehold, good: String, key: String, value: float) -> void
 	if not h.prices.has(good):
 		h.prices[good] = {}
 	h.prices[good][key] = maxf(0.0, value)
+
+
+# Ceny straganu (S42): własne, jeśli ustawione, inaczej granice gospodarstwa-właściciela.
+func stall_sell_min(st: SimStall, good: String, quality: float = 0.0) -> float:
+	var p: Dictionary = st.prices.get(good, {})
+	if p.has("sell_min"):
+		return float(p["sell_min"]) + _quality_bonus(good, quality)
+	return sell_min(w.households.get(st.owner), good, quality)
+
+
+func stall_buy_max(st: SimStall, good: String, quality: float = 0.0) -> float:
+	var p: Dictionary = st.prices.get(good, {})
+	if p.has("buy_max"):
+		return float(p["buy_max"]) + _quality_bonus(good, quality)
+	return buy_max(w.households.get(st.owner), good, quality)
+
+
+func set_stall_price(st: SimStall, good: String, key: String, value: float) -> void:
+	if not st.prices.has(good):
+		st.prices[good] = {}
+	st.prices[good][key] = maxf(0.0, value)
 
 
 # --- Stragany ---
@@ -104,7 +125,7 @@ func best_seller(buyer: SimAgent, good: String) -> SimStall:
 		if st.temporary and good in st.buys:
 			continue   # wóz wywozi to, co skupił
 		var oh: SimHousehold = w.households.get(st.owner)
-		if oh == null or sell_min(oh, good) > buy_max(bh, good):
+		if oh == null or stall_sell_min(st, good) > buy_max(bh, good):
 			continue
 		var score := quote(st, buyer, good) + float(_cfg["price_per_distance"]) * buyer.position.distance_to(st.counter())
 		var ka := w.agent_by_id(st.keeper)
@@ -125,7 +146,7 @@ func best_buyer(seller: SimAgent, good: String) -> SimStall:
 		if not st.is_open() or not good in st.buys or st.owner == sh.id or st.stock.space(good) <= 0 or int(st.wants.get(good, 1)) <= 0:
 			continue
 		var oh: SimHousehold = w.households.get(st.owner)
-		if oh == null or buy_max(oh, good) < sell_min(sh, good):
+		if oh == null or stall_buy_max(st, good) < sell_min(sh, good):
 			continue
 		# Stały stragan skupuje tylko do swojego zapasu (zbyt), a nie bez końca.
 		if not st.temporary and st.stock.amount(good) >= int(_cfg["restock_target"].get(good, 0)):
@@ -134,7 +155,7 @@ func best_buyer(seller: SimAgent, good: String) -> SimStall:
 		var keeper_cash := w.person_of(ka).purse if ka != null and w.person_of(ka) != null else 0.0
 		if keeper_cash < sell_min(sh, good):
 			continue
-		var score := buy_max(oh, good) - float(_cfg["price_per_distance"]) * seller.position.distance_to(st.counter())
+		var score := stall_buy_max(st, good) - float(_cfg["price_per_distance"]) * seller.position.distance_to(st.counter())
 		if score > best_score:
 			best_score = score
 			best = st
@@ -154,8 +175,7 @@ func sellable(st: SimStall, good: String) -> int:
 
 # Spodziewana cena u straganu dla tego kupującego (do planowania ilości).
 func quote(st: SimStall, buyer: SimAgent, good: String) -> float:
-	var oh: SimHousehold = w.households.get(st.owner)
-	var lo := sell_min(oh, good)
+	var lo := stall_sell_min(st, good)
 	var hi := maxf(lo, buy_max(w.household_of(buyer), good))
 	return lo + (hi - lo) * _split(w.agent_by_id(st.keeper), buyer)
 
@@ -198,7 +218,7 @@ func sell_to(st: SimStall, buyer: SimAgent, good: String, qty: int) -> Dictionar
 	var split := _split(ka, buyer)
 	while int(out["qty"]) < qty and sellable(st, good) > 0:
 		var q := float(st.stock.chair_qualities[0]) if good == "chair" and not st.stock.chair_qualities.is_empty() else 0.0
-		var lo := sell_min(oh, good, q)
+		var lo := stall_sell_min(st, good, q)
 		var hi := buy_max(bh, good, q)
 		if lo > hi:
 			break
@@ -238,7 +258,7 @@ func buy_from(st: SimStall, seller: SimAgent, good: String, qty: int, qualities:
 		var n := int(out["qty"])
 		var q: float = float(qualities[n]) if n < qualities.size() else 0.0
 		var lo := sell_min(sh, good, q)
-		var hi := buy_max(oh, good, q)
+		var hi := stall_buy_max(st, good, q)
 		if lo > hi:
 			break
 		# Tu stragan kupuje: lepszy targujący się sprzedawca ciągnie cenę w górę.

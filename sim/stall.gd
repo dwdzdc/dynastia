@@ -15,6 +15,7 @@ var keeper: int = -1           # agent za ladą (-1 = nikogo)
 var packed := true             # zwinięty na noc (towar schowany)
 var buys: Array = []           # co skupuje (reszta tylko na sprzedaż)
 var wants: Dictionary = {}     # limit skupu: towar -> ile jeszcze weźmie (brak klucza = bez limitu)
+var prices: Dictionary = {}    # własne ceny straganu (S42): towar -> { sell_min, buy_max }; brak = granice gospodarstwa
 var temporary := false         # wóz kupca wędrownego: znika po odjeździe
 var last_deal: float = 0.0     # kiedy ostatnio ktoś coś tu kupił albo sprzedał (doby)
 

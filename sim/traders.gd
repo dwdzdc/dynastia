@@ -137,14 +137,13 @@ func offer_text(v: Dictionary) -> String:
 	var st := stall_of(v)
 	if st == null:
 		return "nic już nie ma"
-	var h: SimHousehold = w.households[st.owner]
 	var parts: Array = []
 	for g in st.wants:
 		if int(st.wants[g]) > 0:
-			parts.append("kupi %d× %s po %.1f zł" % [int(st.wants[g]), w.good_label(g), w.trade.buy_max(h, g)])
+			parts.append("kupi %d× %s po %.1f zł" % [int(st.wants[g]), w.good_label(g), w.trade.stall_buy_max(st, g)])
 	for g in st.goods:
 		if st.stock.amount(g) > 0 and not st.wants.has(g):
-			parts.append("sprzeda %d× %s po %.1f zł" % [st.stock.amount(g), w.good_label(g), w.trade.sell_min(h, g)])
+			parts.append("sprzeda %d× %s po %.1f zł" % [st.stock.amount(g), w.good_label(g), w.trade.stall_sell_min(st, g)])
 	return ", ".join(parts) if not parts.is_empty() else "nic już nie ma"
 
 

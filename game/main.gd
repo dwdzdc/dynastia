@@ -16,6 +16,7 @@ var view: Node3D
 var selected_id := -1
 var selected_building := ""
 var hover_id := -1
+var hover_building := ""        # budynek pod kursorem, gdy nie ma pod nim osoby (I7)
 
 var placing := ""            # tryb wskazywania miejsca: id z katalogu budowy (S29)
 var placing_from: Variant = null   # budowa liniowa (droga): wskazany już początek
@@ -73,6 +74,7 @@ func _process(delta: float) -> void:
 	view.refresh(delta, selected_id, night)
 	hud.push_fx(world.events.drain_fx())
 	hover_id = _agent_under_mouse()
+	hover_building = _building_at(_ground_at(get_viewport().get_mouse_position())) if hover_id < 0 else ""
 	# Zaznaczona osoba zmarła — odznacz.
 	if selected_id >= 0:
 		var a := world.agent_by_id(selected_id)
@@ -287,7 +289,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_TAB:
 				_select_next()
 			KEY_F1:
-				hud._help.visible = not hud._help.visible
+				hud.toggle_help()
+			KEY_L:
+				hud.toggle_people()
 			KEY_K:
 				hud.toggle_chronicle()
 			KEY_G:
@@ -301,14 +305,14 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_F3:
 				hud.debug = not hud.debug
 			KEY_ESCAPE:
-				placing = ""
-				placing_from = null
-				follow_cam = false
-				selected_id = -1
-				selected_building = ""
-				hud._help.visible = false
-				if hud._chronicle.visible:
-					hud.toggle_chronicle()
+				# Kolejno: anuluj budowę, zamknij okno sprawy, odznacz.
+				if placing != "":
+					placing = ""
+					placing_from = null
+				elif not hud.close_window():
+					follow_cam = false
+					selected_id = -1
+					selected_building = ""
 
 
 func _select_next() -> void:
@@ -323,7 +327,8 @@ func _select_next() -> void:
 
 
 func _on_left_click(pos: Vector2) -> void:
-	hud._help.visible = false
+	if hud.window_key() == "help":
+		hud.close_window()
 	if placing != "":
 		var g := _ground_at(pos)
 		var at := Vector2(g.x, g.z)

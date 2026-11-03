@@ -4,6 +4,9 @@
 ##   SHOT_DIR=/ścieżka godot --audio-driver Dummy -s res://tools/screenshot.gd
 extends SceneTree
 
+const StallWindow := preload("res://ui/windows/stall_window.gd")
+const PersonWork := preload("res://ui/windows/person_work_window.gd")
+
 var game: Node
 var out_dir: String
 
@@ -25,7 +28,7 @@ func _frames(n: int) -> void:
 
 func _shoot() -> void:
 	await _frames(10)
-	game.hud._help.visible = false
+	game.hud.close_window()
 	# Rano: start dnia, ludzie idą do pracy.
 	game.world.step_sim(game.world.clock.day_seconds * 0.12)
 	await _frames(30)
@@ -93,6 +96,38 @@ func _shoot() -> void:
 	await _frames(15)
 	_save("11_build_menu.png")
 	game.hud.toggle_build()
+	# Okna nowego interfejsu (I1–I8).
+	game.hud.toggle_family()
+	await _frames(15)
+	_save("12_family.png")
+	game.hud.toggle_people()
+	await _frames(15)
+	_save("13_people.png")
+	game.hud.toggle_stats()
+	await _frames(40)
+	_save("14_stats.png")
+	game.hud.close_window()
+	game.selected_building = "stall_bednarz"
+	await _frames(10)
+	game.hud.toggle_window("b:stall_bednarz:goods", func(): return StallWindow.new().for_building(w.building("stall_bednarz")))
+	await _frames(15)
+	_save("15_stall.png")
+	game.select_agent(game.world.family.root().agent_id, true)
+	await _frames(10)
+	var ra = game.world.agent_by_id(game.selected_id)
+	game.hud.toggle_window("a:work", func(): return PersonWork.new().for_agent(ra, game.world.person_of(ra)))
+	await _frames(15)
+	_save("16_person_work.png")
+	game.hud.close_window()
+	game.selected_id = -1
+	game.set_process(false)
+	game.hover_id = -1
+	game.hover_building = "home"
+	game.cam_target = Vector3(48, 0, 38)
+	await _frames(10)
+	_save("17_hover_home.png")
+	game.hover_building = ""
+	game.set_process(true)
 	# Noc i zima.
 	game.world.clock.set_time(16, 0.9)
 	await _frames(30)
