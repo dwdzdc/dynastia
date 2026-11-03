@@ -39,6 +39,9 @@ const CHRONICLE_ROWS := 40
 const SKILL_LABELS := { "chop": "rąbanie", "saw": "piłowanie", "craft": "stolarka", "forage": "zbieractwo", "steal": "złodziejstwo", "trade": "handel" }
 
 const FAMILY_W := 440.0   # szerokość panelu rodu (karty zawijają tekst)
+const CARD_STRIPE := 8    # grubość paska koloru zajęcia na karcie osoby
+const CARD_PAD := 10      # wcięcie tekstu karty od pasków/krawędzi
+const TOP_RES_H := 30.0   # wysokość pola z zasobami w pasku górnym
 
 const PRICE_STEP := 0.1   # krok granicy ceny w panelu chaty (zł)
 var main: Node
@@ -162,10 +165,14 @@ func _build_top() -> void:
 		h.add_child(b)
 	_top_res = RichTextLabel.new()
 	_top_res.bbcode_enabled = true
-	_top_res.fit_content = true
+	# Bez fit_content: szerokość tekstu nie wchodzi w minimum paska, więc zmienne
+	# wartości nie wypychają przycisków za ekran (nadmiar się przycina).
 	_top_res.scroll_active = false
 	_top_res.autowrap_mode = TextServer.AUTOWRAP_OFF
+	_top_res.clip_contents = true
+	_top_res.custom_minimum_size.y = TOP_RES_H
 	_top_res.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_top_res.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	_top_res.add_theme_font_size_override("normal_font_size", 21)
 	_top_res.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	h.add_child(_top_res)
@@ -342,7 +349,9 @@ func _update_family() -> void:
 		b.add_theme_color_override("font_hover_color", col.lightened(0.2))
 		var job_col: Color = AgentView.CHILD_CLOTH if stage == "child" else AgentView.cloth_color(a.person_id)
 		var sb := _box(Color(0.2, 0.16, 0.12) if main.selected_id != a.id else Color(0.42, 0.32, 0.16), job_col, 4, 6)
-		sb.border_width_left = 8
+		sb.border_width_left = CARD_STRIPE
+		sb.content_margin_left = CARD_STRIPE + CARD_PAD
+		sb.content_margin_right = CARD_PAD
 		b.add_theme_stylebox_override("normal", sb)
 
 
