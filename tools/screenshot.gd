@@ -96,6 +96,19 @@ func _shoot() -> void:
 	await _frames(15)
 	_save("11_build_menu.png")
 	game.hud.toggle_build()
+	# Duszek budynku: tartak w wolnym miejscu i za blisko chaty.
+	game.cam_target = Vector3(34, 0, 52)
+	game.cam_size = 34.0
+	game.placing = "sawmill"
+	w.household.earn(200.0)
+	await _frames(60)
+	game.get_viewport().warp_mouse(game.camera.unproject_position(Vector3(24, 0, 60)))
+	await _frames(10)
+	_save("18_ghost_ok.png")
+	game.get_viewport().warp_mouse(game.camera.unproject_position(Vector3(48, 0, 40)))
+	await _frames(10)
+	_save("19_ghost_bad.png")
+	game.placing = ""
 	# Okna nowego interfejsu (I1–I8).
 	game.hud.toggle_family()
 	await _frames(15)
@@ -106,6 +119,9 @@ func _shoot() -> void:
 	game.hud.toggle_stats()
 	await _frames(40)
 	_save("14_stats.png")
+	game.hud.toggle_jobs()
+	await _frames(15)
+	_save("20_jobs.png")
 	game.hud.close_window()
 	game.selected_building = "stall_bednarz"
 	await _frames(10)

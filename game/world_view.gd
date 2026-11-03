@@ -45,6 +45,11 @@ var _stalls: Dictionary = {}       # stall id -> { node, awning, goods, last }
 var _bnodes: Dictionary = {}       # building id -> { node, type } (budynki mogą powstać w trakcie gry, O2)
 var _site_walls: Dictionary = {}   # site id -> MeshInstance3D (ściany rosną z postępem)
 var _roads_drawn := 0              # ile zbudowanych w grze dróg już narysowano
+var _ghost: Node3D                 # duszek budynku przy wskazywaniu miejsca (null = brak)
+var _ghost_key := ""
+var _ghost_ok := true
+const GHOST_OK := Color(0.55, 1.0, 0.55, 0.45)
+const GHOST_BAD := Color(1.0, 0.35, 0.3, 0.45)
 const SEASON_GRASS := {
 	"spring": Color(0.33, 0.45, 0.22), "summer": Color(0.4, 0.46, 0.21),
 	"autumn": Color(0.47, 0.41, 0.22), "winter": Color(0.84, 0.86, 0.9),
@@ -271,7 +276,13 @@ func _add(parent: Node3D, mi: MeshInstance3D, pos: Vector3, rot_y := 0.0) -> Mes
 func _building(b: SimBuilding) -> void:
 	var n := _at(b)
 	_bnodes[b.id] = { "node": n, "type": b.type }
-	match b.type:
+	_shape(n, b.type, b)
+
+
+# Bryła budynku danego typu. b == null: sam kształt bez stert i świecących okien
+# (duszek budynku przy wskazywaniu miejsca budowy).
+func _shape(n: Node3D, type: String, b: SimBuilding) -> void:
+	match type:
 		"site" when world.sites.has(b.id) and bool(world.site_cfg(world.sites[b.id]).get("line", false)):
 			# Droga w budowie: wytyczona linia, jaśniejsza, póki niegotowa.
 			var st: Dictionary = world.sites[b.id]
@@ -328,6 +339,12 @@ func _building(b: SimBuilding) -> void:
 			_house(n, Vector3(6.0, 3.0, 4.6), WOOD, THATCH.darkened(0.15), true)
 			_add(n, Gfx3D.cylinder(0.06, 2.6, WOOD_DARK), Vector3(3.4, 1.3, 2.0))
 			_add(n, Gfx3D.box(Vector3(1.2, 0.7, 0.08), Color(0.7, 0.2, 0.15)), Vector3(3.4, 2.3, 2.1))
+		"stall":
+			_add(n, Gfx3D.box(Vector3(2.8, 1.0, 1.4), WOOD), Vector3(0, 0.5, 0))
+			for x in [-1.3, 1.3]:
+				_add(n, Gfx3D.cylinder(0.07, 2.4, WOOD_DARK), Vector3(x, 1.2, -0.6))
+			var aw := _add(n, Gfx3D.box(Vector3(3.2, 0.12, 2.0), AWNINGS[0]), Vector3(0, 2.4, 0))
+			aw.rotation.x = 0.2
 		"jail":
 			_house(n, Vector3(6.0, 3.6, 5.0), STONE, Color(0.35, 0.33, 0.32), false)
 			_add(n, Gfx3D.box(Vector3(1.6, 5.8, 1.6), STONE.darkened(0.1)), Vector3(2.4, 2.9, -1.4))
@@ -336,6 +353,7 @@ func _building(b: SimBuilding) -> void:
 
 
 func _house(n: Node3D, size: Vector3, wall: Color, roof_col: Color, lit: bool) -> void:
+	lit = lit and not n.has_meta("ghost")
 	_add(n, Gfx3D.box(size, wall), Vector3(0, size.y * 0.5, 0))
 	_add(n, Gfx3D.roof(Vector3(size.x + 0.7, size.y * 0.55 + 0.6, size.z + 0.7), roof_col), Vector3(0, size.y + (size.y * 0.55 + 0.6) * 0.5, 0))
 	_add(n, Gfx3D.box(Vector3(0.95, 1.7, 0.1), WOOD_DARK.darkened(0.2)), Vector3(0, 0.85, size.z * 0.5 + 0.03))
@@ -371,6 +389,8 @@ func _tree(t: SimTree) -> void:
 
 
 func _pile_slot(b: SimBuilding, good: String, parent: Node3D, at: Vector3) -> void:
+	if b == null:
+		return
 	var n := Node3D.new()
 	n.position = at
 	parent.add_child(n)
@@ -497,3 +517,51 @@ func tree_at(pos: Vector2, radius: float) -> SimTree:
 			bd = d
 			best = t
 	return best
+
+
+# --- Duszek budynku przy wskazywaniu miejsca budowy ---
+
+# kind: wpis katalogu budowy; at: miejsce pod kursorem; from: początek drogi albo null;
+# ok: czy da się tu budować (zielony / czerwony).
+func show_ghost(kind: String, at: Vector2, from: Variant, ok: bool) -> void:
+	var cfg: Dictionary = world.buildables.get(kind, {})
+	var line := bool(cfg.get("line", false))
+	var key := "%s:%s" % [kind, str(from) if line else ""]
+	if _ghost == null or _ghost_key != key or (line and from != null):
+		clear_ghost()
+		_ghost_key = key
+		_ghost = Node3D.new()
+		_ghost.set_meta("ghost", true)
+		add_child(_ghost)
+		if line:
+			if from != null:
+				_road(Vector2.ZERO, at - (from as Vector2), ROAD_PLANNED, _ghost)
+			else:
+				_ghost.add_child(Gfx3D.cylinder(0.6, 0.15, ROAD_PLANNED))
+		else:
+			_shape(_ghost, String(cfg.get("result", kind)), null)
+		_ghost_ok = not ok
+	_ghost.position = Vector3((from as Vector2).x, 0, (from as Vector2).y) if line and from != null else Vector3(at.x, 0, at.y)
+	if ok != _ghost_ok:
+		_ghost_ok = ok
+		var m := StandardMaterial3D.new()
+		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		m.albedo_color = GHOST_OK if ok else GHOST_BAD
+		_tint(_ghost, m)
+
+
+func clear_ghost() -> void:
+	if _ghost != null:
+		_ghost.queue_free()
+		_ghost = null
+	_ghost_key = ""
+
+
+func _tint(n: Node, m: Material) -> void:
+	for c in n.get_children():
+		if c is MeshInstance3D:
+			(c as MeshInstance3D).material_override = m
+			(c as MeshInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		_tint(c, m)
+

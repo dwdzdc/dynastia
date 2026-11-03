@@ -672,6 +672,26 @@ func leave_home() -> void:
 # Zlecenie budowy z katalogu (S29, T0): powstaje plac budowy, na który trzeba donieść
 # materiały i na którym ktoś musi pracować; ród wystawia też ofertę dla budowlańców.
 # Budowa liniowa (droga) bierze dwa punkty: początek i koniec.
+# Czy da się tu wytyczyć budowę; "" = tak, inaczej powód (dla duszka budynku i komunikatu).
+func placement_problem(kind: String, at: Vector2, to: Variant = null, owner: SimHousehold = null) -> String:
+	if owner == null:
+		owner = household
+	var cfg: Dictionary = buildables.get(kind, {})
+	if cfg.is_empty():
+		return "Nieznana budowa."
+	var line := bool(cfg.get("line", false))
+	var pos := at if not line or to == null else (at + (to as Vector2)) * 0.5
+	var clearance := float(cfg["clearance"])
+	for b: SimBuilding in buildings.values():
+		if clearance > 0.0 and b.position.distance_to(pos) < clearance:
+			return "Za blisko innego budynku — wybierz inne miejsce."
+	var plot := float(balance["economy"]["plot_price"].get(kind, 0.0))
+	var lo := land_owner()
+	if plot > 0.0 and lo != null and lo != owner and owner.cash < plot:
+		return "Za mało pieniędzy na działkę pod budowę (%d zł dla właściciela ziemi)." % int(plot)
+	return ""
+
+
 func commission(kind: String, at: Vector2, to: Variant = null, owner: SimHousehold = null) -> String:
 	if owner == null:
 		owner = household
@@ -680,19 +700,15 @@ func commission(kind: String, at: Vector2, to: Variant = null, owner: SimHouseho
 		return ""
 	var line := bool(cfg.get("line", false))
 	var pos := at if not line else (at + (to as Vector2)) * 0.5
-	var clearance := float(cfg["clearance"])
-	for b: SimBuilding in buildings.values():
-		if clearance > 0.0 and b.position.distance_to(pos) < clearance:
-			note("Za blisko innego budynku — wybierz inne miejsce.", "warn", null)
-			return ""
+	var why := placement_problem(kind, at, to, owner)
+	if why != "":
+		if owner == household:
+			note(why, "warn", null)
+		return ""
 	# Działka pod budowę (T4): płaci się właścicielowi ziemi, chyba że to własna ziemia.
 	var plot := float(balance["economy"]["plot_price"].get(kind, 0.0))
 	var lo := land_owner()
 	if plot > 0.0 and lo != null and lo != owner:
-		if owner.cash < plot:
-			if owner == household:
-				note("Za mało pieniędzy na działkę pod budowę (%d zł dla właściciela ziemi)." % int(plot), "warn", null)
-			return ""
 		owner.pay(plot)
 		lo.earn(plot)
 	var id := "site_%d" % _next_site

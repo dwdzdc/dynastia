@@ -222,6 +222,7 @@ Pętla gry: ród Wilków (6 osób, 3 pokolenia) w chacie pod lasem. Co 5 dni czy
 - [x] I7 Podświetlenie powiązań pod kursorem: osoba → dom i praca, budynek → jego ludzie → zrzut.
 - [x] I8 Statystyki: ludność, ceny i budynki w czasie → test + zrzut.
 - [x] I9 Pomoc i narzędzie zrzutów pod nowy układ.
+- [x] I11 Duszek budynku przy budowie (zielony / czerwony z powodem; ten sam warunek co zlecenie, `SimWorld.placement_problem`) i okno „Ogłoszenia o pracę” (J): wakaty okolicy, „Wyślij…” najmuje kogoś z rodu.
 - [ ] I10 Playtest autora: co dalej jest nieczytelne → poprawki.
 - Uwagi z wykonania (03.11.2026): dziennik zdarzeń zniknął z ekranu — ważne wpisy (ostrzeżenia, sukcesy) są chorągiewkami przez dobę; pełny dziennik jest w kronice, zakładka „Zdarzenia”. Zasady zakupów rodu to osobne okno z przycisku w oknie Ród. Ceny straganu bez własnych ustawień biorą granice gospodarstwa właściciela, więc rody AI handlują jak dotąd.
 

@@ -12,6 +12,7 @@ const ChronicleWindow := preload("res://ui/windows/chronicle_window.gd")
 const HelpWindow := preload("res://ui/windows/help_window.gd")
 const PeopleWindow := preload("res://ui/windows/people_window.gd")
 const StatsWindow := preload("res://ui/windows/stats_window.gd")
+const JobsWindow := preload("res://ui/windows/jobs_window.gd")
 
 const ORDER_COLOR := Color(1.0, 0.85, 0.3, 0.85)
 const WARM := 15.0                  # progi słów dla więzi i preferencji (bez liczb w UI)
@@ -174,6 +175,7 @@ func _build_left() -> void:
 	p.add_child(v)
 	for it in [["Budowa (B)", "build", toggle_build], ["Ród (G)", "family", toggle_family],
 			["Kronika (K)", "chronicle", toggle_chronicle], ["Ludzie (L)", "people", toggle_people],
+			["Praca (J)", "jobs", toggle_jobs],
 			["Statystyki", "stats", toggle_stats], ["Pomoc (F1)", "help", toggle_help]]:
 		var b := UiKit.button(it[0], it[2], UiKit.SMALL + 1)
 		b.toggle_mode = true
@@ -196,6 +198,10 @@ func toggle_chronicle() -> void:
 
 func toggle_people() -> void:
 	toggle_window("people", func(): return PeopleWindow.new(), "Ludzie")
+
+
+func toggle_jobs() -> void:
+	toggle_window("jobs", func(): return JobsWindow.new(), "Ogłoszenia o pracę")
 
 
 func toggle_stats() -> void:
@@ -503,7 +509,10 @@ func _draw_overlay() -> void:
 		var what := String(cfg.get("label", main.placing)).to_lower()
 		var msg := ("Kliknij koniec drogi" if main.placing_from != null else "Kliknij początek drogi") if bool(cfg.get("line", false)) \
 			else "Kliknij, gdzie stanie: %s" % what
-		_text(get_viewport().get_mouse_position() + Vector2(0, -24), msg + " (Esc — anuluj)", 17, Color(1, 0.9, 0.5))
+		var mp := get_viewport().get_mouse_position()
+		_text(mp + Vector2(0, -24), msg + " (Esc — anuluj)", 17, Color(1, 0.9, 0.5))
+		if main.placing_problem != "":
+			_text(mp + Vector2(0, 40), main.placing_problem, 16, UiKit.BAD)
 	# Etykiety budynków z zapasami.
 	for id in world.buildings:
 		var b: SimBuilding = world.buildings[id]

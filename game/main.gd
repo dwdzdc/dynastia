@@ -20,6 +20,7 @@ var hover_building := ""        # budynek pod kursorem, gdy nie ma pod nim osoby
 
 var placing := ""            # tryb wskazywania miejsca: id z katalogu budowy (S29)
 var placing_from: Variant = null   # budowa liniowa (droga): wskazany już początek
+var placing_problem := ""         # czemu nie da się budować pod kursorem ("" = można)
 var cam_target := Vector3.ZERO
 var follow_cam := false         # kamera biegnie za zaznaczoną osobą (F)
 var cam_size := 42.0
@@ -74,6 +75,7 @@ func _process(delta: float) -> void:
 	view.refresh(delta, selected_id, night)
 	hud.push_fx(world.events.drain_fx())
 	hover_id = _agent_under_mouse()
+	_update_ghost()
 	hover_building = _building_at(_ground_at(get_viewport().get_mouse_position())) if hover_id < 0 else ""
 	# Zaznaczona osoba zmarła — odznacz.
 	if selected_id >= 0:
@@ -292,6 +294,8 @@ func _unhandled_input(event: InputEvent) -> void:
 				hud.toggle_help()
 			KEY_L:
 				hud.toggle_people()
+			KEY_J:
+				hud.toggle_jobs()
 			KEY_K:
 				hud.toggle_chronicle()
 			KEY_G:
@@ -313,6 +317,20 @@ func _unhandled_input(event: InputEvent) -> void:
 					follow_cam = false
 					selected_id = -1
 					selected_building = ""
+
+
+# Duszek budynku pod kursorem przy wskazywaniu miejsca budowy (zielony = można).
+func _update_ghost() -> void:
+	if placing == "":
+		view.clear_ghost()
+		placing_problem = ""
+		return
+	var g := _ground_at(get_viewport().get_mouse_position())
+	var at := Vector2(g.x, g.z)
+	var line := bool(world.buildables[placing].get("line", false))
+	placing_problem = world.placement_problem(placing, placing_from if line and placing_from != null else at,
+		at if line and placing_from != null else null)
+	view.show_ghost(placing, at, placing_from if line else null, placing_problem == "")
 
 
 func _select_next() -> void:
