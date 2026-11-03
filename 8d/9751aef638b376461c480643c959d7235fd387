@@ -1,0 +1,139 @@
+ui/windows/building_people_window.gd.uid
+  s_b883d7d0695cbf::t_155ab7434de2a1 1
+tests/run_tests.gd
+  s_b883d7d0695cbf::t_1b81d6ca4e0359 76-77,1105-1126,1128-1129
+  s_b883d7d0695cbf::t_b06406fc0cd8b2 1127
+tools/screenshot.gd
+  s_b883d7d0695cbf::t_6b21498681f9b1 107,123-130
+  s_b883d7d0695cbf::t_155ab7434de2a1 7-9,99-106,108-122
+  s_b883d7d0695cbf::t_cb31a56146fd25 31
+ui/windows/stats_window.gd.uid
+  s_b883d7d0695cbf::t_155ab7434de2a1 1
+ui/windows/chronicle_window.gd
+  s_b883d7d0695cbf::t_72a16e378d1dd1 1-2,7,9,16-25,33-34,36,39,45-49
+  s_b883d7d0695cbf::t_6877711ac1107d 3-6,8,10-15,26-32,35,37-38,40-44,50
+ui/windows/help_window.gd
+  s_b883d7d0695cbf::t_6877711ac1107d 1-13
+ui/ui_kit.gd.uid
+  s_b883d7d0695cbf::t_155ab7434de2a1 1
+ui/windows/person_window.gd.uid
+  s_b883d7d0695cbf::t_155ab7434de2a1 1
+ui/windows/rules_window.gd
+  s_b883d7d0695cbf::t_3ab23e949b61ff 1-2
+  s_b883d7d0695cbf::t_21f3f432e5b1e6 3-20
+ui/windows/stall_window.gd.uid
+  s_b883d7d0695cbf::t_155ab7434de2a1 1
+CLAUDE.md
+  s_b883d7d0695cbf::t_1e0059cb0dbc90 20-21
+ui/windows/building_stock_window.gd
+  s_b883d7d0695cbf::t_38b313267b80d4 1-28
+progress.md
+  s_b883d7d0695cbf::t_72a16e378d1dd1 226
+  s_b883d7d0695cbf::t_1e0059cb0dbc90 216-225
+ui/selection_card.gd.uid
+  s_b883d7d0695cbf::t_155ab7434de2a1 1
+ui/windows/person_work_window.gd.uid
+  s_b883d7d0695cbf::t_155ab7434de2a1 1
+ui/windows/building_window.gd
+  s_b883d7d0695cbf::t_38b313267b80d4 1-11
+ui/windows/build_window.gd
+  s_b883d7d0695cbf::t_6877711ac1107d 1-26
+ui/windows/chronicle_window.gd.uid
+  s_b883d7d0695cbf::t_155ab7434de2a1 1
+game/main.gd
+  s_b883d7d0695cbf::t_cb31a56146fd25 292-294,308-315,330-331
+  s_b883d7d0695cbf::t_3ab23e949b61ff 19,77
+sim/stall.gd
+  s_b883d7d0695cbf::t_6be33791d112c1 18
+ui/windows/person_traits_window.gd
+  s_b883d7d0695cbf::t_30af3a7bebb7ae 1-12
+ui/topic_window.gd.uid
+  s_b883d7d0695cbf::t_155ab7434de2a1 1
+ui/selection_card.gd
+  s_b883d7d0695cbf::t_8b2d543b7d9b16 165
+  s_b883d7d0695cbf::t_a697db6147f7c3 98
+  s_b883d7d0695cbf::t_0635d4356307a3 1-97,99-164,166-211
+ui/windows/stats_window.gd
+  s_b883d7d0695cbf::t_a2a744354654e6 1-77
+ui/windows/person_prefs_window.gd
+  s_b883d7d0695cbf::t_30af3a7bebb7ae 1-19
+ui/ui_kit.gd
+  s_b883d7d0695cbf::t_def4f3dab21e5b 1-87
+ui/windows/stall_window.gd
+  s_b883d7d0695cbf::t_21f3f432e5b1e6 27,29,32-36,38-53,57,59-61
+  s_b883d7d0695cbf::t_8a41c7d38828d6 1-22,26,28,30-31,37,54-56,58
+  s_b883d7d0695cbf::t_8b2d543b7d9b16 23-25
+ui/hud.gd
+  s_b883d7d0695cbf::t_3a3f26f1798d02 267-272
+  s_b883d7d0695cbf::t_6b21498681f9b1 612
+  s_b883d7d0695cbf::t_1a0f655a2ceddc 1-3,8-14,19-25,30,35,39-47,62-63,72,74,82,84,86-90,94-95,99-109,120-121,123-144,146-158,161-162,164-167,169-170,175-182,186,190-202,205-217,219-241,243-245,247-265,273-282,285-312,324-325,328-329,332-349,351-356,359,373,376-392,395,397-412,439,444,450-452,457,481-482,516,575
+  s_b883d7d0695cbf::t_3ab23e949b61ff 26-29,519,578-611,613-616
+ui/windows/building_window.gd.uid
+  s_b883d7d0695cbf::t_155ab7434de2a1 1
+ui/windows/people_window.gd
+  s_b883d7d0695cbf::t_a2a744354654e6 1-86
+ui/windows/family_window.gd.uid
+  s_b883d7d0695cbf::t_155ab7434de2a1 1
+sim/jobs.gd
+  s_b883d7d0695cbf::t_6be33791d112c1 934
+sim/world.gd
+  s_b883d7d0695cbf::t_8a41c7d38828d6 921-943
+  s_b883d7d0695cbf::t_f053075085d314 48,52,1357-1391,1394
+ui/windows/build_window.gd.uid
+  s_b883d7d0695cbf::t_155ab7434de2a1 1
+ui/windows/person_window.gd
+  s_b883d7d0695cbf::t_30af3a7bebb7ae 1,3-9,11
+  s_b883d7d0695cbf::t_38b313267b80d4 2,10,12-14
+ui/topic_window.gd
+  s_b883d7d0695cbf::t_fce7d7fd94e419 1-8,10-35,37-45,47-49,54-73,81-104,108-147
+  s_b883d7d0695cbf::t_4a85755aa5d23d 9,148-160
+  s_b883d7d0695cbf::t_b1b7206f8af697 36,50-53
+  s_b883d7d0695cbf::t_9ba7ab56863df1 46,74-80
+  s_b883d7d0695cbf::t_21f3f432e5b1e6 105-107
+ui/windows/people_window.gd.uid
+  s_b883d7d0695cbf::t_155ab7434de2a1 1
+ui/windows/person_work_window.gd
+  s_b883d7d0695cbf::t_30af3a7bebb7ae 1-101
+ui/windows/person_memories_window.gd.uid
+  s_b883d7d0695cbf::t_155ab7434de2a1 1
+ui/windows/building_people_window.gd
+  s_b883d7d0695cbf::t_38b313267b80d4 1-35
+ui/windows/house_supplies_window.gd.uid
+  s_b883d7d0695cbf::t_155ab7434de2a1 1
+ui/windows/person_prefs_window.gd.uid
+  s_b883d7d0695cbf::t_155ab7434de2a1 1
+ui/windows/person_traits_window.gd.uid
+  s_b883d7d0695cbf::t_155ab7434de2a1 1
+ui/windows/help_window.gd.uid
+  s_b883d7d0695cbf::t_155ab7434de2a1 1
+ui/windows/family_window.gd
+  s_b883d7d0695cbf::t_21f3f432e5b1e6 7,29-30
+  s_b883d7d0695cbf::t_e81315062e5ff9 1-6,8-28,31-77
+sim/trade.gd
+  s_b883d7d0695cbf::t_a2a744354654e6 38,59,66
+  s_b883d7d0695cbf::t_6be33791d112c1 54-58,60-65,67-74,128,149,158,178,221,261
+sim/traders.gd
+  s_b883d7d0695cbf::t_6be33791d112c1 143,146
+ui/windows/building_stock_window.gd.uid
+  s_b883d7d0695cbf::t_155ab7434de2a1 1
+ui/windows/house_supplies_window.gd
+  s_b883d7d0695cbf::t_38b313267b80d4 1-19
+ui/windows/person_memories_window.gd
+  s_b883d7d0695cbf::t_30af3a7bebb7ae 1-33
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "8d9751aef638b376461c480643c959d7235fd387",
+  "prompts": {},
+  "sessions": {
+    "s_b883d7d0695cbf": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "629fcdf4-5289-43b0-baa5-441c52b03016",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Dawid Dziedzic <24682682+dwdzdc@users.noreply.github.com>"
+    }
+  }
+}
