@@ -438,7 +438,10 @@ func _plan_work(a: SimAgent) -> void:
 		"carrier":
 			if not _plan_carrier(a):
 				var mill := _own(a, "sawmill")
-				if mill != null and _hh(a).sell_planks and mill.amount("plank") > 0:
+				var hungry_home := _food_shortage_reason(a)
+				if hungry_home != "":
+					_free_time(a, hungry_home)
+				elif mill != null and _hh(a).sell_planks and mill.amount("plank") > 0:
 					_free_time(a, "nikt nie skupuje desek po waszej cenie")
 				else:
 					_free_time(a, "nie ma nic do noszenia")
@@ -746,6 +749,22 @@ func _food_trip(a: SimAgent, urgent: bool) -> bool:
 	w.chore_claims[_claim(a, "food")] = a.id
 	a.claims.append("chore:" + _claim(a, "food"))
 	return true
+
+
+# Czemu tragarz nie kupił jedzenia, choć w domu go brakuje ("" = nie brakuje).
+func _food_shortage_reason(a: SimAgent) -> String:
+	var home := _home(a)
+	if home == null or home.amount("food") >= _hh(a).target_food:
+		return ""
+	var any_food := false
+	for st: SimStall in w.trade.stalls.values():
+		if st.is_open() and st.deals_in("food") and w.trade.sellable(st, "food") > 0:
+			any_food = true
+	if not any_food:
+		return "w chacie mało jedzenia, a nikt go teraz nie sprzedaje"
+	if _budget(a) < w.trade.ref("food"):
+		return "w chacie mało jedzenia, a nie ma za co kupić"
+	return "w chacie mało jedzenia, ale drożej niż wasza granica ceny"
 
 
 # Zakup na straganie (M4): wybór straganu (cena, droga, sympatia), po pieniądze do

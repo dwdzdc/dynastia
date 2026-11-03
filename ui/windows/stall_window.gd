@@ -11,7 +11,7 @@ func build() -> void:
 	var own := st.owner == world.household.id
 	var cfg: Dictionary = world.balance["trade"]
 	text("Sprzedaje: nie taniej niż · skupuje: nie drożej niż (do zapasu). Kramarz targuje się w tych granicach." if own
-		else "Cudzy stragan: tak handluje jego właściciel.", UiKit.SMALL, UiKit.DIM)
+		else "Cudzy stragan: tak handluje jego właściciel. W nawiasie: ile jest na sprzedaż (z ilu w zapasie — resztę trzyma dla siebie).", UiKit.SMALL, UiKit.DIM)
 	var g := UiKit.grid(5, 4)
 	add(g)
 	for t in ["Towar", "Sprzedaje", "", "Skupuje", ""]:
@@ -22,7 +22,11 @@ func build() -> void:
 			continue
 		var lbl := UiKit.label(world.good_label(gd), UiKit.SMALL + 1)
 		g.add_child(lbl)
-		watch(func(): lbl.text = "%s (%d)" % [world.good_label(gd), st.stock.amount(gd)])
+		# Na sprzedaż jest tylko to, czego właściciel nie trzyma dla siebie (np. dwór na swój stół).
+		watch(func():
+			var have := st.stock.amount(gd)
+			var sell := world.trade.sellable(st, gd)
+			lbl.text = "%s (%d)" % [world.good_label(gd), have] if sell == have else "%s (%d z %d)" % [world.good_label(gd), sell, have])
 		_toggle(g, st, gd, "goods", own)
 		g.add_child(_price(st, gd, "sell_min", "goods", own))
 		_toggle(g, st, gd, "buys", own)
