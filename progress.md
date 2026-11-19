@@ -199,7 +199,22 @@ Pętla gry: ród Wilków (6 osób, 3 pokolenia) w chacie pod lasem. Co 5 dni czy
   - Wynik (seed 1, 02.11.2026, `tools/probe_village.gd -- 100 1`): ród gracza bez decyzji wygasa w 59. dobie (koniec sondy). Do tego czasu ludzi 22 → 9 (6 narodzin, 21 śmierci, około 23 lat życia), Wilkowie awansowali na „mistrzów i kupców” (6. doba), Nowakowie podupadli i sprzedali karczmę Bednarzom (18. doba), sołectwo przeszło na Bednarzy, pieniędzy we wsi przybyło (994 → 1957 zł), żadnej budowy AI.
   - **Otwarte:** (1) demografia — za mało ślubów i dzieci względem śmierci ze starości, biedne rody bez dachu się nie rozmnażają; (2) biedne rody AI dalej bez domu (problem z Q2); (3) AI nie zbudowało niczego (progi `found_cash` i braku towaru za wysokie albo nikt nie spełnia warunku).
 
-## Iteracja 4 — czytelny interfejs (BIEŻĄCA)
+## Iteracja 5 — świat, który żyje sam (BIEŻĄCA)
+
+Źródło: nowy core (`docs/design/vision.md`, 19.11.2026) i `docs/design/world-economy.md` (decyzje szkieletowe zatwierdzone przez autora 19.11.2026). Wielka gospodarka współczesnego świata bez gracza, czyli sieć miast, aktorzy z kapitałem, firmy, ciężarówki, wstrząsy i kronika. Gracza wpychamy w nią w następnej iteracji. Kod: `sim/econ/`, dane: `data/economy.json`, testy: `tests/run_econ_tests.gd`, sonda: `tools/probe_economy.gd`, podgląd: `game/economy_view.tscn`.
+
+- [ ] E1 Dane i mapa: `economy.json`, generowanie sieci miast (ludność, drogi, złoża, najkrótsze ścieżki) → test determinizmu i spójności grafu.
+- [ ] E2 Rynek i ludność: partie towaru należące do sprzedawców, ceny z zapasu i popytu, koszyk ludności, płace i bezrobocie → test: suma pieniędzy stała, cena reaguje na brak i nadmiar.
+- [ ] E3 Firmy: przepisy, zatrudnienie, produkcja tylko gdy się opłaca, dywidendy, bankructwo; świat startuje z firmami → test łańcucha zboże → mąka → chleb.
+- [ ] E4 Przewoźnicy: ciężarówki kupują tanio i sprzedają drogo, paliwo, kierowcy, ładunek w drodze, zużycie i zakup ciężarówek → test: towar płynie z nadmiaru do braku.
+- [ ] E5 Aktorzy: tygodniowy przegląd interesów (zamknij, sprzedaj, kup, rozbuduj, załóż, wejdź w przewozy), budowa z materiałów, życie aktora, nowi przedsiębiorcy, śmierć i dziedziczenie → test.
+- [ ] E6 Wstrząsy (pożar, strajk, nieurodzaj, zamknięta droga, zbójcy, złoża) i migracja → test.
+- [ ] E7 Kronika świata z przyczynami → test.
+- [ ] E8 Sonda i balans: kryteria „żyje” z `world-economy.md` na kilku seedach → wynik tutaj.
+- [ ] E9 Podgląd świata: mapa z miastami, drogami, jadącymi ciężarówkami, panelem miasta, kroniką i najbogatszymi → zrzut.
+- [ ] E10 Playtest autora.
+
+## Iteracja 4 — czytelny interfejs (wstrzymana: zwrot na nowy core 19.11.2026)
 
 Źródło: rozmowa z autorem 03.11.2026. Panel po prawej był jedną długą listą wszystkiego (zapasy domu, ceny, najem, wakaty), a ceny straganu ustawiało się w oknie domu. Wzór: okna Cultures (`docs/design/wzorce-cultures.md` §2): osobne okno dla każdej sprawy. Czytelność ma największy wpływ na grywalność.
 
