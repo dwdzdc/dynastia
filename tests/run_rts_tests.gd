@@ -38,6 +38,7 @@ func _run_all() -> void:
 	_test_unit_works()
 	_test_player_builds()
 	_test_player_truck()
+	_test_world_lives_with_idle_player()
 
 
 # R2: płynny czas liczy doby gospodarki; gracz nie tworzy pieniędzy.
@@ -137,3 +138,19 @@ func _test_player_truck() -> void:
 	check("R7 dojechała", not tr.moving and tr.city_id == to)
 	w.truck_route(tr.id, to, tr.city_id if tr.city_id != to else r.other(to), "grain")
 	check("R7 trasa stała ustawiona", tr.mode == "route")
+
+
+# R8: gracz nic nie robi, a świat żyje dalej (świat nie zależy od gracza).
+func _test_world_lives_with_idle_player() -> void:
+	var w := RtsWorld.new(11, econ_data, rts_data, true)
+	var money := w.econ.money_total()
+	for i in 200:
+		w.advance(1.0)
+	var moving := w.econ.trucks.values().filter(func(t: EconTruck) -> bool: return t.moving).size()
+	var unemp := 0.0
+	for c: EconCity in w.econ.cities:
+		unemp += c.unemployment() * c.population
+	check("R8 pieniądze stałe po 200 dobach", absf(w.econ.money_total() - money) < money * 1e-6)
+	check("R8 ciężarówki jeżdżą", moving > 100)
+	check("R8 bezrobocie < 35%%", unemp / w.econ.total_population() < 0.35)
+	check("R8 firm przybywa", int(w.econ.stats["founded"]) > 20)

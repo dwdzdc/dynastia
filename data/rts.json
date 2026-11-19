@@ -3,7 +3,7 @@
 	"walk_km_per_day": 30,
 	"arrive_km": 0.03,
 	"player": {
-		"cash": 40000,
+		"cash": 60000,
 		"people": 2,
 		"start_city_rank": 4
 	},

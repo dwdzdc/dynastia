@@ -205,12 +205,13 @@ Pętla gry: ród Wilków (6 osób, 3 pokolenia) w chacie pod lasem. Co 5 dni czy
 
 - [x] R1 Skala i drogi: zwarta mapa (km), drogi jako łamane, ciężarówki na łamanych, przyjazd w chwili dojazdu → testy econ + sonda 720 dób „żyje”.
 - [x] R2 Czas ciągły i układ miast: `RtsWorld` przesuwa czas płynnie i liczy dobę gospodarki; działki firm i bloki mieszkalne w miastach (deterministycznie) → test.
-- [ ] R3 Mapa 3D: teren (pola, lasy), drogi, miasta z budynkami, jadące ciężarówki, kamera RTS (WASD, kółko, przeciąganie), nazwy miast → zrzut.
-- [ ] R4 Zaznaczanie i karta: klik w ciężarówkę, budynek albo miasto pokazuje kartę (firma, właściciel, ładunek, produkcja); minimapa; Kurier → zrzut.
-- [ ] R5 Gracz i jego ludzie: aktor-gracz z dwiema osobami; PPM idź, zadanie „pracuj w firmie” (idzie, pracuje, pensja do gracza) → test + zrzut.
-- [ ] R6 Firma gracza: menu budowy, miejsce w mieście, budowa z materiałów, zatrudnianie, wyniki w karcie → test.
-- [ ] R7 Ciężarówki gracza: kupno, rozkazy (handluj sam, trasa stała, jedź do, kup i sprzedaj tutaj) → test.
-- [ ] R8 Sonda: świat z graczem, który nic nie robi, żyje 720 dób; testy; dokumentacja.
+- [x] R3 Mapa 3D: teren (pola, lasy), drogi, miasta z budynkami, jadące ciężarówki, kamera RTS (WASD, kółko, przeciąganie), nazwy miast → zrzut.
+- [x] R4 Zaznaczanie i karta: klik w ciężarówkę, budynek albo miasto pokazuje kartę (firma, właściciel, ładunek, produkcja); minimapa; Kurier → zrzut.
+- [x] R5 Gracz i jego ludzie: aktor-gracz z dwiema osobami; PPM idź, zadanie „pracuj w firmie” (idzie, pracuje, pensja do gracza) → test + zrzut.
+- [x] R6 Firma gracza: menu budowy, miejsce w mieście, budowa z materiałów, zatrudnianie, wyniki w karcie → test.
+- [x] R7 Ciężarówki gracza: kupno, rozkazy (handluj sam, trasa stała, jedź do, kup i sprzedaj tutaj) → test.
+- [x] R8 Sonda: świat z graczem, który nic nie robi, żyje 720 dób; testy; dokumentacja.
+- Uwagi z wykonania (19.11.2026): gra startuje od mapy RTS (`game/rts/rts_main.tscn` to główna scena), stary podgląd grafu to `game/economy_view.tscn` (narzędzie). Ziemia to tekstura liczona z danych świata: pola wokół żyznych miast, lasy, zabudowa. Budynki są prostymi bryłami wg rodzaju firmy, a firmy gracza mają złoty odcień. Ciężarówki gracza są złote, ludzie gracza mają złote chorągiewki. Podatek majątkowy liczy się dopiero od nadwyżki ponad 500 tys. zł, żeby nie zjadał drobnych.
 - [ ] R9 Playtest autora.
 
 ## Iteracja 5 — świat, który żyje sam (zrobiona, czeka na playtest)

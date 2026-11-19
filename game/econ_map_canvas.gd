@@ -7,6 +7,7 @@ extends Control
 
 
 signal city_clicked(city_id: int)
+signal ground_clicked(km: Vector2)
 
 const BG := Color(0.07, 0.09, 0.12)
 const GRID := Color(0.12, 0.15, 0.2)
@@ -36,6 +37,8 @@ var price_good: String = "fuel"
 var zoom := 1.0
 var pan := Vector2.ZERO
 var _drag := false
+var show_labels := true
+var view_rect := Rect2()          # prostokąt widoku kamery (km) — ramka na minimapie
 var _font: Font
 
 
@@ -127,9 +130,20 @@ func _draw() -> void:
 			draw_circle(p, rad + 5.0, SELECT)
 		draw_circle(p, rad + 1.5, BG)
 		draw_circle(p, rad, city_color(c))
+		if not show_labels:
+			continue
 		var fs := 14 if c.population > 20000 else 12
 		var label := c.name
 		draw_string(_font, p + Vector2(rad + 4.0, 5.0), label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, LABEL if c.population > 20000 else LABEL_DIM)
+	_draw_view_rect()
+
+
+func _draw_view_rect() -> void:
+	if view_rect.size == Vector2.ZERO:
+		return
+	var a := to_screen(view_rect.position)
+	var b := to_screen(view_rect.end)
+	draw_rect(Rect2(a, b - a), Color(1, 1, 1, 0.8), false, 1.5)
 
 
 # Miasta, o których kronika pisała w ostatnich dobach (ważne wpisy) -> siła błysku 0..1.
@@ -143,6 +157,13 @@ func _recent_news_cities() -> Dictionary:
 		if int(e["severity"]) >= 1 and int(e["city"]) >= 0:
 			out[int(e["city"])] = maxf(float(out.get(int(e["city"]), 0.0)), 1.0 - age / FLASH_DAYS)
 	return out
+
+
+func from_screen(p: Vector2) -> Vector2:
+	var ms: Array = w.data["world"]["map_size"]
+	var s := _base_scale() * zoom
+	var origin := size * 0.5 - Vector2(float(ms[0]), float(ms[1])) * 0.5 * s + pan
+	return (p - origin) / s
 
 
 func city_at(screen: Vector2) -> int:
@@ -178,6 +199,7 @@ func _gui_input(event: InputEvent) -> void:
 				if not _drag:
 					var id := city_at(mb.position)
 					city_clicked.emit(id)
+					ground_clicked.emit(from_screen(mb.position))
 				_drag = false
 		elif mb.button_index in [MOUSE_BUTTON_RIGHT, MOUSE_BUTTON_MIDDLE]:
 			_drag = mb.pressed
