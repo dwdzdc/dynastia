@@ -21,6 +21,7 @@ var trucks: Array[int] = []       # haulage: id ciężarówek
 var extra_workers: float = 0.0    # ludzie gracza pracujący na miejscu (jednostki RTS)
 var extra_payee: int = -1         # komu idą ich pensje (aktor-gracz)
 var extra_paid: bool = true       # czy wczoraj dostali wypłatę
+var steward: bool = true          # firma gracza: zarządca sam dokłada kapitał obrotowy
 
 # Budowa albo rozbudowa: materiały do kupienia, potem dni pracy.
 var project: Dictionary = {}      # { "materials": {towar: ile}, "days": int, "to_level": int }

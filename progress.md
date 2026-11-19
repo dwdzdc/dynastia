@@ -212,6 +212,7 @@ Pętla gry: ród Wilków (6 osób, 3 pokolenia) w chacie pod lasem. Co 5 dni czy
 - [x] R7 Ciężarówki gracza: kupno, rozkazy (handluj sam, trasa stała, jedź do, kup i sprzedaj tutaj) → test.
 - [x] R8 Sonda: świat z graczem, który nic nie robi, żyje 720 dób; testy; dokumentacja.
 - Uwagi z wykonania (19.11.2026): gra startuje od mapy RTS (`game/rts/rts_main.tscn` to główna scena), stary podgląd grafu to `game/economy_view.tscn` (narzędzie). Ziemia to tekstura liczona z danych świata: pola wokół żyznych miast, lasy, zabudowa. Budynki są prostymi bryłami wg rodzaju firmy, a firmy gracza mają złoty odcień. Ciężarówki gracza są złote, ludzie gracza mają złote chorągiewki. Podatek majątkowy liczy się dopiero od nadwyżki ponad 500 tys. zł, żeby nie zjadał drobnych.
+- Dodatki (19.11.2026): ulice, obwodnice i dojazdy w miastach; dom rodu (ludzie bez zadania wracają do domu); koszty życia rodu (codzienny koszyk na rynku, a bez pieniędzy ludzie chodzą głodni); zarządca w firmie gracza (domyślnie sam dokłada kapitał obrotowy); państwo jako klocki polityk w danych, gotowe na wiele państw.
 - [ ] R9 Playtest autora.
 
 ## Iteracja 5 — świat, który żyje sam (zrobiona, czeka na playtest)

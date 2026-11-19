@@ -16,6 +16,7 @@ var order: Dictionary = {"kind": "idle"}   # idle / move {to} / work {business}
 var inside: int = -1                       # id firmy, w której pracuje
 var reason: String = "czeka na zadanie"
 var earned: float = 0.0                    # zarobione łącznie
+var fed: float = 1.0                       # jak dobrze ród go wczoraj wykarmił (0..1)
 
 
 func _init(id_: int) -> void:

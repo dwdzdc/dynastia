@@ -98,6 +98,10 @@ func advance(dt_days: float) -> void:
 
 
 func _after_day() -> void:
+	_family_needs()
+	for b: EconBusiness in player_businesses():
+		if b.steward and b.type != "haulage":
+			EconInvest.top_up(econ, player, b)
 	for tr: EconTruck in player_trucks():
 		if tr.mode == "route" and not tr.moving:
 			_route_step(tr)
@@ -116,6 +120,36 @@ func _after_day() -> void:
 			else:
 				u.earned += econ.city_of(b).wage
 				u.reason = "pracuje: %s (%.0f zł dziennie)" % [b.name, econ.city_of(b).wage]
+
+
+# Koszty życia rodu: każdy człowiek codziennie kupuje koszyk na rynku miasta, w którym
+# jest dom rodu (jedzenie, paliwo, usługi). Bez pieniędzy — chodzi głodny.
+func _family_needs() -> void:
+	var basket: Dictionary = data["family_basket"]
+	var c := home_city()
+	var hungry := 0
+	for u: RtsUnit in units.values():
+		var got_w := 0.0
+		var all_w := 0.0
+		for g: String in basket.keys():
+			var want := float(basket[g])
+			var res: Array = c.market(g).buy(want, maxf(player.cash, 0.0), econ.pay_seller)
+			player.cash -= float(res[1])
+			all_w += 1.0
+			got_w += clampf(float(res[0]) / want, 0.0, 1.0)
+		u.fed = got_w / all_w
+		if u.fed < 0.5:
+			hungry += 1
+	if hungry > 0 and econ.day % int(data["hunger_days_note"]) == 0:
+		note("Ród nie ma za co żyć: %d os. chodzi głodnych." % hungry)
+
+
+func family_cost_per_day() -> float:
+	var basket: Dictionary = data["family_basket"]
+	var s := 0.0
+	for g: String in basket.keys():
+		s += float(basket[g]) * home_city().market(g).price
+	return s * units.size()
 
 
 # --- ludzie gracza ------------------------------------------------------------

@@ -39,6 +39,7 @@ func _run_all() -> void:
 	_test_player_builds()
 	_test_player_truck()
 	_test_world_lives_with_idle_player()
+	_test_family_needs()
 
 
 # R2: płynny czas liczy doby gospodarki; gracz nie tworzy pieniędzy.
@@ -154,3 +155,17 @@ func _test_world_lives_with_idle_player() -> void:
 	check("R8 ciężarówki jeżdżą", moving > 100)
 	check("R8 bezrobocie < 35%%", unemp / w.econ.total_population() < 0.35)
 	check("R8 firm przybywa", int(w.econ.stats["founded"]) > 20)
+
+
+# Ród żyje z kasy: z pieniędzmi ludzie są najedzeni, bez pieniędzy chodzą głodni.
+func _test_family_needs() -> void:
+	var w := _world(13)
+	var money := w.econ.money_total()
+	w.advance(1.0)
+	var u: RtsUnit = w.units.values()[0]
+	check("Ród: z kasą najedzony", u.fed > 0.5)
+	check("Ród: zakupy nie tworzą pieniędzy", absf(w.econ.money_total() - money) < money * 1e-7)
+	w.home_city().cash += w.player.cash
+	w.player.cash = 0.0
+	w.advance(1.0)
+	check("Ród: bez kasy głodny", u.fed < 0.5)

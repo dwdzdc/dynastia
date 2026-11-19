@@ -425,6 +425,7 @@ func _home_card() -> void:
 	_row("ludzie", ", ".join(rts.units.values().map(func(u: RtsUnit) -> String: return u.first)))
 	_row("firmy", str(rts.player_businesses().size()))
 	_row("ciężarówki", str(rts.player_trucks().size()))
+	_row("koszt życia", "ok. %s zł dziennie" % _thousands(rts.family_cost_per_day()), DIM)
 	var hint := _label("LPM: zaznacz człowieka, ciężarówkę, firmę albo miasto. PPM: rozkaz dla zaznaczonego (idź, pracuj tu, jedź do miasta). WASD: kamera, kółko: zoom, spacja: pauza.", SMALL, DIM)
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	hint.custom_minimum_size.x = CARD_W - 30
@@ -437,6 +438,7 @@ func _unit_card(u: RtsUnit) -> void:
 	_card_box.add_child(_label(u.full_name(), HEAD, GOLD))
 	_row("co robi", u.reason)
 	_row("zarobił%s" % ("a" if u.female else ""), "%s zł" % _thousands(u.earned))
+	_row("najedzony", "tak" if u.fed > 0.8 else "słabo" if u.fed > 0.4 else "głodny", GOOD if u.fed > 0.8 else WARN if u.fed > 0.4 else BAD)
 	_actions([
 		_button("Do pracy… (wskaż firmę)", func() -> void: start_pick({"kind": "work", "unit": u.id}, "Kliknij firmę, w której %s ma pracować." % u.first)),
 		_button("Do domu", func() -> void:
@@ -515,6 +517,11 @@ func _business_card(b: EconBusiness) -> void:
 			_row("budowa", "czeka na: %s" % ", ".join(missing.map(func(g: String) -> String: return rts.econ.good_name(g))) if not missing.is_empty() else "zostało %d dni" % int(b.project["days"]))
 	if mine:
 		_row("kasa firmy", "%s zł · zysk %s zł/dzień" % [_thousands(b.cash), _thousands(b.profit_ema)], GOOD if b.profit_ema >= 0.0 else BAD)
+		var steward := CheckButton.new()
+		steward.text = "Zarządca pilnuje kasy (dokłada z kasy rodu, gdy produkcja się opłaca)"
+		steward.button_pressed = b.steward
+		steward.toggled.connect(func(on: bool) -> void: b.steward = on)
+		_card_box.add_child(steward)
 		_actions([
 			_button("Dopłać 10 tys.", func() -> void:
 				rts.move_cash(b.id, 10000.0)
