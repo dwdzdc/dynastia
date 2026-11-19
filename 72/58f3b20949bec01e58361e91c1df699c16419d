@@ -1,0 +1,73 @@
+game/rts/rts_city_view.gd
+  s_b35b8f715f6824::t_dd234e5514e1d8 148
+  s_b35b8f715f6824::t_2048046b9f6bdc 41
+sim/econ/econ_population.gd
+  s_b35b8f715f6824::t_342a8bf9160822 8-11,30,35-36
+sim/econ/econ_city.gd
+  s_b35b8f715f6824::t_342a8bf9160822 27-29,31-35
+  s_b35b8f715f6824::t_f73bfdfbef48dd 30
+sim/econ/econ_logistics.gd
+  s_b35b8f715f6824::t_b6e8346ca2a31d 337-343,346,356
+sim/econ/econ_events.gd
+  s_b35b8f715f6824::t_342a8bf9160822 31,35-36
+sim/econ/econ_route.gd
+  s_b35b8f715f6824::t_b6e8346ca2a31d 40-42,44-47
+sim/econ/econ_world.gd
+  s_b35b8f715f6824::t_b6e8346ca2a31d 40,161
+tests/run_rts_tests.gd
+  s_b35b8f715f6824::t_397a8979e6ced5 93-94
+sim/econ/econ_housing.gd
+  s_b35b8f715f6824::t_00e4c4a04b0a6f 82-83,95-127
+  s_b35b8f715f6824::t_76c740953b7107 1-12,17-56,58,64-81,84-85,88-94,128-150,153-182
+  s_b35b8f715f6824::t_f73bfdfbef48dd 57,59-63,151-152
+  s_b35b8f715f6824::t_ce6bcdf3fec26a 13-16,86-87
+data/economy.json
+  s_b35b8f715f6824::t_44c25ef30f0f42 113-114,116-144
+  s_b35b8f715f6824::t_00e4c4a04b0a6f 145-151
+  s_b35b8f715f6824::t_f73bfdfbef48dd 115
+game/rts/rts_hud.gd
+  s_b35b8f715f6824::t_2048046b9f6bdc 524-528,557,575-576
+sim/econ/econ_production.gd
+  s_b35b8f715f6824::t_342a8bf9160822 33-35
+sim/rts/rts_world.gd
+  s_b35b8f715f6824::t_b93d5834db12f4 178-179
+CLAUDE.md
+  ai_agent 21,27
+progress.md
+  ai_agent 209-212
+tools/probe_economy.gd
+  s_b35b8f715f6824::t_f4e17a48f15a32 119-120
+docs/design/world-economy.md
+  ai_agent 35-44
+sim/econ/econ_housing.gd.uid
+  s_b35b8f715f6824::t_ce6bcdf3fec26a 1
+sim/econ/econ_setup.gd
+  s_b35b8f715f6824::t_342a8bf9160822 26-28,66,212-213
+sim/econ/econ_consumption.gd
+  s_b35b8f715f6824::t_342a8bf9160822 13,16,21-22,45-46
+sim/econ/econ_invest.gd
+  s_b35b8f715f6824::t_951f034e898f6e 46
+  s_b35b8f715f6824::t_342a8bf9160822 73,90,146-147,187,245-246,259-260,474-479
+  s_b35b8f715f6824::t_00e4c4a04b0a6f 410-420
+  s_b35b8f715f6824::t_c6c46fd1b81105 44-45
+tests/run_econ_tests.gd
+  s_b35b8f715f6824::t_ce6bcdf3fec26a 49,284-319
+sim/econ/econ_labor.gd
+  s_b35b8f715f6824::t_342a8bf9160822 24-25
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "7258f3b20949bec01e58361e91c1df699c16419d",
+  "prompts": {},
+  "sessions": {
+    "s_b35b8f715f6824": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "8ea3f297-9483-40f4-a9c0-36a4b605ddb0",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Dawid Dziedzic <24682682+dwdzdc@users.noreply.github.com>"
+    }
+  }
+}
