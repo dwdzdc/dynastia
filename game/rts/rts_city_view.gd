@@ -12,6 +12,13 @@ const BUILDING_TINT := Color(0.55, 0.55, 0.55)
 const BURNED := Color(0.12, 0.1, 0.09)
 const PLAYER_ROOF := Color(1.0, 0.82, 0.3)
 const FIELD_COLORS := [Color(0.8, 0.72, 0.35), Color(0.55, 0.68, 0.3), Color(0.6, 0.45, 0.28)]
+const STREET := Color(0.38, 0.38, 0.4)
+const STREET_W := 9.0
+const STREET_Y := 0.45
+const RING_MIN_POP := 12000.0
+const RING_AT := 0.45            # obwodnica w tylu promieniach miasta
+const RING_SEGS := 28
+const DRIVE_MAX_KM := 3.5
 
 # Części budynku: [rodzaj ("box"/"cyl"), przesunięcie (x, z) m, wymiary (x, y, z) m albo (r, h, -), kolor]
 const PARTS := {
@@ -41,6 +48,8 @@ var lp: Dictionary
 var _boxes: MultiMeshInstance3D
 var _cyls: MultiMeshInstance3D
 var _sig := ""
+var _streets: MeshInstance3D
+var _home: Node3D
 
 
 func build(world: RtsWorld) -> void:
@@ -54,6 +63,15 @@ func build(world: RtsWorld) -> void:
 	cyl.radial_segments = 12
 	cyl.rings = 1
 	_cyls = _mmi(cyl)
+	_streets = MeshInstance3D.new()
+	var smat := StandardMaterial3D.new()
+	smat.vertex_color_use_as_albedo = true
+	smat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	smat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	_streets.material_override = smat
+	add_child(_streets)
+	_home = _home_node()
+	add_child(_home)
 	refresh(true)
 
 
@@ -133,6 +151,69 @@ func refresh(force := false) -> void:
 					boxes.append([_xf(at, Vector3(dims.x * grow, h, dims.z * grow), rot), col])
 	_fill(_boxes.multimesh, boxes)
 	_fill(_cyls.multimesh, cyls)
+	_build_streets()
+	var hp := rts.home_pos() * KM
+	_home.position = Vector3(hp.x, 0, hp.y)
+
+
+# Dom rodu gracza: dom ze złotym dachem.
+func _home_node() -> Node3D:
+	var n := Node3D.new()
+	var walls := Gfx3D.box(Vector3(22, 9, 16), Color(0.92, 0.88, 0.8))
+	walls.position.y = 4.5
+	n.add_child(walls)
+	var roof := Gfx3D.box(Vector3(24, 4, 18), PLAYER_ROOF)
+	roof.position.y = 11.0
+	n.add_child(roof)
+	return n
+
+
+# Ulice: obwodnica w większych miastach i dojazd od każdej firmy do najbliższej drogi.
+func _build_streets() -> void:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	st.set_color(STREET)
+	var segs: Array = []  # [a, b] km — drogi, do których można się podpiąć
+	for r: EconRoute in rts.econ.routes:
+		for i in r.points.size() - 1:
+			segs.append([r.points[i], r.points[i + 1]])
+	for c: EconCity in rts.econ.cities:
+		if c.population < RING_MIN_POP:
+			continue
+		var rr := RtsLayout.city_radius(lp, c) * RING_AT
+		var prev := c.pos + Vector2(rr, 0)
+		for k in range(1, RING_SEGS + 1):
+			var ang := TAU * float(k) / RING_SEGS
+			var p := c.pos + Vector2(cos(ang), sin(ang)) * rr
+			_strip(st, prev * KM, p * KM, STREET_W)
+			segs.append([prev, p])
+			prev = p
+	var home := rts.home_pos()
+	var drive: Array = [home]
+	for b: EconBusiness in rts.econ.businesses.values():
+		if b.status != "closed":
+			drive.append(rts.business_pos(b))
+	for p: Vector2 in drive:
+		var best := p
+		var best_d := INF
+		for sg: Array in segs:
+			var q := Geometry2D.get_closest_point_to_segment(p, sg[0], sg[1])
+			var d := p.distance_squared_to(q)
+			if d < best_d:
+				best_d = d
+				best = q
+		if sqrt(best_d) < DRIVE_MAX_KM:
+			_strip(st, p * KM, best * KM, STREET_W * 0.7)
+	_streets.mesh = st.commit()
+
+
+static func _strip(st: SurfaceTool, a: Vector2, b: Vector2, width: float) -> void:
+	if a.distance_to(b) < 0.5:
+		return
+	var side := (b - a).orthogonal().normalized() * width * 0.5
+	var v := [a + side, a - side, b - side, b + side]
+	for idx in [0, 1, 2, 0, 2, 3]:
+		st.add_vertex(Vector3(v[idx].x, STREET_Y, v[idx].y))
 
 
 static func _xf(at: Vector2, size: Vector3, rot: float) -> Transform3D:

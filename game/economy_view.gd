@@ -323,7 +323,7 @@ func _world_panel() -> void:
 		s /= w.cities.size()
 		_row(w.good_name(g), "×%.2f" % s, _price_color(s))
 	_section("PAŃSTWO")
-	_row("skarb", "%.1f mln zł" % (w.state_cash / 1e6))
+	_row("skarb", "%.1f mln zł" % (w.state_cash() / 1e6))
 	_row("budżetówka", _thousands(w.cities.reduce(func(acc: float, c: EconCity) -> float: return acc + c.public_workers, 0.0)) + " osób")
 
 

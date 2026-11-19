@@ -53,8 +53,7 @@ static func _to_owner(w: EconWorld, b: EconBusiness, amount: float) -> void:
 	var owner := w.actor(b.owner_id)
 	b.cash -= amount
 	if owner != null and owner.alive:
-		var tax := amount * float(w.data["state"]["dividend_tax"])
-		EconState.collect(w, tax)
+		var tax := w.state_of_city(owner.city_id).tax_dividend(w, amount)
 		owner.cash += amount - tax
 		owner.income_today += amount - tax
 	else:

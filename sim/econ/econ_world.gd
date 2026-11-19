@@ -29,9 +29,7 @@ var _next_id := 1
 var stats: Dictionary = {}                 # liczniki do sondy i kroniki
 var truck_profit_ema: float = 0.0          # średni zysk z kursu (decyzje o kupnie ciężarówek)
 var last_money: float = 0.0
-var state_cash: float = 0.0                # skarb państwa (EconState)
-var state_income_today: float = 0.0
-var state_income_ema: float = 0.0
+var states: Array[EconState] = []          # państwa (polityki z data/economy.json → "states")
 var supply_cache: Dictionary = {}          # EconInvest: moc produkcyjna (liczona raz na dobę)
 var supply_cache_day: int = -1
 var fleet_use_cache: float = 1.0
@@ -57,6 +55,10 @@ func _init(seed_: int, data_: Dictionary, warmup: bool = true) -> void:
 		"trips": 0, "deaths": 0, "entrepreneurs": 0, "retired": 0, "trucks_bought": 0, "trucks_scrapped": 0,
 		"closures": 0, "discoveries": 0, "migrants": 0.0}
 	EconMap.generate(self)
+	var sid := 0
+	for spec: Dictionary in data["states"]:
+		states.append(EconState.from_data(sid, spec))
+		sid += 1
 	for c: EconCity in cities:
 		for g: String in goods.keys():
 			c.markets[g] = EconMarket.new(g, float(goods[g]["base"]), float(goods[g].get("spoil", 0.0)))
@@ -85,7 +87,9 @@ func money_total() -> float:
 		s += a.cash
 	for b: EconBusiness in businesses.values():
 		s += b.cash
-	return s + state_cash
+	for st: EconState in states:
+		s += st.cash
+	return s
 
 
 # Zapłata sprzedawcy za towar z rynku (callback dla EconMarket.buy).
@@ -100,6 +104,18 @@ func pay_seller(seller_id: int, amount: float) -> void:
 
 
 # --- zapytania ---------------------------------------------------------------
+
+func state_of_city(city_id: int) -> EconState:
+	return states[cities[city_id].state_id]
+
+
+# Skarb wszystkich państw (do sondy i podglądu).
+func state_cash() -> float:
+	var s := 0.0
+	for st: EconState in states:
+		s += st.cash
+	return s
+
 
 func city_of(b: EconBusiness) -> EconCity:
 	return cities[b.city_id]
@@ -154,7 +170,9 @@ func phases() -> Array:
 	return [
 		["events", func() -> void: EconEvents.step(self)],
 		["labor", func() -> void: EconLabor.step(self)],
-		["state", func() -> void: EconState.step(self)],
+		["state", func() -> void:
+			for st: EconState in states:
+				st.step(self)],
 		["production", func() -> void: EconProduction.step(self)],
 		["logistics", func() -> void: EconLogistics.step(self)],
 		["consumption", func() -> void: EconConsumption.step(self)],

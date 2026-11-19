@@ -98,7 +98,7 @@ func _print_state(w: EconWorld) -> void:
 	for a: EconActor in w.actors.values():
 		ac += a.cash
 	var money := w.money_total()
-	var st := w.state_cash
+	var st := w.state_cash()
 	print("      pieniądze: ludność %.0f%%  aktorzy %.0f%%  firmy %.0f%%  państwo %.0f%%" % [hh / money * 100.0, ac / money * 100.0, (money - hh - ac - st) / money * 100.0, st / money * 100.0])
 	print("d%4d  ludność %7.0f  bezrob %4.1f%%  potrzeby %4.1f%%  firmy %4d (+%d bud.)  aktorzy %3d  ciężarówki %3d (w drodze %3d)  kurs %.0f  chleb %.2f paliwo %.2f stal %.2f" % [
 		w.day, pop, unemp / pop * 100.0, sat / pop * 100.0, active, building, w.living_actors().size(),

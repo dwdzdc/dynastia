@@ -439,7 +439,7 @@ func _unit_card(u: RtsUnit) -> void:
 	_row("zarobił%s" % ("a" if u.female else ""), "%s zł" % _thousands(u.earned))
 	_actions([
 		_button("Do pracy… (wskaż firmę)", func() -> void: start_pick({"kind": "work", "unit": u.id}, "Kliknij firmę, w której %s ma pracować." % u.first)),
-		_button("Stój", func() -> void:
+		_button("Do domu", func() -> void:
 			rts.order_idle(u.id)
 			on_selection()),
 		_button("Pokaż", func() -> void: main.focus_km(u.pos if u.inside < 0 else rts.business_pos(rts.econ.business(u.inside)), minf(main.cam_size, 1500.0))),

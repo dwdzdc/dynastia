@@ -46,12 +46,21 @@ func _make_player() -> void:
 			u.first = str(econ.rng.choice(econ.data["names"]["first"]))
 			u.female = EconNames.is_female_first(u.first)
 		u.last = EconNames.surname_for(family_last, u.female)
-		u.pos = home.pos + Vector2(0.05 * i, 0.03)
+		u.pos = home_pos() + Vector2(0.02 * i, 0.015)
+		u.reason = "w domu, czeka na zadanie"
 		units[u.id] = u
 
 
 func home_city() -> EconCity:
 	return econ.cities[player.city_id]
+
+
+# Dom rodu: stałe miejsce w mieście startowym (deterministycznie z seeda).
+func home_pos() -> Vector2:
+	var c := home_city()
+	var r := RtsLayout.city_radius(data["layout"], c) * 0.3
+	var ang := float(SimRng.hash3(econ.world_seed, player.id, "home") % 1000) / 1000.0 * TAU
+	return c.pos + Vector2(cos(ang), sin(ang)) * r
 
 
 func player_businesses() -> Array:
@@ -150,9 +159,10 @@ func order_idle(unit_id: int) -> void:
 	if u == null:
 		return
 	_leave(u)
-	u.order = {"kind": "idle"}
-	u.walking = false
-	u.reason = "czeka na zadanie"
+	u.order = {"kind": "home"}
+	u.target = home_pos()
+	u.walking = true
+	u.reason = "wraca do domu"
 
 
 func _leave(u: RtsUnit) -> void:
@@ -193,6 +203,9 @@ func _arrived(u: RtsUnit) -> void:
 		"move":
 			u.order = {"kind": "idle"}
 			u.reason = "stoi tam, gdzie kazano"
+		"home":
+			u.order = {"kind": "idle"}
+			u.reason = "w domu, czeka na zadanie"
 
 
 # --- firmy gracza -------------------------------------------------------------

@@ -45,6 +45,7 @@ func _run_all() -> void:
 	_test_fire_and_cause()
 	_test_road_closure_reroutes()
 	_test_gazette()
+	_test_two_states()
 
 
 # E1: sieć miast jest spójna, każdy zasób jest w kilku miastach.
@@ -231,3 +232,27 @@ func _test_gazette() -> void:
 	check("Kurier ma 4 kolumny", (issue["columns"] as Array).size() == 4)
 	check("Kurier: ranking rodów", ((issue["columns"] as Array)[3]["lines"] as Array).size() > 0)
 	check("Kurier nie zmienia świata", absf(w.money_total() - money) < 1e-6)
+
+
+# Państwa: polityki z danych, dwa państwa w jednym świecie, pieniądze się zgadzają.
+func _test_two_states() -> void:
+	var d2: Dictionary = data.duplicate(true)
+	var second: Dictionary = (d2["states"][0] as Dictionary).duplicate(true)
+	second["name"] = "Księstwo"
+	second["policies"] = [{"type": "dividend_tax", "rate": 0.05}, {"type": "pensions", "share": "rest"}]
+	(d2["states"] as Array).append(second)
+	var w := EconWorld.new(12, d2, false)
+	for i in w.cities.size():
+		if i % 2 == 1:
+			w.cities[i].state_id = 1
+	check("Państwa: dwa z danych", w.states.size() == 2 and w.states[1].policies.size() == 2)
+	var money := w.money_total()
+	for i in 60:
+		w.step_day()
+	check("Państwa: pieniądze stałe", absf(w.money_total() - money) < money * 1e-7)
+	var public_in_second := 0.0
+	for c: EconCity in w.cities:
+		if c.state_id == 1:
+			public_in_second += c.public_workers
+	check("Państwa: bez budżetówki w państwie bez tej polityki", public_in_second == 0.0)
+	check("Państwa: oba zbierają podatki", w.states[0].income_ema > 0.0 and w.states[1].income_ema > 0.0)

@@ -184,14 +184,19 @@
 		"max_idle_fleet": 0.25
 	},
 
-	"state": {
-		"dividend_tax": 0.35,
-		"wealth_tax": 0.0005,
-		"wealth_tax_free": 500000,
-		"spend_of_savings": 0.02,
-		"public_share": 0.75,
-		"max_public_workers": 0.15
-	},
+	"states": [
+		{
+			"name": "Rzeczpospolita",
+			"spend_of_savings": 0.02,
+			"policies": [
+				{"type": "dividend_tax", "rate": 0.35},
+				{"type": "wealth_tax", "rate": 0.0005, "free": 500000},
+				{"type": "public_jobs", "share": 0.75, "max_share": 0.15},
+				{"type": "unemployment_benefit", "share": 0.25},
+				{"type": "pensions", "share": "rest"}
+			]
+		}
+	],
 
 	"population": {
 		"update_every": 30,

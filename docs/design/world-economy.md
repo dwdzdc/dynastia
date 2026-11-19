@@ -30,6 +30,8 @@ Ustalenia z autorem z 19.11.2026. Pierwszy kawałek pod nowy core (`vision.md`, 
 
 **Kronika** (`EconNews`): gazeta świata. Wykrywa skoki i krachy cen, braki, bankructwa, przejęcia, fale migracji, kryzys i boom w mieście oraz nowych krezusów. Tam, gdzie to możliwe, podaje przyczynę („po pożarze rafinerii w Wilkowie”).
 
+**Państwo** (`EconState`, `sim/econ/econ_state.gd`): bez niego świat upada w rok, bo zyski zbierają się u kapitalistów. Państwo ma kasę, miasta (`EconCity.state_id`) i listę polityk z `data/economy.json` → `"states"`. Polityka to klocek (`EconPolicy`) z trzema zaczepami: `collect` (codzienne podatki), `tax_dividend` (podatek od dywidendy) i `spend` (wydatki z udziałem w budżecie albo `"rest"`). Teraz są: podatek od dywidend, podatek majątkowy od nadwyżki ponad próg, budżetówka, zasiłki i emerytury. **Nowa polityka** (płaca minimalna, cło, dotacja do rolnictwa, podatek od nieruchomości…) to nowy skrypt w `sim/econ/policies/`, jedna linia w `EconState.POLICIES` i wpis w danych. Świat może mieć wiele państw, a struktura jest gotowa. Podział mapy na państwa i cła na granicach czekają na decyzję autora.
+
 ## Kryteria „żyje”
 
 Sprawdzają je sonda `tools/probe_economy.gd` i testy `tests/run_econ_tests.gd`. Po 2–3 latach bez gracza:

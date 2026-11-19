@@ -18,6 +18,7 @@ var routes: Array[int] = []       # id dróg wychodzących
 # Stan liczony co dobę (do decyzji, kroniki i podglądu).
 var labor_force: float = 0.0
 var employed: float = 0.0
+var state_id: int = 0             # do którego państwa należy
 var public_workers: float = 0.0   # budżetówka opłacana przez państwo (EconState)
 var income_today: float = 0.0
 var income_ema: float = 0.0
