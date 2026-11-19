@@ -1,0 +1,232 @@
+{
+	"world": {
+		"seed": 7,
+		"city_count": 20,
+		"map_size": [1400, 900],
+		"min_city_distance": 140,
+		"route_neighbors": 3,
+		"route_detour": 1.15,
+		"city_tiers": [
+			{"count": 1, "pop": [140000, 180000]},
+			{"count": 3, "pop": [45000, 75000]},
+			{"count": 6, "pop": [14000, 30000]},
+			{"count": 10, "pop": [3000, 9000]}
+		],
+		"resources": {
+			"fertile": {"chance": 0.55, "richness": [0.6, 1.4]},
+			"forest": {"chance": 0.4, "richness": [0.6, 1.4]},
+			"oil": {"chance": 0.25, "richness": [0.7, 1.5]},
+			"iron": {"chance": 0.18, "richness": [0.7, 1.4]},
+			"limestone": {"chance": 0.25, "richness": [0.7, 1.4]}
+		},
+		"min_cities_per_resource": 3,
+		"start_household_cash_days": 25,
+		"start_business_cash_days": 15,
+		"start_actor_count": 90,
+		"start_actor_cash": [20000, 400000],
+		"start_coverage": 1.05,
+		"start_trucks": 320,
+		"warmup_days": 30
+	},
+
+	"goods": {
+		"grain":      {"name": "zboże",        "base": 2.0,    "weight": 1.0,  "spoil": 0.002, "category": "raw"},
+		"vegetables": {"name": "warzywa",      "base": 3.0,    "weight": 1.0,  "spoil": 0.05, "category": "food"},
+		"flour":      {"name": "mąka",         "base": 4.0,    "weight": 1.0,  "spoil": 0.002, "category": "part"},
+		"bread":      {"name": "pieczywo",     "base": 6.0,    "weight": 1.0,  "spoil": 0.08, "category": "food"},
+		"meat":       {"name": "mięso",        "base": 14.0,   "weight": 1.0,  "spoil": 0.03, "category": "food"},
+		"crude":      {"name": "ropa",         "base": 4.0,    "weight": 1.0,  "spoil": 0.002, "category": "raw"},
+		"fuel":       {"name": "paliwo",       "base": 7.0,    "weight": 1.0,  "spoil": 0.002, "category": "energy"},
+		"plastics":   {"name": "tworzywa",     "base": 10.0,   "weight": 1.0,  "spoil": 0.002, "category": "part"},
+		"wood":       {"name": "drewno",       "base": 2.0,    "weight": 1.5,  "spoil": 0.002, "category": "raw"},
+		"lumber":     {"name": "deski",        "base": 5.0,    "weight": 1.0,  "spoil": 0.002, "category": "material"},
+		"limestone":  {"name": "wapień",       "base": 1.5,    "weight": 1.5,  "spoil": 0.002, "category": "raw"},
+		"cement":     {"name": "cement",       "base": 4.0,    "weight": 1.0,  "spoil": 0.002, "category": "material"},
+		"iron_ore":   {"name": "ruda żelaza",  "base": 3.0,    "weight": 1.5,  "spoil": 0.002, "category": "raw"},
+		"steel":      {"name": "stal",         "base": 12.0,   "weight": 1.0,  "spoil": 0.002, "category": "material"},
+		"furniture":  {"name": "meble",        "base": 80.0,   "weight": 8.0,  "spoil": 0.002, "category": "goods"},
+		"appliances": {"name": "AGD",          "base": 200.0,  "weight": 5.0,  "spoil": 0.002, "category": "goods"},
+		"trucks":     {"name": "ciężarówki",   "base": 9000.0, "weight": 0.0,  "spoil": 0.002, "category": "vehicle", "self_moving": true},
+		"services":   {"name": "usługi",       "base": 4.0,    "weight": 0.0,  "spoil": 1.0, "category": "service", "local_only": true}
+	},
+
+	"recipes": {
+		"grain_farm":     {"name": "gospodarstwo zbożowe", "out": "grain",      "per_worker": 24.0, "inputs": {"fuel": 0.05}, "resource": "fertile", "workers": 50, "max_level": 8,
+			"build": {"money": 6000,  "lumber": 21,  "cement": 7,  "steel": 4,  "days": 15}},
+		"vegetable_farm": {"name": "gospodarstwo warzywne", "out": "vegetables", "per_worker": 15.0, "inputs": {"fuel": 0.05}, "resource": "fertile", "workers": 50, "max_level": 8,
+			"build": {"money": 6000,  "lumber": 21,  "cement": 7,  "steel": 4,  "days": 15}},
+		"livestock_farm": {"name": "ferma",               "out": "meat",       "per_worker": 5.0,  "inputs": {"grain": 3.0}, "resource": "fertile", "workers": 50, "max_level": 8,
+			"build": {"money": 9000,  "lumber": 35, "cement": 21,  "steel": 7,  "days": 20}},
+		"mill":           {"name": "młyn",                "out": "flour",      "per_worker": 27.0, "inputs": {"grain": 1.25}, "workers": 40, "max_level": 8,
+			"build": {"money": 10000, "lumber": 21,  "cement": 42, "steel": 14,  "days": 25}},
+		"bakery":         {"name": "piekarnia",           "out": "bread",      "per_worker": 14.0, "inputs": {"flour": 0.7, "fuel": 0.05}, "workers": 30, "max_level": 10,
+			"build": {"money": 5000,  "lumber": 14,  "cement": 21,  "steel": 4,  "days": 12}},
+		"oil_well":       {"name": "szyb naftowy",        "out": "crude",      "per_worker": 150.0, "inputs": {}, "resource": "oil", "workers": 30, "max_level": 8,
+			"build": {"money": 20000, "lumber": 14,  "cement": 52, "steel": 70, "days": 30}},
+		"refinery":       {"name": "rafineria",           "out": "fuel",       "per_worker": 60.0, "inputs": {"crude": 1.2}, "workers": 60, "max_level": 6,
+			"build": {"money": 60000, "lumber": 28,  "cement": 210, "steel": 175, "days": 60}},
+		"chemical_plant": {"name": "zakłady chemiczne",   "out": "plastics",   "per_worker": 40.0, "inputs": {"crude": 1.5, "fuel": 0.1}, "workers": 40, "max_level": 6,
+			"build": {"money": 40000, "lumber": 21,  "cement": 140, "steel": 105, "days": 45}},
+		"logging_camp":   {"name": "wyrąb lasu"  ,        "out": "wood",       "per_worker": 24.0, "inputs": {"fuel": 0.05}, "resource": "forest", "workers": 30, "max_level": 8,
+			"build": {"money": 4000,  "lumber": 7,  "cement": 4,  "steel": 5,  "days": 10}},
+		"sawmill":        {"name": "tartak",              "out": "lumber",     "per_worker": 28.0, "inputs": {"wood": 1.8}, "workers": 30, "max_level": 8,
+			"build": {"money": 8000,  "lumber": 14,  "cement": 28,  "steel": 14,  "days": 20}},
+		"quarry":         {"name": "kamieniołom",         "out": "limestone",  "per_worker": 35.0, "inputs": {"fuel": 0.05}, "resource": "limestone", "workers": 30, "max_level": 8,
+			"build": {"money": 5000,  "lumber": 7,  "cement": 4,  "steel": 10,  "days": 12}},
+		"cement_works":   {"name": "cementownia",         "out": "cement",     "per_worker": 100.0, "inputs": {"limestone": 1.5, "fuel": 0.15}, "workers": 25, "max_level": 6,
+			"build": {"money": 20000, "lumber": 14,  "cement": 52, "steel": 52, "days": 35}},
+		"iron_mine":      {"name": "kopalnia rudy",       "out": "iron_ore",   "per_worker": 60.0, "inputs": {"fuel": 0.05}, "resource": "iron", "workers": 40, "max_level": 8,
+			"build": {"money": 15000, "lumber": 28,  "cement": 35, "steel": 35, "days": 30}},
+		"steelworks":     {"name": "huta",                "out": "steel",      "per_worker": 40.0, "inputs": {"iron_ore": 2.0, "fuel": 0.4}, "workers": 80, "max_level": 6,
+			"build": {"money": 80000, "lumber": 21,  "cement": 280, "steel": 105, "days": 70}},
+		"furniture_factory": {"name": "fabryka mebli",    "out": "furniture",  "per_worker": 1.2,  "inputs": {"lumber": 8.0, "steel": 0.5}, "workers": 30, "max_level": 6,
+			"build": {"money": 15000, "lumber": 28,  "cement": 52, "steel": 21,  "days": 25}},
+		"appliance_factory": {"name": "fabryka AGD",      "out": "appliances", "per_worker": 0.4,  "inputs": {"steel": 5.0, "plastics": 4.0}, "workers": 50, "max_level": 6,
+			"build": {"money": 40000, "lumber": 21,  "cement": 105, "steel": 70, "days": 40}},
+		"vehicle_plant":  {"name": "fabryka ciężarówek",  "out": "trucks",     "per_worker": 0.009, "inputs": {"steel": 300.0, "plastics": 100.0}, "workers": 120, "max_level": 4,
+			"build": {"money": 120000, "lumber": 35, "cement": 350, "steel": 280, "days": 90}},
+		"services":       {"name": "usługi",              "out": "services",   "per_worker": 12.0, "inputs": {}, "workers": 100, "max_level": 40,
+			"build": {"money": 4000,  "lumber": 10,  "cement": 14,  "steel": 2,   "days": 10}},
+		"haulage":        {"name": "firma przewozowa",    "out": "",           "per_worker": 0.0,  "inputs": {}, "workers": 0, "max_level": 1,
+			"build": {"money": 3000,  "lumber": 0,   "cement": 0,   "steel": 0,   "days": 3}}
+	},
+
+	"needs": [
+		{"good": "bread",      "per_capita": 0.4,   "priority": 1, "luxury": 0.0},
+		{"good": "vegetables", "per_capita": 0.3,   "priority": 1, "luxury": 0.0},
+		{"good": "fuel",       "per_capita": 0.12,  "priority": 2, "luxury": 0.2},
+		{"good": "meat",       "per_capita": 0.1,   "priority": 2, "luxury": 0.6},
+		{"good": "services",   "per_capita": 1.2,   "priority": 3, "luxury": 1.0},
+		{"good": "furniture",  "per_capita": 0.001, "priority": 4, "luxury": 1.5},
+		{"good": "appliances", "per_capita": 0.0005,"priority": 4, "luxury": 1.5}
+	],
+
+	"market": {
+		"target_days": 6.0,
+		"price_speed": 0.15,
+		"shortage_push": 0.3,
+		"min_mult": 0.3,
+		"max_mult": 4.0,
+		"demand_ema": 0.15,
+		"history_every": 5,
+		"history_len": 240
+	},
+
+	"labor": {
+		"participation": 0.32,
+		"base_wage": 22.0,
+		"wage_speed": 0.03,
+		"wage_slope": 4.0,
+		"natural_unemployment": 0.08,
+		"min_wage_mult": 0.4,
+		"max_wage_mult": 3.0
+	},
+
+	"households": {
+		"spend_of_income": 0.95,
+		"spend_of_savings": 0.006,
+		"reference_income": 9.0,
+		"satisfaction_ema": 0.05
+	},
+
+	"business": {
+		"reserve_days": 4,
+		"dividend_share": 1.0,
+		"dividend_every": 7,
+		"min_margin": 0.0,
+		"profit_ema": 0.04,
+		"input_buffer_days": 3,
+		"hire_step": 0.25,
+		"loss_days_to_review": 60,
+		"broke_days_to_close": 20
+	},
+
+	"transport": {
+		"truck_capacity": 5000,
+		"speed_km_per_day": 450,
+		"fuel_per_km": 0.25,
+		"tank_km": 4000,
+		"reserve_km": 1200,
+		"stuck_days_to_canister": 4,
+		"canister_fee_per_km": 2.0,
+		"driver_wage_mult": 1.2,
+		"min_profit": 150,
+		"sell_discount": 0.9,
+		"max_days_of_demand": 6.0,
+		"truck_life_days": [1200, 1800],
+		"empty_trip_min_gain": 400,
+		"robbery_base": 0.08,
+		"wait_days_when_idle": 1
+	},
+
+	"actors": {
+		"review_every": 7,
+		"spend_of_wealth": 0.004,
+		"spend_of_income": 0.9,
+		"min_invest_cash": 8000,
+		"invest_candidates": 30,
+		"payback_horizon_days": 360,
+		"min_roi": 1.4,
+		"sale_discount": 0.7,
+		"listing_days": 30,
+		"life_days": [2200, 3600],
+		"split_heirs_chance": 0.25,
+		"new_entrepreneur_every": 30,
+		"new_entrepreneur_share": 0.01,
+		"new_entrepreneur_min_cash": 15000,
+		"retire_cash": 2000,
+		"idle_days_to_retire": 180,
+		"risk": [0.2, 1.0],
+		"truck_purchase_roi": 1.3
+	},
+
+	"state": {
+		"dividend_tax": 0.35,
+		"wealth_tax": 0.0005,
+		"spend_of_savings": 0.02,
+		"public_share": 0.75,
+		"max_public_workers": 0.15
+	},
+
+	"population": {
+		"update_every": 30,
+		"growth_per_month": 0.002,
+		"prosperity_growth": 0.006,
+		"migration_share": 0.02,
+		"migration_max_km": 500
+	},
+
+	"events": {
+		"fire_chance": 0.00008,
+		"fire_days": [15, 40],
+		"fire_stock_loss": 0.5,
+		"strike_chance": 0.0001,
+		"strike_days": [3, 12],
+		"harvest_every": 90,
+		"harvest_mult": [[0.4, 0.15], [0.75, 0.2], [1.0, 0.4], [1.3, 0.2], [1.6, 0.05]],
+		"road_closure_chance": 0.0012,
+		"road_closure_days": [3, 20],
+		"bandits_chance": 0.0004,
+		"bandits_level": [0.15, 0.5],
+		"bandits_decay": 0.97,
+		"discovery_chance": 0.0006,
+		"depletion_per_day": 0.00015
+	},
+
+	"news": {
+		"spike_ratio": 1.8,
+		"crash_ratio": 0.45,
+		"crisis_satisfaction": 0.6,
+		"crisis_unemployment": 0.22,
+		"boom_satisfaction": 0.95,
+		"boom_unemployment": 0.05,
+		"cooldown_days": 45,
+		"keep": 600
+	},
+
+	"names": {
+		"cities": ["Wilkowo", "Grabowiec", "Lipnica", "Sosnowo", "Kamieniec", "Olszyny", "Dębogóra", "Złotniki", "Borowa Wola", "Krzemieniec", "Mszana", "Rudnik", "Białowice", "Jaworzno Dolne", "Przełęcz", "Mokradło", "Słonecznik", "Kruczyce", "Zagórze", "Bystrzyca", "Modrzewie", "Sokołów Stary", "Głęboczek", "Wrzosowo", "Topolin", "Pogorzel", "Jezioro", "Strzeżów"],
+		"first": ["Adam", "Barbara", "Celina", "Damian", "Edyta", "Filip", "Grażyna", "Henryk", "Irena", "Jan", "Kamila", "Leszek", "Marta", "Norbert", "Olga", "Paweł", "Renata", "Stefan", "Teresa", "Urszula", "Wiktor", "Zofia", "Jakub", "Ewa", "Tomasz", "Agata", "Krzysztof", "Monika", "Marek", "Dorota"],
+		"last": ["Nowak", "Kowalski", "Wiśniewski", "Wójcik", "Kamiński", "Lewandowski", "Zieliński", "Szymański", "Woźniak", "Dąbrowski", "Kozłowski", "Jankowski", "Mazur", "Krawczyk", "Piotrowski", "Grabowski", "Pawłowski", "Michalski", "Zając", "Król", "Gajda", "Jabłoński", "Kubiak", "Majewski", "Olszewski", "Stec", "Malinowski", "Jaworski", "Adamczyk", "Dudziak", "Nowicki", "Pawlak", "Sikora", "Baran", "Rutkowski", "Michalak", "Szewczyk", "Ostrowski", "Tomaszewski", "Pietrzak"]
+	}
+}

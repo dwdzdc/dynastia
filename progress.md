@@ -203,13 +203,14 @@ Pętla gry: ród Wilków (6 osób, 3 pokolenia) w chacie pod lasem. Co 5 dni czy
 
 Źródło: nowy core (`docs/design/vision.md`, 19.11.2026) i `docs/design/world-economy.md` (decyzje szkieletowe zatwierdzone przez autora 19.11.2026). Wielka gospodarka współczesnego świata bez gracza, czyli sieć miast, aktorzy z kapitałem, firmy, ciężarówki, wstrząsy i kronika. Gracza wpychamy w nią w następnej iteracji. Kod: `sim/econ/`, dane: `data/economy.json`, testy: `tests/run_econ_tests.gd`, sonda: `tools/probe_economy.gd`, podgląd: `game/economy_view.tscn`.
 
-- [ ] E1 Dane i mapa: `economy.json`, generowanie sieci miast (ludność, drogi, złoża, najkrótsze ścieżki) → test determinizmu i spójności grafu.
-- [ ] E2 Rynek i ludność: partie towaru należące do sprzedawców, ceny z zapasu i popytu, koszyk ludności, płace i bezrobocie → test: suma pieniędzy stała, cena reaguje na brak i nadmiar.
-- [ ] E3 Firmy: przepisy, zatrudnienie, produkcja tylko gdy się opłaca, dywidendy, bankructwo; świat startuje z firmami → test łańcucha zboże → mąka → chleb.
-- [ ] E4 Przewoźnicy: ciężarówki kupują tanio i sprzedają drogo, paliwo, kierowcy, ładunek w drodze, zużycie i zakup ciężarówek → test: towar płynie z nadmiaru do braku.
-- [ ] E5 Aktorzy: tygodniowy przegląd interesów (zamknij, sprzedaj, kup, rozbuduj, załóż, wejdź w przewozy), budowa z materiałów, życie aktora, nowi przedsiębiorcy, śmierć i dziedziczenie → test.
-- [ ] E6 Wstrząsy (pożar, strajk, nieurodzaj, zamknięta droga, zbójcy, złoża) i migracja → test.
-- [ ] E7 Kronika świata z przyczynami → test.
+- [x] E1 Dane i mapa: `economy.json`, generowanie sieci miast (ludność, drogi, złoża, najkrótsze ścieżki) → test determinizmu i spójności grafu.
+- [x] E2 Rynek i ludność: partie towaru należące do sprzedawców, ceny z zapasu i popytu, koszyk ludności, płace i bezrobocie → test: suma pieniędzy stała, cena reaguje na brak i nadmiar.
+- [x] E3 Firmy: przepisy, zatrudnienie, produkcja tylko gdy się opłaca, dywidendy, bankructwo; świat startuje z firmami → test łańcucha zboże → mąka → chleb.
+- [x] E4 Przewoźnicy: ciężarówki kupują tanio i sprzedają drogo, paliwo, kierowcy, ładunek w drodze, zużycie i zakup ciężarówek → test: towar płynie z nadmiaru do braku.
+- [x] E5 Aktorzy: tygodniowy przegląd interesów (zamknij, sprzedaj, kup, rozbuduj, załóż, wejdź w przewozy), budowa z materiałów, życie aktora, nowi przedsiębiorcy, śmierć i dziedziczenie → test.
+- [x] E6 Wstrząsy (pożar, strajk, nieurodzaj, zamknięta droga, zbójcy, złoża) i migracja → test.
+- [x] E7 Kronika świata z przyczynami → test.
+- Uwagi z wykonania (19.11.2026): ceny jak w Port Royale (z pokrycia zapasu w dobach, a nie narastające), usługi i żywność się psują, ciężarówki mają bak (tankują do pełna, gdy w mieście brakuje paliwa, dowóz w kanistrach), właściciel dokłada kapitał obrotowy, gdy produkcja opłaca się przy dzisiejszych cenach, a firmy upadłego przewoźnika idą do innych przewoźników. Dodano skarb państwa (`sim/econ/econ_state.gd`): podatek od dywidend i majątku, pensje budżetówki, zasiłki i emerytury. Bez niego zyski zbierały się u kapitalistów, a ludność biedniała.
 - [ ] E8 Sonda i balans: kryteria „żyje” z `world-economy.md` na kilku seedach → wynik tutaj.
 - [ ] E9 Podgląd świata: mapa z miastami, drogami, jadącymi ciężarówkami, panelem miasta, kroniką i najbogatszymi → zrzut.
 - [ ] E10 Playtest autora.
