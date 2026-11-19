@@ -1,0 +1,69 @@
+progress.md
+  ai_agent 208-214
+tools/screenshot_rts.gd.uid
+  s_b35b8f715f6824::t_b5fec7859dc7dc 1
+game/rts/rts_terrain.gd
+  s_b35b8f715f6824::t_ce6d6a89a2694d 8,101
+  s_b35b8f715f6824::t_7258b1b9a86561 1-7,9-29,31-100,102-147,149-173
+  s_b35b8f715f6824::t_dd4f6dc31d1c2d 30,148,174
+game/rts/rts_units_view.gd
+  s_b35b8f715f6824::t_30b8b3e10a8c86 49-67,99-111
+  s_b35b8f715f6824::t_ae58e76bb05c1f 1-15,19-21,23-48,68-98,112-136
+  s_b35b8f715f6824::t_af80957bcde659 16-18,22
+game/rts/rts_city_view.gd.uid
+  s_b35b8f715f6824::t_415c2a429f9bae 1
+tests/run_rts_tests.gd
+  s_b35b8f715f6824::t_293e9a9c72243a 41,141-156
+game/rts/rts_hud.gd.uid
+  s_b35b8f715f6824::t_415c2a429f9bae 1
+game/rts/rts_hud.gd
+  s_b35b8f715f6824::t_38c347d93edd70 1-55,57-105,107-128,130-137,139-168,170-175,190-198,200-343,345-599,601-693
+  s_b35b8f715f6824::t_747a0f30bd8778 56,106,129,138,600
+  s_b35b8f715f6824::t_48551b7b5b97d1 344
+  s_b35b8f715f6824::t_ce6d6a89a2694d 169,176-189,199
+game/rts/rts_main.tscn
+  s_b35b8f715f6824::t_415c2a429f9bae 1-6
+data/rts.json
+  s_b35b8f715f6824::t_293e9a9c72243a 6
+game/rts/rts_city_view.gd
+  s_b35b8f715f6824::t_42c8e0301cb8e0 1-138,140-147
+  s_b35b8f715f6824::t_c561c1cecef349 139
+game/rts/kurier_page.gd
+  s_b35b8f715f6824::t_747a0f30bd8778 25,52
+  s_b35b8f715f6824::t_e854dfa72b37d5 1-24,26-51,53-110
+project.godot
+  s_b35b8f715f6824::t_415c2a429f9bae 6
+game/econ_map_canvas.gd
+  s_b35b8f715f6824::t_415c2a429f9bae 10,40-41,133-134,138-146,162-168,202
+tools/screenshot_rts.gd
+  s_b35b8f715f6824::t_b850ddd1d9fab3 74-90
+  s_b35b8f715f6824::t_9797e842f3efb2 91-104
+  s_b35b8f715f6824::t_b5fec7859dc7dc 1-73,105
+game/rts/rts_terrain.gd.uid
+  s_b35b8f715f6824::t_415c2a429f9bae 1
+game/rts/rts_main.gd.uid
+  s_b35b8f715f6824::t_415c2a429f9bae 1
+game/rts/rts_units_view.gd.uid
+  s_b35b8f715f6824::t_415c2a429f9bae 1
+game/rts/kurier_page.gd.uid
+  s_b35b8f715f6824::t_415c2a429f9bae 1
+game/rts/rts_main.gd
+  s_b35b8f715f6824::t_84aa824ec71e23 1-274,276-278
+  s_b35b8f715f6824::t_48551b7b5b97d1 275
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "f9cc25d39c7e743a161f657c6b91fe4b28ecae74",
+  "prompts": {},
+  "sessions": {
+    "s_b35b8f715f6824": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "8ea3f297-9483-40f4-a9c0-36a4b605ddb0",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Dawid Dziedzic <24682682+dwdzdc@users.noreply.github.com>"
+    }
+  }
+}
