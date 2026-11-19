@@ -46,3 +46,21 @@ func _reversed() -> PackedVector2Array:
 
 func is_closed(day: int) -> bool:
 	return day < closed_until
+
+
+# Punkty łamanej od km `k0` do km `k1` (liczone od miasta `from_id`), w kolejności
+# jazdy — także wstecz, gdy k1 < k0. Z oboma końcami.
+func segment(from_id: int, k0: float, k1: float) -> PackedVector2Array:
+	var out := PackedVector2Array([point_at(from_id, k0)])
+	var pts := points if from_id == a else _reversed()
+	var acc := 0.0
+	var inner := PackedVector2Array()
+	for i in range(1, pts.size() - 1):
+		acc += pts[i - 1].distance_to(pts[i])
+		if acc > minf(k0, k1) and acc < maxf(k0, k1):
+			inner.append(pts[i])
+	if k1 < k0:
+		inner.reverse()
+	out.append_array(inner)
+	out.append(point_at(from_id, k1))
+	return out

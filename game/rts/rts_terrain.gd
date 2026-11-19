@@ -24,16 +24,15 @@ const ROAD_Y := 0.6
 const MARGIN_KM := 4.0
 
 var w: EconWorld
-var lp: Dictionary
+
 var _roads: MeshInstance3D
 var _road_w := -1.0
 var _want_w := ROAD_MIN_W
 var _noise := FastNoiseLite.new()
 
 
-func build(world: EconWorld, layout: Dictionary) -> void:
+func build(world: EconWorld) -> void:
 	w = world
-	lp = layout
 	_noise.seed = w.world_seed
 	_noise.frequency = 0.18
 	_ground()
@@ -51,7 +50,7 @@ func _size_km() -> Vector2:
 # Rodzaj ziemi w punkcie (km): "field:<i>", "forest", "town", "grass:<t>".
 func ground_kind(p: Vector2) -> String:
 	for c: EconCity in w.cities:
-		var r := RtsLayout.city_radius(lp, c)
+		var r := EconLayout.city_radius(w, c)
 		var d := p.distance_to(c.pos)
 		if d < r * 0.7:
 			return "town"
@@ -60,7 +59,7 @@ func ground_kind(p: Vector2) -> String:
 	var fertile_city: EconCity = null
 	for c: EconCity in w.cities:
 		var d := p.distance_to(c.pos)
-		var r := RtsLayout.city_radius(lp, c)
+		var r := EconLayout.city_radius(w, c)
 		if c.resources.has("fertile"):
 			var f := 1.0 - (d - r) / (r * FIELD_RANGE + 1.2)
 			if f > best_field:

@@ -69,7 +69,7 @@ func _ready() -> void:
 	rts = RtsWorld.new(seed, econ_data, DataLoader.load_json("res://data/rts.json"))
 	terrain = RtsTerrain.new()
 	add_child(terrain)
-	terrain.build(rts.econ, rts.data["layout"])
+	terrain.build(rts.econ)
 	cities = RtsCityView.new()
 	add_child(cities)
 	cities.build(rts)
@@ -233,7 +233,7 @@ func pick(screen: Vector2) -> Dictionary:
 	if not best.is_empty():
 		return best
 	for c: EconCity in rts.econ.cities:
-		var r := RtsLayout.city_radius(rts.data["layout"], c) * 1.3
+		var r := EconLayout.city_radius(rts.econ, c) * 1.3
 		if c.pos.distance_to(g) < maxf(r, 24.0 * px_km):
 			return {"kind": "city", "id": c.id}
 	return {}
@@ -272,7 +272,12 @@ func _right_click(screen: Vector2) -> void:
 			rts.order_move(uid, ground_km(screen))
 			hud.flash("Idzie we wskazane miejsce.")
 	elif kind == "truck" and hud.is_mine_truck(int(selected["id"])):
-		var city: int = int(target["id"]) if str(target.get("kind", "")) == "city" else nearest_city(ground_km(screen))
-		var why := rts.truck_go(int(selected["id"]), city)
-		hud.flash(why if why != "" else "Jedzie do: %s." % rts.econ.cities[city].name)
+		if str(target.get("kind", "")) == "business":
+			var b: EconBusiness = rts.econ.business(int(target["id"]))
+			var why_b := rts.truck_to_business(int(selected["id"]), b.id)
+			hud.flash(why_b if why_b != "" else "Jedzie pod: %s." % b.name)
+		else:
+			var city: int = int(target["id"]) if str(target.get("kind", "")) == "city" else nearest_city(ground_km(screen))
+			var why := rts.truck_go(int(selected["id"]), city)
+			hud.flash(why if why != "" else "Jedzie do: %s." % rts.econ.cities[city].name)
 	hud.on_selection()

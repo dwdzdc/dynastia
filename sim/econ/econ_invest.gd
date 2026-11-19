@@ -423,7 +423,7 @@ static func found(w: EconWorld, a: EconActor, type: String, c: EconCity, cost: f
 	b.name = EconNames.business_name(str(r["name"]), a.last)
 	b.founded_day = w.day
 	b.level = 0
-	w.businesses[b.id] = b
+	w.add_business(b)
 	a.businesses.append(b.id)
 	w.stats["founded"] += 1
 	if type == "haulage":

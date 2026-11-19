@@ -159,7 +159,16 @@ func _test_trucks_carry() -> void:
 		var t: EconTruck = moving[0]
 		var p0 := w.truck_pos(t, t.depart_time)
 		var p1 := w.truck_pos(t, t.arrive_time)
-		check("E4 pozycja: start w mieście, koniec w celu", p0.distance_to(w.cities[t.city_id].pos) < 1.0 and p1.distance_to(w.cities[t.to_city].pos) < 1.0)
+		check("E4 pozycja: start w punkcie wyjazdu, koniec u odbiorcy", p0.distance_to(t.pts[0]) < 0.01 and p1.distance_to(t.dest_spot["pos"]) < 0.01)
+	# Ładunki jadą od budynku do budynku, a nie od centrum do centrum.
+	var to_firm := 0
+	var off_center := 0
+	for t: EconTruck in moving:
+		if t.to_bid != -1:
+			to_firm += 1
+		if (t.dest_spot["pos"] as Vector2).distance_to(w.cities[t.to_city].pos) > 0.05:
+			off_center += 1
+	check("E4 kursy kończą się pod firmą odbiorcy", to_firm > moving.size() * 0.8 and off_center > moving.size() * 0.8)
 
 
 # E5: śmierć aktora — spadkobierca z tego samego rodu przejmuje firmy i kasę.

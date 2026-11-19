@@ -34,6 +34,8 @@ var supply_cache: Dictionary = {}          # EconInvest: moc produkcyjna (liczon
 var supply_cache_day: int = -1
 var fleet_use_cache: float = 1.0
 var fleet_use_day: int = -1
+var _firms_by_city: Array = []             # firmy wg miasta (odświeżane raz na dobę)
+var _firms_day: int = -1
 
 
 func _init(seed_: int, data_: Dictionary, warmup: bool = true) -> void:
@@ -70,6 +72,12 @@ func _init(seed_: int, data_: Dictionary, warmup: bool = true) -> void:
 		news.entries.clear()
 		for k: String in stats.keys():
 			stats[k] = 0.0 if k == "migrants" else 0
+
+
+# Nowa firma w świecie: dostaje miejsce na mapie i dojazd do drogi.
+func add_business(b: EconBusiness) -> void:
+	businesses[b.id] = b
+	EconLayout.place(self, b)
 
 
 func new_id() -> int:
@@ -135,6 +143,19 @@ func recipe(type: String) -> Dictionary:
 
 func good_name(g: String) -> String:
 	return str(goods[g]["name"])
+
+
+# Otwarte firmy w mieście (lista liczona raz na dobę).
+func firms_in(city_id: int) -> Array:
+	if _firms_day != day or _firms_by_city.size() != cities.size():
+		_firms_day = day
+		_firms_by_city.clear()
+		for c: EconCity in cities:
+			_firms_by_city.append([])
+		for b: EconBusiness in businesses.values():
+			if b.is_open():
+				(_firms_by_city[b.city_id] as Array).append(b)
+	return _firms_by_city[city_id]
 
 
 func living_actors() -> Array:
@@ -209,21 +230,11 @@ func _record_city(c: EconCity, keep: int) -> void:
 			arr.remove_at(0)
 
 
-# Pozycja ciężarówki na mapie (do podglądu): `t` = czas świata z ułamkiem doby.
+# Pozycja ciężarówki na mapie: `t` = czas świata z ułamkiem doby. Jedzie od budynku
+# do budynku po łamanej kursu (EconTruck.pts) ze stałą prędkością.
 func truck_pos(tr: EconTruck, t: float) -> Vector2:
-	if not tr.moving or tr.path.is_empty():
-		return cities[tr.city_id].pos
+	if not tr.moving or tr.pts.size() < 2:
+		return tr.spot.get("pos", cities[tr.city_id].pos)
 	var total := tr.arrive_time - tr.depart_time
 	var f := clampf((t - tr.depart_time) / maxf(total, 1e-6), 0.0, 1.0)
-	var km_total := 0.0
-	for rid: int in tr.path:
-		km_total += routes[rid].length
-	var target := f * km_total
-	var cur := tr.city_id
-	for rid: int in tr.path:
-		var r: EconRoute = routes[rid]
-		if target <= r.length:
-			return r.point_at(cur, target)
-		target -= r.length
-		cur = r.other(cur)
-	return cities[tr.to_city].pos
+	return EconLayout.point_on(tr.pts, tr.cum, f * tr.cum[tr.cum.size() - 1])

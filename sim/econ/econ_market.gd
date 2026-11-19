@@ -103,6 +103,32 @@ func buy(qty: float, budget: float, pay: Callable, exclude: int = -1, is_trade: 
 	return [taken, cost]
 
 
+# Kupno od jednego, wskazanego sprzedawcy (kurs gracza „z firmy A”). Zwraca [ilość, koszt].
+func buy_from(seller_id: int, qty: float, budget: float, pay: Callable) -> Array:
+	if qty <= 0.0 or budget <= 0.0 or price <= 0.0:
+		return [0.0, 0.0]
+	var want_q := minf(qty, budget / price)
+	demand_today += want_q
+	var got := take_from(seller_id, want_q)
+	if got <= 1e-6:
+		return [0.0, 0.0]
+	var cost := got * price
+	pay.call(seller_id, cost)
+	sold_today += got
+	return [got, cost]
+
+
+# Największy sprzedawca (poza `exclude`) — z jego magazynu ciężarówka bierze ładunek.
+func top_seller(exclude: int = -1) -> int:
+	var best := -1
+	var best_q := 0.0
+	for s: int in lots.keys():
+		if s != exclude and float(lots[s]) > best_q:
+			best_q = lots[s]
+			best = s
+	return best
+
+
 # Sam popyt bez kupna (np. nikt nie ma ciężarówki na sprzedaż): podbija cenę.
 func want(qty: float, budget: float) -> void:
 	if qty <= 0.0 or budget <= 0.0 or price <= 0.0:

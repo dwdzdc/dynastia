@@ -15,8 +15,6 @@ const FIELD_COLORS := [Color(0.8, 0.72, 0.35), Color(0.55, 0.68, 0.3), Color(0.6
 const STREET := Color(0.38, 0.38, 0.4)
 const STREET_W := 9.0
 const STREET_Y := 0.45
-const RING_MIN_POP := 12000.0
-const RING_AT := 0.45            # obwodnica w tylu promieniach miasta
 const RING_SEGS := 28
 const DRIVE_MAX_KM := 3.5
 
@@ -44,7 +42,7 @@ const PARTS := {
 }
 
 var rts: RtsWorld
-var lp: Dictionary
+var lp: Dictionary               # data/economy.json → "layout"
 var _boxes: MultiMeshInstance3D
 var _cyls: MultiMeshInstance3D
 var _sig := ""
@@ -54,7 +52,7 @@ var _home: Node3D
 
 func build(world: RtsWorld) -> void:
 	rts = world
-	lp = world.data["layout"]
+	lp = world.econ.data["layout"]
 	_boxes = _mmi(BoxMesh.new())
 	var cyl := CylinderMesh.new()
 	cyl.top_radius = 1.0
@@ -110,8 +108,7 @@ func refresh(force := false) -> void:
 	var boxes: Array = []  # [Transform3D, Color]
 	var cyls: Array = []
 	for c: EconCity in rts.econ.cities:
-		var r_km := RtsLayout.city_radius(lp, c)
-		for hb: Array in RtsLayout.housing(rts.econ, lp, c):
+		for hb: Array in EconLayout.housing(rts.econ, c):
 			var p: Vector2 = hb[0]
 			var size: float = hb[1]
 			var hseed := SimRng.hash3(rts.econ.world_seed, int(p.x * 1000.0) * 31 + int(p.y * 1000.0), "house")
@@ -168,7 +165,8 @@ func _home_node() -> Node3D:
 	return n
 
 
-# Ulice: obwodnica w większych miastach i dojazd od każdej firmy do najbliższej drogi.
+# Ulice: obwodnica w większych miastach i dojazd od każdej firmy do jej drogi
+# (ten sam, którym jeżdżą ciężarówki — EconLayout).
 func _build_streets() -> void:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
@@ -178,9 +176,9 @@ func _build_streets() -> void:
 		for i in r.points.size() - 1:
 			segs.append([r.points[i], r.points[i + 1]])
 	for c: EconCity in rts.econ.cities:
-		if c.population < RING_MIN_POP:
+		var rr := EconLayout.ring_radius(rts.econ, c)
+		if rr <= 0.0:
 			continue
-		var rr := RtsLayout.city_radius(lp, c) * RING_AT
 		var prev := c.pos + Vector2(rr, 0)
 		for k in range(1, RING_SEGS + 1):
 			var ang := TAU * float(k) / RING_SEGS
@@ -188,11 +186,10 @@ func _build_streets() -> void:
 			_strip(st, prev * KM, p * KM, STREET_W)
 			segs.append([prev, p])
 			prev = p
-	var home := rts.home_pos()
-	var drive: Array = [home]
 	for b: EconBusiness in rts.econ.businesses.values():
-		if b.status != "closed":
-			drive.append(rts.business_pos(b))
+		if b.status != "closed" and b.road >= 0:
+			_strip(st, b.pos * KM, rts.econ.routes[b.road].point_at(b.city_id, b.road_s) * KM, STREET_W * 0.7)
+	var drive: Array = [rts.home_pos()]
 	for p: Vector2 in drive:
 		var best := p
 		var best_d := INF

@@ -12,7 +12,6 @@ var time: float = 0.0         # czas świata w dobach (z ułamkiem)
 var player: EconActor
 var units: Dictionary = {}    # id -> RtsUnit
 var notes: Array[String] = [] # meldunki dla gracza (ostatnie)
-var _pos_cache: Dictionary = {}
 
 
 func _init(seed: int, econ_data: Dictionary, rts_data: Dictionary, warmup: bool = true) -> void:
@@ -58,7 +57,7 @@ func home_city() -> EconCity:
 # Dom rodu: stałe miejsce w mieście startowym (deterministycznie z seeda).
 func home_pos() -> Vector2:
 	var c := home_city()
-	var r := RtsLayout.city_radius(data["layout"], c) * 0.3
+	var r := EconLayout.city_radius(econ, c) * 0.3
 	var ang := float(SimRng.hash3(econ.world_seed, player.id, "home") % 1000) / 1000.0 * TAU
 	return c.pos + Vector2(cos(ang), sin(ang)) * r
 
@@ -155,9 +154,7 @@ func family_cost_per_day() -> float:
 # --- ludzie gracza ------------------------------------------------------------
 
 func business_pos(b: EconBusiness) -> Vector2:
-	if not _pos_cache.has(b.id):
-		_pos_cache[b.id] = RtsLayout.business_pos(econ, data["layout"], b)
-	return _pos_cache[b.id]
+	return b.pos
 
 
 func order_move(unit_id: int, to: Vector2) -> void:
@@ -289,7 +286,7 @@ func buy_truck() -> String:
 		comp = EconBusiness.new(econ.new_id(), "haulage", c.id, player.id)
 		comp.name = EconNames.business_name(str(econ.recipe("haulage")["name"]), EconPopulation.family_last(player))
 		comp.founded_day = econ.day
-		econ.businesses[comp.id] = comp
+		econ.add_business(comp)
 		player.businesses.append(comp.id)
 	var price := INF
 	for city: EconCity in econ.cities:
@@ -336,36 +333,83 @@ func truck_go(truck_id: int, to_id: int, good: String = "") -> String:
 	return ""
 
 
-# Trasa stała: kupuj towar w A, wieź do B, wracaj — aż do odwołania.
-func truck_route(truck_id: int, from_id: int, to_id: int, good: String) -> void:
+# Pod budynek firmy (pusta) — np. żeby stamtąd zabrać towar.
+func truck_to_business(truck_id: int, business_id: int) -> String:
 	var tr: EconTruck = econ.trucks.get(truck_id)
-	if tr == null:
-		return
+	var b: EconBusiness = econ.business(business_id)
+	if tr == null or b == null:
+		return "nie ma takiej ciężarówki albo firmy"
+	if tr.moving:
+		return "ciężarówka jest w drodze"
+	tr.mode = "manual"
+	tr.route = {}
+	if not EconLogistics.go_to(econ, tr, b):
+		return "nie da się dojechać (brak drogi albo paliwa)"
+	return ""
+
+
+# Kurs z firmy do firmy: wyrób firmy A pod budynek firmy B. `repeat` = trasa stała
+# (wraca do A i wiezie znowu, aż do odwołania). Własna firma B dostaje towar prosto
+# do magazynu; cudzy towar z A kupuje się po cenie rynku miasta.
+func truck_route(truck_id: int, from_bid: int, to_bid: int, repeat: bool = true) -> String:
+	var tr: EconTruck = econ.trucks.get(truck_id)
+	var a: EconBusiness = econ.business(from_bid)
+	var b: EconBusiness = econ.business(to_bid)
+	if tr == null or a == null or b == null:
+		return "nie ma takiej ciężarówki albo firmy"
+	var good: String = econ.recipe(a.type)["out"]
+	if good == "" or not good in econ.tradable:
+		return "%s nie ma towaru do wożenia" % a.name
+	if from_bid == to_bid:
+		return "źródło i odbiorca to ta sama firma"
 	tr.mode = "route"
-	tr.route = {"from": from_id, "to": to_id, "good": good}
+	tr.route = {"from_b": from_bid, "to_b": to_bid, "repeat": repeat}
 	if not tr.moving:
 		_route_step(tr)
+	return ""
 
 
 func _route_step(tr: EconTruck) -> void:
-	var from_id := int(tr.route["from"])
-	var to_id := int(tr.route["to"])
-	var good := str(tr.route["good"])
-	if tr.city_id == from_id:
-		var qty := float(econ.data["transport"]["truck_capacity"]) / maxf(float(econ.goods[good]["weight"]), 0.01)
-		EconLogistics.depart(econ, tr, to_id, good, qty)
-	else:
-		EconLogistics.depart(econ, tr, from_id, "", 0.0)
+	var a: EconBusiness = econ.business(int(tr.route.get("from_b", -1)))
+	var b: EconBusiness = econ.business(int(tr.route.get("to_b", -1)))
+	if a == null or b == null or not a.is_open() or not b.is_open():
+		tr.mode = "manual"
+		tr.route = {}
+		note("Trasa stała przerwana: firma zniknęła.")
+		return
+	if int(tr.spot.get("bid", -1)) != a.id:
+		EconLogistics.go_to(econ, tr, a)
+		return
+	if EconLogistics.haul(econ, tr, a, b) and not bool(tr.route.get("repeat", true)):
+		tr.mode = "manual"
+		tr.route = {}
 
 
 func truck_status(tr: EconTruck) -> String:
 	if tr.moving:
 		var what := "pusta" if tr.good == "" else "%s, %.0f j." % [econ.good_name(tr.good), tr.qty]
-		return "jedzie do: %s (%s)" % [econ.cities[tr.to_city].name, what]
+		return "jedzie%s do: %s (%s)" % [_from_txt(tr), _place_txt(tr.to_bid, tr.to_city), what]
+	var here := _place_txt(int(tr.spot.get("bid", -1)), tr.city_id)
 	match tr.mode:
 		"route":
-			return "trasa stała, czeka na załadunek w: %s" % econ.cities[tr.city_id].name
+			var a: EconBusiness = econ.business(int(tr.route.get("from_b", -1)))
+			var comp: EconBusiness = econ.business(tr.company_id)
+			if a != null and a.owner_id != player.id and comp != null and comp.cash < econ.city_of(a).market(econ.recipe(a.type)["out"]).price * 100.0:
+				return "trasa stała: firma przewozowa nie ma pieniędzy na towar (dopłać jej w karcie firmy)"
+			return "trasa stała, czeka na towar: %s" % (a.name if a != null else here)
 		"manual":
-			return "stoi w: %s, czeka na rozkaz" % econ.cities[tr.city_id].name
+			return "stoi: %s, czeka na rozkaz" % here
 		_:
-			return "stoi w: %s, szuka kursu" % econ.cities[tr.city_id].name
+			return "stoi: %s, szuka kursu" % here
+
+
+func _from_txt(tr: EconTruck) -> String:
+	var a: EconBusiness = econ.business(tr.from_bid)
+	return "" if a == null else " z: %s" % a.name
+
+
+func _place_txt(bid: int, city_id: int) -> String:
+	var b: EconBusiness = econ.business(bid)
+	if b != null:
+		return "%s (%s)" % [b.name, econ.cities[b.city_id].name]
+	return "%s, parking" % econ.cities[city_id].name

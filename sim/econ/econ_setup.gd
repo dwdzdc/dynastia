@@ -114,7 +114,7 @@ static func _fill(w: EconWorld, rid: String, need: float, cands: Array, weights:
 		var b := EconBusiness.new(w.new_id(), rid, c.id, -1)
 		b.level = lvl
 		b.workers = float(r["workers"]) * lvl * 0.9
-		w.businesses[b.id] = b
+		w.add_business(b)
 		have += per_level * lvl
 
 
@@ -166,7 +166,7 @@ static func _haulage(w: EconWorld, wp: Dictionary) -> void:
 		var b := EconBusiness.new(w.new_id(), "haulage", c.id, a.id)
 		b.name = EconNames.business_name(str(w.recipe("haulage")["name"]), a.last)
 		b.founded_day = -w.rng.next_int(100, 3000)
-		w.businesses[b.id] = b
+		w.add_business(b)
 		a.businesses.append(b.id)
 		comps.append(b)
 	for i in n_trucks:

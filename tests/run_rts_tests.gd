@@ -69,8 +69,7 @@ func _test_layout() -> void:
 	check("R2 firmy na mapie", inside)
 	var big: EconCity = w.econ.cities[0]
 	var small: EconCity = w.econ.cities[w.econ.cities.size() - 1]
-	var lp: Dictionary = rts_data["layout"]
-	check("R2 większe miasto ma więcej bloków", RtsLayout.housing(w.econ, lp, big).size() > RtsLayout.housing(w.econ, lp, small).size())
+	check("R2 większe miasto ma więcej bloków", EconLayout.housing(w.econ, big).size() > EconLayout.housing(w.econ, small).size())
 
 
 # R5: człowiek gracza idzie do pracy, pracuje, a pensja trafia do gracza.
@@ -137,8 +136,35 @@ func _test_player_truck() -> void:
 	for i in 3:
 		w.advance(1.0)
 	check("R7 dojechała", not tr.moving and tr.city_id == to)
-	w.truck_route(tr.id, to, tr.city_id if tr.city_id != to else r.other(to), "grain")
-	check("R7 trasa stała ustawiona", tr.mode == "route")
+	check("R7 stoi na parkingu, nie w centrum", w.econ.truck_pos(tr, w.time).distance_to(w.econ.cities[to].pos) > 0.05)
+	# Trasa stała z firmy do firmy: dojazd pod źródło, załadunek, dostawa pod odbiorcę.
+	var src: EconBusiness = null
+	var dst: EconBusiness = null
+	for b: EconBusiness in w.econ.businesses.values():
+		if b.type == "mill" and b.status == "active" and w.econ.city_of(b).market("flour").stock_of(b.id) > 100.0 and src == null:
+			src = b
+	if src != null:
+		for b: EconBusiness in w.econ.businesses.values():
+			if b.type == "bakery" and b.status == "active" and b.city_id != src.city_id and dst == null:
+				dst = b
+	check("R7 jest młyn z mąką i piekarnia", src != null and dst != null)
+	if src == null or dst == null:
+		return
+	w.player.cash += 30000.0
+	w.home_city().cash -= 30000.0
+	w.move_cash(w.haulage().id, 30000.0)
+	check("R7 trasa stała ustawiona", w.truck_route(tr.id, src.id, dst.id) == "" and tr.mode == "route")
+	var loaded := false
+	var delivered := false
+	for i in 40:
+		w.advance(0.25)
+		if tr.moving and tr.good == "flour" and tr.from_bid == src.id and tr.to_bid == dst.id:
+			loaded = true
+		# Po dostawie od razu wraca: nowy kurs zaczyna się spod piekarni.
+		if loaded and int(tr.spot.get("bid", -1)) == dst.id and (tr.pts.is_empty() or tr.pts[0].distance_to(dst.pos) < 1e-3):
+			delivered = true
+	check("R7 wiezie mąkę z młyna do piekarni", loaded)
+	check("R7 dowiozła pod piekarnię", delivered)
 
 
 # R8: gracz nic nie robi, a świat żyje dalej (świat nie zależy od gracza).

@@ -199,7 +199,15 @@ Pętla gry: ród Wilków (6 osób, 3 pokolenia) w chacie pod lasem. Co 5 dni czy
   - Wynik (seed 1, 02.11.2026, `tools/probe_village.gd -- 100 1`): ród gracza bez decyzji wygasa w 59. dobie (koniec sondy). Do tego czasu ludzi 22 → 9 (6 narodzin, 21 śmierci, około 23 lat życia), Wilkowie awansowali na „mistrzów i kupców” (6. doba), Nowakowie podupadli i sprzedali karczmę Bednarzom (18. doba), sołectwo przeszło na Bednarzy, pieniędzy we wsi przybyło (994 → 1957 zł), żadnej budowy AI.
   - **Otwarte:** (1) demografia — za mało ślubów i dzieci względem śmierci ze starości, biedne rody bez dachu się nie rozmnażają; (2) biedne rody AI dalej bez domu (problem z Q2); (3) AI nie zbudowało niczego (progi `found_cash` i braku towaru za wysokie albo nikt nie spełnia warunku).
 
-## Iteracja 6 — świat na mapie: RTS (BIEŻĄCA)
+## Iteracja 7 — logistyka między firmami, nieruchomości, trzy państwa (BIEŻĄCA)
+
+Źródło: rozmowa z autorem z 19.11.2026 („logistyka jest pomiędzy firmami, budynkami, a nie centrami miast”, „nieruchomości dawaj”, „państw niech będzie 3”). Decyzje: `docs/design/rts-world.md` (4–6, 10), modele: `docs/design/world-economy.md`.
+
+- [x] L1 Kursy od budynku do budynku: miejsca firm i dojazdy w gospodarce (`EconLayout`), trasa kursu przez dojazdy, obwodnice i drogi, odbiór u sprzedawcy, dostawa do odbiorcy; rozkazy gracza firma → firma (jednorazowo i trasa stała, dostawa prosto do magazynu własnej firmy), PPM na budynek → testy econ i RTS + sonda 720 dób „żyje” + zrzut.
+- [ ] P1 Trzy państwa: podział miast (stolice daleko od siebie, miasta do najbliższej stolicy po drogach), polityki każdego państwa w danych, cło przy wwozie (nowy zaczep polityki), granice na mapie i minimapie → test + sonda + zrzut.
+- [ ] N1 Nieruchomości: cena działki zależna od wielkości miasta (płacona gminie, czyli państwu, przy budowie i rozbudowie), mieszkania na wynajem jako firmy aktorów (czynsz z ciasnoty, przeludnienie hamuje przyrost i wypycha ludzi, czynsz podnosi płace) → test + sonda + zrzut.
+
+## Iteracja 6 — świat na mapie: RTS (zrobiona, czeka na playtest)
 
 Źródło: `docs/design/rts-world.md` (decyzje autora 1–3 z 19.11.2026, propozycje Claude'a 4–9 do potwierdzenia w playteście). Gospodarka z iteracji 5 zostaje silnikiem. Na wierzch dochodzi ciągła mapa 3D z jednostkami. Gracz jest jednym z aktorów. Kod: `sim/rts/` (gracz, jednostki, rozkazy), `game/rts/` (render i interfejs).
 

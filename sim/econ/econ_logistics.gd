@@ -1,10 +1,17 @@
-# EconLogistics — ciężarówki firm przewozowych. Doba: przyjazdy (rabunek na
-# niebezpiecznej drodze, rozładunek na rynek jako partia przewoźnika), pensje
+# EconLogistics — ciężarówki firm przewozowych. Kurs prowadzi od budynku do budynku:
+# ładunek bierze się z magazynu sprzedawcy (największa partia na rynku miasta), a
+# zostawia u odbiorcy (firma, która go przerabia, a dobra konsumpcyjne — sklep, czyli
+# firma usługowa). Rynek miasta zostaje cennikiem i księgowością: kto ma ile i po ile.
+# Doba: przyjazdy (rabunek na niebezpiecznej drodze, rozładunek jako partia
+# przewoźnika albo prosto do magazynu własnej firmy), pensje
 # kierowców, złomowanie, a wolne ciężarówki szukają kursu: kupić tu, sprzedać
 # tam, po odliczeniu paliwa, kierowcy, ryzyka i tego, co już tam jedzie
 # (market.incoming — żeby wszystkie nie rzucały się na jedną trasę).
 class_name EconLogistics
 extends RefCounted
+
+
+const BUILD_GOODS := ["lumber", "cement", "steel"]
 
 
 static func step(w: EconWorld) -> void:
@@ -67,13 +74,22 @@ static func _arrive(w: EconWorld, tr: EconTruck, tp: Dictionary) -> void:
 			cur = r.other(cur)
 	var expected := 0.0
 	if m != null and not robbed:
-		m.add(tr.company_id, tr.qty)
+		var own: EconBusiness = w.business(tr.deliver_to)
+		if own != null and own.is_open() and (w.recipe(own.type)["inputs"] as Dictionary).has(tr.good):
+			# Dostawa do magazynu własnej firmy (łańcuch gracza): bez sprzedaży na rynku.
+			own.inputs[tr.good] = float(own.inputs.get(tr.good, 0.0)) + tr.qty
+		else:
+			m.add(tr.company_id, tr.qty)
 		expected = tr.qty * m.price * float(tp["sell_discount"])
 	var profit := expected - tr.cost_basis
 	tr.profit_total += profit
 	w.truck_profit_ema = lerpf(w.truck_profit_ema, profit, 0.02)
 	tr.moving = false
 	tr.city_id = tr.to_city
+	tr.spot = tr.dest_spot
+	tr.pts = PackedVector2Array()
+	tr.cum = PackedFloat32Array()
+	tr.deliver_to = -1
 	tr.path.clear()
 	tr.good = ""
 	tr.qty = 0.0
@@ -171,20 +187,47 @@ static func _plan(w: EconWorld, tr: EconTruck, comp: EconBusiness, best_from: Ar
 	return false
 
 
-static func _depart(w: EconWorld, tr: EconTruck, comp: EconBusiness, to_id: int, good: String, qty: float, tp: Dictionary, force: bool = false) -> bool:
-	var path := EconMap.path(w, tr.city_id, to_id)
-	if path.is_empty():
+static func _depart(w: EconWorld, tr: EconTruck, comp: EconBusiness, to_id: int, good: String, qty: float, tp: Dictionary, force: bool = false, pickup_bid: int = -1, drop_bid: int = -1) -> bool:
+	var c: EconCity = w.cities[tr.city_id]
+	var dest: EconCity = w.cities[to_id]
+	var path: Array[int] = []
+	if to_id != tr.city_id:
+		path = EconMap.path(w, tr.city_id, to_id)
+		if path.is_empty():
+			return false
+	elif drop_bid == -1:
 		return false
-	var km := 0.0
+	# Skąd ładunek i dokąd: budynek sprzedawcy, budynek odbiorcy (albo parking przy drodze).
+	if tr.spot.is_empty():
+		tr.spot = home_spot(w, comp, c)
+	var pickup: Dictionary = {}
+	if good != "":
+		var pb := pickup_bid if pickup_bid != -1 else c.market(good).top_seller(comp.id)
+		var seller: EconBusiness = w.business(pb)
+		pickup = EconLayout.spot_of(seller) if seller != null and seller.city_id == c.id else shop_spot(w, c)
+	var drop: Dictionary
+	var drop_b: EconBusiness = w.business(drop_bid)
+	if drop_b != null:
+		drop = EconLayout.spot_of(drop_b)
+	elif good != "":
+		drop = consumer_spot(w, dest, good)
+	else:
+		drop = EconLayout.parking(w, dest, path[path.size() - 1] if not path.is_empty() else -1)
+	var pts := PackedVector2Array()
+	if not pickup.is_empty():
+		pts = EconLayout.in_city(w, c, tr.spot, pickup)
+		pts.append_array(EconLayout.trip(w, c, pickup, path, dest, drop))
+	else:
+		pts = EconLayout.trip(w, c, tr.spot, path, dest, drop)
+	var cum := EconLayout.cumulative(pts)
+	var km := cum[cum.size() - 1]
 	var danger := 0.0
 	for rid: int in path:
-		km += w.routes[rid].length
 		danger += w.routes[rid].danger
-	var c: EconCity = w.cities[tr.city_id]
 	# Ryzyko: na niebezpiecznej trasie towar musi być wart zachodu.
 	if good != "" and danger > 0.0 and not force:
 		var risk := minf(1.0, danger * float(tp["robbery_base"]))
-		var md: EconMarket = w.cities[to_id].market(good)
+		var md: EconMarket = dest.market(good)
 		var value := qty * md.price * float(tp["sell_discount"])
 		var gain := value - qty * c.market(good).price
 		if value * risk > gain * 0.5:
@@ -202,7 +245,7 @@ static func _depart(w: EconWorld, tr: EconTruck, comp: EconBusiness, to_id: int,
 		fuel_cost = float(fres[1])
 	# Rezerwa w baku na dojazd dalej, chyba że w celu jest paliwo.
 	var reserve := float(tp["reserve_km"]) * float(tp["fuel_per_km"])
-	if w.cities[to_id].market("fuel").stock() > tank_max * 3.0:
+	if dest.market("fuel").stock() > tank_max * 3.0:
 		reserve = 0.0
 	if tr.tank < fuel_need + reserve:
 		w.stats["no_fuel"] = int(w.stats.get("no_fuel", 0)) + 1
@@ -216,21 +259,76 @@ static func _depart(w: EconWorld, tr: EconTruck, comp: EconBusiness, to_id: int,
 	var cost := fuel_cost
 	if good != "":
 		var gm := c.market(good)
-		var res: Array = gm.buy(qty, maxf(comp.cash * 0.9, 0.0), w.pay_seller, comp.id, true)
+		var seller: EconBusiness = w.business(pickup_bid)
+		var res: Array
+		if seller != null and seller.owner_id == comp.owner_id:
+			# Towar z własnej firmy: bez płacenia samemu sobie.
+			res = [gm.take_from(seller.id, qty), 0.0]
+		elif seller != null:
+			res = gm.buy_from(seller.id, qty, maxf(comp.cash * 0.9, 0.0), w.pay_seller)
+		else:
+			res = gm.buy(qty, maxf(comp.cash * 0.9, 0.0), w.pay_seller, comp.id, true)
 		got = float(res[0])
 		comp.cash -= float(res[1])
 		comp.cost_today += float(res[1])
 		cost += float(res[1])
-		w.cities[to_id].market(good).incoming += got
+		dest.market(good).incoming += got
+		if got <= 0.0 and pickup_bid != -1:
+			tr.tank += fuel_need  # nie było czego załadować: kurs się nie odbywa
+			return false
 	tr.moving = true
 	tr.path = path
 	tr.to_city = to_id
 	tr.good = good if got > 0.0 else ""
 	tr.qty = got
 	tr.cost_basis = cost
+	tr.pts = pts
+	tr.cum = cum
+	tr.from_bid = int(pickup.get("bid", -1)) if got > 0.0 else -1
+	tr.to_bid = int(drop.get("bid", -1))
+	tr.dest_spot = drop
 	tr.depart_time = float(w.day) + w.rng.next_float(0.0, 0.5)
 	tr.arrive_time = tr.depart_time + km / float(tp["speed_km_per_day"])
 	return true
+
+
+# Gdzie stoi ciężarówka bez zadania: baza firmy w jej mieście, a gdzie indziej parking przy drodze.
+static func home_spot(w: EconWorld, comp: EconBusiness, c: EconCity) -> Dictionary:
+	if comp.city_id == c.id:
+		return EconLayout.spot_of(comp)
+	return EconLayout.parking(w, c, c.routes[0] if not c.routes.is_empty() else -1)
+
+
+# Sklep / hurtownia w mieście: firma usługowa (dobra konsumpcyjne trafiają do handlu).
+static func shop_spot(w: EconWorld, c: EconCity) -> Dictionary:
+	var shops: Array = []
+	var weights: Array = []
+	for b: EconBusiness in w.firms_in(c.id):
+		if b.type == "services":
+			shops.append(b)
+			weights.append(float(b.level))
+	if shops.is_empty():
+		return EconLayout.parking(w, c, c.routes[0] if not c.routes.is_empty() else -1)
+	return EconLayout.spot_of(shops[EconSetup._pick(w, weights)])
+
+
+# Odbiorca towaru w mieście: firma, która go przerabia (wg wielkości), a jak nikt — sklep.
+static func consumer_spot(w: EconWorld, c: EconCity, good: String) -> Dictionary:
+	var list: Array = []
+	var weights: Array = []
+	for b: EconBusiness in w.firms_in(c.id):
+		var uses := false
+		if good == "trucks":
+			uses = b.type == "haulage"
+		else:
+			# Budowa też odbiera: deski, cement i stal jadą na plac budowy.
+			uses = (w.recipe(b.type)["inputs"] as Dictionary).has(good) or (not b.project.is_empty() and good in BUILD_GOODS)
+		if uses:
+			list.append(b)
+			weights.append(float(maxi(b.level, 1)))
+	if list.is_empty():
+		return shop_spot(w, c)
+	return EconLayout.spot_of(list[EconSetup._pick(w, weights)])
 
 
 # Utknęła bez paliwa: firma kupuje paliwo w najbliższym mieście, które je ma, i płaci
@@ -284,6 +382,31 @@ static func depart(w: EconWorld, tr: EconTruck, to_id: int, good: String, qty: f
 	return _depart(w, tr, comp, to_id, good, qty, w.data["transport"], true)
 
 
+# Pusty dojazd pod budynek firmy (także w tym samym mieście).
+static func go_to(w: EconWorld, tr: EconTruck, b: EconBusiness) -> bool:
+	var comp: EconBusiness = w.business(tr.company_id)
+	if comp == null or tr.moving or b == null:
+		return false
+	return _depart(w, tr, comp, b.city_id, "", 0.0, w.data["transport"], true, -1, b.id)
+
+
+# Kurs z firmy do firmy: ładunek to wyrób firmy-źródła (z jej magazynu), dostawa pod
+# budynek odbiorcy. Własna firma odbiorcy dostaje towar prosto do magazynu wejść.
+static func haul(w: EconWorld, tr: EconTruck, from_b: EconBusiness, to_b: EconBusiness) -> bool:
+	var comp: EconBusiness = w.business(tr.company_id)
+	if comp == null or tr.moving or from_b == null or to_b == null or from_b.city_id != tr.city_id:
+		return false
+	var good: String = w.recipe(from_b.type)["out"]
+	if good == "" or not good in w.tradable:
+		return false
+	var qty := float(w.data["transport"]["truck_capacity"]) / maxf(float(w.goods[good]["weight"]), 0.01)
+	if not _depart(w, tr, comp, to_b.city_id, good, qty, w.data["transport"], true, from_b.id, to_b.id):
+		return false
+	if to_b.owner_id == comp.owner_id:
+		tr.deliver_to = to_b.id
+	return true
+
+
 static func scrap(w: EconWorld, tr: EconTruck) -> void:
 	var comp: EconBusiness = w.business(tr.company_id)
 	if comp != null:
@@ -322,7 +445,13 @@ static func buy_truck(w: EconWorld, comp: EconBusiness) -> bool:
 		return false
 	comp.cash -= float(res[1])
 	comp.cost_today += float(res[1])
-	add_truck(w, comp, best.id)
+	var tr := add_truck(w, comp, best.id)
+	var maker: EconBusiness = w.business(m.top_seller()) if m.stock() > 0.0 else null
+	for b: EconBusiness in w.firms_in(best.id):
+		if b.type == "vehicle_plant":
+			maker = b
+	if maker != null:
+		tr.spot = EconLayout.spot_of(maker)  # odbiór spod fabryki
 	w.stats["trucks_bought"] += 1
 	return true
 
@@ -332,6 +461,7 @@ static func add_truck(w: EconWorld, comp: EconBusiness, city_id: int) -> EconTru
 	tr.tank = float(w.data["transport"]["tank_km"]) * float(w.data["transport"]["fuel_per_km"])
 	var life: Array = w.data["transport"]["truck_life_days"]
 	tr.retire_day = w.day + w.rng.next_int(int(life[0]), int(life[1]))
+	tr.spot = home_spot(w, comp, w.cities[city_id])
 	w.trucks[tr.id] = tr
 	comp.trucks.append(tr.id)
 	return tr

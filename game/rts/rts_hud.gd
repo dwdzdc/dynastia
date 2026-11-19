@@ -355,11 +355,26 @@ func handle_pick_click(screen: Vector2) -> bool:
 		"truck_go":
 			var why := rts.truck_go(int(mode["truck"]), city, str(mode.get("good", "")))
 			flash(why if why != "" else "Jedzie do: %s." % rts.econ.cities[city].name)
-		"route":
-			var tr: EconTruck = rts.econ.trucks.get(int(mode["truck"]))
-			if tr != null:
-				rts.truck_route(tr.id, tr.city_id if not tr.moving else tr.to_city, city, str(mode["good"]))
-				flash("Trasa stała: %s → %s." % [rts.econ.good_name(str(mode["good"])), rts.econ.cities[city].name])
+		"route_from":
+			if str(target.get("kind", "")) != "business":
+				flash("Kliknij budynek firmy, z której brać towar.")
+			else:
+				var a: EconBusiness = rts.econ.business(int(target["id"]))
+				var good: String = rts.econ.recipe(a.type)["out"]
+				if good == "" or not good in rts.econ.tradable:
+					flash("%s nie ma towaru do wożenia." % a.name)
+				else:
+					start_pick({"kind": "route_to", "truck": mode["truck"], "from": a.id, "repeat": mode["repeat"]}, "Teraz kliknij odbiorcę (%s z: %s)." % [rts.econ.good_name(good), a.name])
+					on_selection()
+					return true
+		"route_to":
+			if str(target.get("kind", "")) != "business":
+				flash("Kliknij budynek firmy-odbiorcy.")
+			else:
+				var b: EconBusiness = rts.econ.business(int(target["id"]))
+				var why := rts.truck_route(int(mode["truck"]), int(mode["from"]), b.id, bool(mode["repeat"]))
+				var a: EconBusiness = rts.econ.business(int(mode["from"]))
+				flash(why if why != "" else "%s: %s → %s." % ["Trasa stała" if bool(mode["repeat"]) else "Kurs", a.name, b.name])
 	on_selection()
 	return true
 
@@ -478,14 +493,18 @@ func _truck_card(tr: EconTruck) -> void:
 			on_selection()),
 		_button("Jedź do… (wskaż miasto)", func() -> void: start_pick({"kind": "truck_go", "truck": tr.id}, "Kliknij miasto, do którego ma jechać.")),
 	])
+	_actions([
+		_button("Kurs: z firmy do firmy", func() -> void: start_pick({"kind": "route_from", "truck": tr.id, "repeat": false}, "Kliknij firmę, z której wziąć towar.")),
+		_button("Trasa stała: firma → firma", func() -> void: start_pick({"kind": "route_from", "truck": tr.id, "repeat": true}, "Kliknij firmę-źródło trasy stałej.")),
+	])
 	var h := HBoxContainer.new()
 	h.add_child(_label("towar:", SMALL, DIM))
 	h.add_child(good_pick)
 	_card_box.add_child(h)
 	_actions([
-		_button("Wieź stąd towar do…", func() -> void: start_pick({"kind": "truck_go", "truck": tr.id, "good": _route_good}, "Kliknij miasto: kupi tu %s i zawiezie." % rts.econ.good_name(_route_good))),
-		_button("Trasa stała do…", func() -> void: start_pick({"kind": "route", "truck": tr.id, "good": _route_good}, "Kliknij miasto docelowe trasy stałej (%s)." % rts.econ.good_name(_route_good))),
+		_button("Kup tu i wieź do miasta…", func() -> void: start_pick({"kind": "truck_go", "truck": tr.id, "good": _route_good}, "Kliknij miasto: kupi tu %s i zawiezie odbiorcy." % rts.econ.good_name(_route_good))),
 	])
+	_card_box.add_child(_label("PPM na budynek: jedź pod tę firmę. PPM na miasto: jedź tam.", SMALL, DIM))
 
 
 func _business_card(b: EconBusiness) -> void:
