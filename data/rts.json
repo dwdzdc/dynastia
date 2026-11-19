@@ -1,0 +1,24 @@
+{
+	"day_seconds": 240,
+	"walk_km_per_day": 30,
+	"arrive_km": 0.03,
+	"player": {
+		"cash": 40000,
+		"people": 2,
+		"start_city_rank": 4
+	},
+	"layout": {
+		"radius_base_km": 0.18,
+		"radius_per_sqrt_pop_km": 0.0032,
+		"people_per_block": 1200,
+		"min_blocks": 4,
+		"max_blocks": 260,
+		"rings": {
+			"services": [0.05, 0.6],
+			"processing": [0.6, 1.1],
+			"haulage": [0.85, 1.15],
+			"heavy": [1.15, 1.6],
+			"raw": [1.6, 3.2]
+		}
+	}
+}

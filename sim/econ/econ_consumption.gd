@@ -45,7 +45,7 @@ static func step(w: EconWorld) -> void:
 	for a: EconActor in w.actors.values():
 		a.income_ema = lerpf(a.income_ema, a.income_today, INCOME_EMA)
 		a.income_today = 0.0
-		if not a.alive or a.cash <= 0.0:
+		if not a.alive or a.cash <= 0.0 or a.is_player:
 			continue
 		# Bogaci żyją z dochodu (dywidend) i trochę z majątku.
 		var spend := minf(a.cash, a.cash * share + a.income_ema * of_income)

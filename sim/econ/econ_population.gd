@@ -7,7 +7,7 @@ extends RefCounted
 
 static func step(w: EconWorld) -> void:
 	for a: EconActor in w.actors.values().duplicate():
-		if a.alive and w.day >= a.death_day:
+		if a.alive and not a.is_player and w.day >= a.death_day:
 			die(w, a)
 	var pp: Dictionary = w.data["population"]
 	var every := int(pp["update_every"])
@@ -74,7 +74,7 @@ static func _retire(w: EconWorld) -> void:
 	var limit := float(w.data["actors"]["retire_cash"])
 	var idle_days := int(w.data["actors"]["idle_days_to_retire"])
 	for a: EconActor in w.actors.values():
-		if not a.alive:
+		if not a.alive or a.is_player:
 			continue
 		if not a.businesses.is_empty():
 			a.idle_since = -1

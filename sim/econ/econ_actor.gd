@@ -20,6 +20,7 @@ var born_day: int = 0
 var death_day: int = 0
 var alive: bool = true
 var parent_id: int = -1
+var is_player: bool = false       # decyzje podejmuje gracz, nie AI
 var idle_since: int = -1          # od kiedy nie ma żadnej firmy
 
 

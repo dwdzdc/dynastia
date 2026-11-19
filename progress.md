@@ -204,7 +204,7 @@ Pętla gry: ród Wilków (6 osób, 3 pokolenia) w chacie pod lasem. Co 5 dni czy
 Źródło: `docs/design/rts-world.md` (decyzje autora 1–3 z 19.11.2026, propozycje Claude'a 4–9 do potwierdzenia w playteście). Gospodarka z iteracji 5 zostaje silnikiem. Na wierzch dochodzi ciągła mapa 3D z jednostkami. Gracz jest jednym z aktorów. Kod: `sim/rts/` (gracz, jednostki, rozkazy), `game/rts/` (render i interfejs).
 
 - [x] R1 Skala i drogi: zwarta mapa (km), drogi jako łamane, ciężarówki na łamanych, przyjazd w chwili dojazdu → testy econ + sonda 720 dób „żyje”.
-- [ ] R2 Czas ciągły i układ miast: `RtsWorld` przesuwa czas płynnie i liczy dobę gospodarki; działki firm i bloki mieszkalne w miastach (deterministycznie) → test.
+- [x] R2 Czas ciągły i układ miast: `RtsWorld` przesuwa czas płynnie i liczy dobę gospodarki; działki firm i bloki mieszkalne w miastach (deterministycznie) → test.
 - [ ] R3 Mapa 3D: teren (pola, lasy), drogi, miasta z budynkami, jadące ciężarówki, kamera RTS (WASD, kółko, przeciąganie), nazwy miast → zrzut.
 - [ ] R4 Zaznaczanie i karta: klik w ciężarówkę, budynek albo miasto pokazuje kartę (firma, właściciel, ładunek, produkcja); minimapa; Kurier → zrzut.
 - [ ] R5 Gracz i jego ludzie: aktor-gracz z dwiema osobami; PPM idź, zadanie „pracuj w firmie” (idzie, pracuje, pensja do gracza) → test + zrzut.

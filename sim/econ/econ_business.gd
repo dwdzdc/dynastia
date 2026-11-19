@@ -18,6 +18,9 @@ var status_until: int = -1
 var founded_day: int = 0
 var inputs: Dictionary = {}       # towar -> zapas wejść w magazynie
 var trucks: Array[int] = []       # haulage: id ciężarówek
+var extra_workers: float = 0.0    # ludzie gracza pracujący na miejscu (jednostki RTS)
+var extra_payee: int = -1         # komu idą ich pensje (aktor-gracz)
+var extra_paid: bool = true       # czy wczoraj dostali wypłatę
 
 # Budowa albo rozbudowa: materiały do kupienia, potem dni pracy.
 var project: Dictionary = {}      # { "materials": {towar: ile}, "days": int, "to_level": int }

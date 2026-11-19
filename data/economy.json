@@ -187,6 +187,7 @@
 	"state": {
 		"dividend_tax": 0.35,
 		"wealth_tax": 0.0005,
+		"wealth_tax_free": 500000,
 		"spend_of_savings": 0.02,
 		"public_share": 0.75,
 		"max_public_workers": 0.15

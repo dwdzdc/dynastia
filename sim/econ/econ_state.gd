@@ -11,9 +11,10 @@ static func step(w: EconWorld) -> void:
 	var sp: Dictionary = w.data["state"]
 	# Podatek od majątku (gotówki) aktorów.
 	var wealth_tax := float(sp["wealth_tax"])
+	var free := float(sp["wealth_tax_free"])
 	for a: EconActor in w.actors.values():
-		if a.alive and a.cash > 0.0:
-			var t := a.cash * wealth_tax
+		if a.alive and a.cash > free:
+			var t := (a.cash - free) * wealth_tax
 			a.cash -= t
 			collect(w, t)
 	w.state_income_ema = lerpf(w.state_income_ema, w.state_income_today, 0.05)

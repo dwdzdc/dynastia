@@ -40,7 +40,7 @@ static func step(w: EconWorld) -> void:
 		if w.day >= tr.retire_day:
 			scrap(w, tr)
 			continue
-		if comp.status != "active" or w.day < tr.next_plan_day:
+		if comp.status != "active" or w.day < tr.next_plan_day or tr.mode != "auto":
 			continue
 		if not _plan(w, tr, comp, best_from, tp, tg):
 			var wait: Array = tp["idle_wait_days"]
@@ -171,7 +171,7 @@ static func _plan(w: EconWorld, tr: EconTruck, comp: EconBusiness, best_from: Ar
 	return false
 
 
-static func _depart(w: EconWorld, tr: EconTruck, comp: EconBusiness, to_id: int, good: String, qty: float, tp: Dictionary) -> bool:
+static func _depart(w: EconWorld, tr: EconTruck, comp: EconBusiness, to_id: int, good: String, qty: float, tp: Dictionary, force: bool = false) -> bool:
 	var path := EconMap.path(w, tr.city_id, to_id)
 	if path.is_empty():
 		return false
@@ -182,7 +182,7 @@ static func _depart(w: EconWorld, tr: EconTruck, comp: EconBusiness, to_id: int,
 		danger += w.routes[rid].danger
 	var c: EconCity = w.cities[tr.city_id]
 	# Ryzyko: na niebezpiecznej trasie towar musi być wart zachodu.
-	if good != "" and danger > 0.0:
+	if good != "" and danger > 0.0 and not force:
 		var risk := minf(1.0, danger * float(tp["robbery_base"]))
 		var md: EconMarket = w.cities[to_id].market(good)
 		var value := qty * md.price * float(tp["sell_discount"])
@@ -274,6 +274,14 @@ static func sell_used(w: EconWorld, tr: EconTruck, from: EconBusiness) -> bool:
 	tr.company_id = buyer.id
 	w.stats["trucks_resold"] = int(w.stats.get("trucks_resold", 0)) + 1
 	return true
+
+
+# Wyjazd na rozkaz (gracz): opcjonalnie z ładunkiem kupionym tu na miejscu.
+static func depart(w: EconWorld, tr: EconTruck, to_id: int, good: String, qty: float) -> bool:
+	var comp: EconBusiness = w.business(tr.company_id)
+	if comp == null or tr.moving or to_id == tr.city_id:
+		return false
+	return _depart(w, tr, comp, to_id, good, qty, w.data["transport"], true)
 
 
 static func scrap(w: EconWorld, tr: EconTruck) -> void:

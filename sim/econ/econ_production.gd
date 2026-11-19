@@ -33,6 +33,23 @@ static func step(w: EconWorld) -> void:
 		_produce(w, b, c)
 
 
+# Pensje ludzi gracza (jednostek) pracujących na miejscu idą do kasy gracza.
+static func _pay_extra(w: EconWorld, b: EconBusiness, c: EconCity) -> void:
+	if b.extra_workers <= 0.0:
+		b.extra_paid = true
+		return
+	var bill := b.extra_workers * c.wage
+	var payee := w.actor(b.extra_payee)
+	if payee == null or b.cash < bill:
+		b.extra_paid = false
+		return
+	b.cash -= bill
+	b.cost_today += bill
+	payee.cash += bill
+	payee.income_today += bill
+	b.extra_paid = true
+
+
 static func effective_per_worker(w: EconWorld, type: String, c: EconCity) -> float:
 	var r: Dictionary = w.recipe(type)
 	var eff := float(r["per_worker"])
@@ -70,8 +87,9 @@ static func _produce(w: EconWorld, b: EconBusiness, c: EconCity) -> void:
 	var own := m_out.stock_of(b.id)
 	var glut := own > eff * cap_workers * float(w.data["market"]["target_days"])
 	var target := b.workers
+	var cap_hired := maxf(0.0, cap_workers - b.extra_workers)  # ludzie gracza zajmują etaty
 	if margin > float(bp["min_margin"]) * m_out.price and not glut and eff > 0.0:
-		target = cap_workers
+		target = cap_hired
 	else:
 		target = b.workers * (1.0 - float(bp["hire_step"]))
 		if target < 1.0:
@@ -83,6 +101,10 @@ static func _produce(w: EconWorld, b: EconBusiness, c: EconCity) -> void:
 	elif target < b.workers:
 		c.employed -= b.workers - target
 		b.workers = target
+	if b.workers > cap_hired:
+		c.employed -= b.workers - cap_hired
+		b.workers = cap_hired
+	_pay_extra(w, b, c)
 	# Pensje.
 	var bill := b.workers * c.wage
 	if bill > 0.0:
@@ -101,11 +123,12 @@ static func _produce(w: EconWorld, b: EconBusiness, c: EconCity) -> void:
 			b.workers -= leave
 			c.employed -= leave
 			b.broke_days += 1
-	if b.workers <= 0.0:
+	var staff := b.workers + (b.extra_workers if b.extra_paid else 0.0)
+	if staff <= 0.0:
 		b.produced_today = 0.0
 		return
 	# Wejścia: kupujemy brakujące na dziś plus mały zapas.
-	var potential := b.workers * eff
+	var potential := staff * eff
 	var units := potential
 	var ins: Dictionary = r["inputs"]
 	var buffer := float(bp["input_buffer_days"])

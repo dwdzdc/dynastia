@@ -14,7 +14,7 @@ static func step(w: EconWorld) -> void:
 	_accounting(w)
 	var every := int(w.data["actors"]["review_every"])
 	for a: EconActor in w.actors.values():
-		if a.alive and (a.id + w.day) % every == 0:
+		if a.alive and not a.is_player and (a.id + w.day) % every == 0:
 			_review(w, a)
 
 
