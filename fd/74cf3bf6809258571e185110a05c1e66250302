@@ -1,0 +1,39 @@
+CLAUDE.md
+  ai_agent 20,24-25,40
+game/econ_map_canvas.gd
+  s_b35b8f715f6824::t_8cccbcad1de51b 69-71,77-81
+tools/screenshot_economy.gd
+  s_b35b8f715f6824::t_77416a4ca20d30 49-51
+sim/econ/econ_gazette.gd
+  s_b35b8f715f6824::t_77416a4ca20d30 150
+  s_b35b8f715f6824::t_1cface047abd54 1-149,151
+data/economy.json
+  s_b35b8f715f6824::t_8cccbcad1de51b 220,222
+  s_b35b8f715f6824::t_77416a4ca20d30 225
+sim/econ/econ_population.gd
+  s_b35b8f715f6824::t_77416a4ca20d30 112,131,155
+tests/run_econ_tests.gd
+  s_b35b8f715f6824::t_dbe8b6ddf903c2 47,221-233
+game/economy_view.gd
+  s_b35b8f715f6824::t_77416a4ca20d30 41-44,133-136,206-211,242-245,314,415-526
+sim/econ/econ_gazette.gd.uid
+  s_b35b8f715f6824::t_77416a4ca20d30 1
+progress.md
+  ai_agent 219
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "fd74cf3bf6809258571e185110a05c1e66250302",
+  "prompts": {},
+  "sessions": {
+    "s_b35b8f715f6824": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "8ea3f297-9483-40f4-a9c0-36a4b605ddb0",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Dawid Dziedzic <24682682+dwdzdc@users.noreply.github.com>"
+    }
+  }
+}
