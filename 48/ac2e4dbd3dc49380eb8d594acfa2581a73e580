@@ -1,0 +1,33 @@
+data/rts.json
+  s_b35b8f715f6824::t_ad752376b690cd 17-36,38-47
+sim/econ/econ_business.gd
+  s_b35b8f715f6824::t_ad752376b690cd 24
+CLAUDE.md
+  ai_agent 20-21,25
+game/rts/rts_hud.gd
+  s_b35b8f715f6824::t_ad752376b690cd 428,441,520-524
+sim/rts/rts_unit.gd
+  s_b35b8f715f6824::t_ad752376b690cd 19
+progress.md
+  ai_agent 215
+tests/run_rts_tests.gd
+  s_b35b8f715f6824::t_d04be1cec567f5 42,158-171
+sim/rts/rts_world.gd
+  s_b35b8f715f6824::t_ad752376b690cd 101-104,125-152
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "48ac2e4dbd3dc49380eb8d594acfa2581a73e580",
+  "prompts": {},
+  "sessions": {
+    "s_b35b8f715f6824": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "8ea3f297-9483-40f4-a9c0-36a4b605ddb0",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Dawid Dziedzic <24682682+dwdzdc@users.noreply.github.com>"
+    }
+  }
+}
