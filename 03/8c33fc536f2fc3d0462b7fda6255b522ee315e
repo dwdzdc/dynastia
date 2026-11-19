@@ -1,0 +1,25 @@
+docs/design/vision.md
+  s_b35b8f715f6824::t_4adbba31836dc5 5-10,15-17,19
+  s_b35b8f715f6824::t_df51ec913c2c82 18
+  s_b35b8f715f6824::t_293807a8476d13 12-13
+  s_b35b8f715f6824::t_4cca14cfb2ade7 11
+  s_b35b8f715f6824::t_992e05363c2068 14
+CLAUDE.md
+  s_b35b8f715f6824::t_94a06913efdc53 21
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "038c33fc536f2fc3d0462b7fda6255b522ee315e",
+  "prompts": {},
+  "sessions": {
+    "s_b35b8f715f6824": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "8ea3f297-9483-40f4-a9c0-36a4b605ddb0",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Dawid Dziedzic <24682682+dwdzdc@users.noreply.github.com>"
+    }
+  }
+}
