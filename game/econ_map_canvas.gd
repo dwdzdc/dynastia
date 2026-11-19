@@ -66,12 +66,19 @@ func city_color(c: EconCity) -> Color:
 		"unemployment":
 			return _ramp(1.0 - clampf(c.unemployment() / 0.3, 0.0, 1.0))
 		"price":
-			var m := c.market(price_good)
-			# Tanio = zielony, drogo = czerwony (log wokół ceny bazowej).
-			var r := log(m.price / m.base) / log(4.0)
+			# Tanio = zielony, drogo = czerwony — względem średniej w świecie (widać, gdzie
+			# opłaca się kupić, a gdzie sprzedać).
+			var r := log(c.market(price_good).price / _avg_price()) / log(2.0)
 			return _ramp(clampf(0.5 - r * 0.5, 0.0, 1.0))
 		_:
 			return _ramp(c.prosperity())
+
+
+func _avg_price() -> float:
+	var s := 0.0
+	for c: EconCity in w.cities:
+		s += c.market(price_good).price
+	return s / maxf(1.0, w.cities.size())
 
 
 # 0 = czerwony, 0,5 = żółty, 1 = zielony.

@@ -38,6 +38,10 @@ var _day_label: Label
 var _speed_buttons: Array[Button] = []
 var _mode: OptionButton
 var _loading: Label
+var _paper_btn: Button
+var _paper: Control            # nakładka z gazetą (null = zamknięta)
+var _paper_day := 0            # doba końca pokazywanego numeru
+var _last_issue_day := 0
 
 
 func _ready() -> void:
@@ -126,6 +130,10 @@ func _build() -> void:
 		_mode.add_item("cena: %s" % w.good_name(g))
 	_mode.item_selected.connect(_on_mode)
 	bar.add_child(_mode)
+	_paper_btn = Button.new()
+	_paper_btn.text = "Kurier"
+	_paper_btn.pressed.connect(_open_paper)
+	bar.add_child(_paper_btn)
 	_status = _label("", SMALL, DIM)
 	_status.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
@@ -195,7 +203,12 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif k >= KEY_1 and k <= KEY_4:
 			_set_speed(k - KEY_1)
 		elif k == KEY_ESCAPE:
-			_on_city(-1)
+			if _paper != null:
+				_close_paper()
+			else:
+				_on_city(-1)
+		elif k == KEY_K:
+			_open_paper()
 
 
 func _process(delta: float) -> void:
@@ -226,6 +239,10 @@ func _refresh_all() -> void:
 	var pop := w.total_population()
 	var firms := w.businesses.values().filter(func(b: EconBusiness) -> bool: return b.status != "closed").size()
 	var moving := w.trucks.values().filter(func(t: EconTruck) -> bool: return t.moving).size()
+	var issue_day := (w.day / EconGazette.MONTH_DAYS) * EconGazette.MONTH_DAYS
+	if issue_day > _last_issue_day and issue_day > 0:
+		_paper_btn.text = "Kurier: nowy numer!"
+		_paper_btn.add_theme_color_override("font_color", WARN)
 	_status.text = "ludność %s · bezrobocie %.1f%% · firm %d · ciężarówek %d (w drodze %d) · pieniądze w obiegu %.0f mln zł" % [
 		_thousands(pop), unemp / pop * 100.0, firms, w.trucks.size(), moving, w.money_total() / 1e6]
 	_clear(_side)
@@ -294,7 +311,7 @@ func _world_panel() -> void:
 		var people: Array = f["people"]
 		var head: EconActor = people[0]
 		var names := ", ".join(people.map(func(p: EconActor) -> String: return p.first))
-		var line := "Ród %s · %.1f mln zł · firm %d" % [EconNames.family_genitive(EconPopulation._family_last(head)), float(f["wealth"]) / 1e6, int(f["firms"])]
+		var line := "Ród %s · %.1f mln zł · firm %d" % [EconNames.family_genitive(EconPopulation.family_last(head)), float(f["wealth"]) / 1e6, int(f["firms"])]
 		_side.add_child(_label(line, FONT, TEXT))
 		var sub := _label("   %s (%s)" % [names, w.cities[head.city_id].name], SMALL, DIM)
 		_side.add_child(sub)
@@ -395,3 +412,115 @@ func _news_panel() -> void:
 		shown += 1
 		if shown >= NEWS_LINES:
 			break
+
+
+# --- gazeta ------------------------------------------------------------------
+
+const PAPER_BG := Color(0.95, 0.92, 0.84)
+const PAPER_INK := Color(0.12, 0.1, 0.08)
+const PAPER_DIM := Color(0.35, 0.3, 0.25)
+const PAPER_RULE := Color(0.2, 0.17, 0.13)
+const PAPER_W := 980
+
+
+func _open_paper() -> void:
+	if w == null:
+		return
+	var last := (w.day / EconGazette.MONTH_DAYS) * EconGazette.MONTH_DAYS
+	_paper_day = maxi(last, EconGazette.MONTH_DAYS)
+	_last_issue_day = last
+	_paper_btn.text = "Kurier"
+	_paper_btn.remove_theme_color_override("font_color")
+	_set_speed(0)
+	_show_paper()
+
+
+func _close_paper() -> void:
+	if _paper != null:
+		_paper.queue_free()
+		_paper = null
+
+
+func _paper_label(text: String, size: int, color := PAPER_INK, wrap := true) -> Label:
+	var l := _label(text, size, color)
+	if wrap:
+		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	return l
+
+
+func _show_paper() -> void:
+	_close_paper()
+	var issue := EconGazette.issue(w, _paper_day)
+	var shade := ColorRect.new()
+	shade.color = Color(0, 0, 0, 0.55)
+	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(shade)
+	_paper = shade
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	shade.add_child(center)
+	var page := PanelContainer.new()
+	var st := StyleBoxFlat.new()
+	st.bg_color = PAPER_BG
+	st.set_corner_radius_all(2)
+	st.set_content_margin_all(26)
+	st.shadow_color = Color(0, 0, 0, 0.5)
+	st.shadow_size = 12
+	page.add_theme_stylebox_override("panel", st)
+	page.custom_minimum_size.x = PAPER_W
+	center.add_child(page)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 8)
+	page.add_child(v)
+	var mast := _paper_label("KURIER ŚWIATA", 40, PAPER_INK, false)
+	mast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	v.add_child(mast)
+	var meta := _paper_label("nr %d · %s · cena 2 zł" % [int(issue["number"]), str(issue["date"])], SMALL, PAPER_DIM, false)
+	meta.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	v.add_child(meta)
+	v.add_child(_rule())
+	v.add_child(_paper_label(str(issue["headline"]), 30))
+	v.add_child(_paper_label(str(issue["lead"]), FONT, PAPER_DIM))
+	v.add_child(_rule())
+	var grid := GridContainer.new()
+	grid.columns = 2
+	grid.add_theme_constant_override("h_separation", 30)
+	grid.add_theme_constant_override("v_separation", 14)
+	v.add_child(grid)
+	for col: Dictionary in issue["columns"]:
+		var box := VBoxContainer.new()
+		box.custom_minimum_size.x = PAPER_W / 2 - 50
+		box.add_child(_paper_label(str(col["title"]).to_upper(), SMALL, PAPER_RULE, false))
+		for line: String in col["lines"]:
+			box.add_child(_paper_label("• " + line, SMALL))
+		grid.add_child(box)
+	v.add_child(_rule())
+	var nav := HBoxContainer.new()
+	nav.alignment = BoxContainer.ALIGNMENT_CENTER
+	nav.add_theme_constant_override("separation", 12)
+	v.add_child(nav)
+	var prev := Button.new()
+	prev.text = "‹ poprzedni numer"
+	prev.disabled = _paper_day <= EconGazette.MONTH_DAYS
+	prev.pressed.connect(func() -> void:
+		_paper_day -= EconGazette.MONTH_DAYS
+		_show_paper())
+	nav.add_child(prev)
+	var close := Button.new()
+	close.text = "zamknij (Esc)"
+	close.pressed.connect(_close_paper)
+	nav.add_child(close)
+	var next := Button.new()
+	next.text = "następny numer ›"
+	next.disabled = _paper_day + EconGazette.MONTH_DAYS > w.day
+	next.pressed.connect(func() -> void:
+		_paper_day += EconGazette.MONTH_DAYS
+		_show_paper())
+	nav.add_child(next)
+
+
+func _rule() -> ColorRect:
+	var r := ColorRect.new()
+	r.color = PAPER_RULE
+	r.custom_minimum_size.y = 2
+	return r

@@ -217,12 +217,12 @@
 	"news": {
 		"spike_ratio": 1.8,
 		"crash_ratio": 0.45,
-		"crisis_satisfaction": 0.6,
+		"crisis_satisfaction": 0.42,
 		"crisis_unemployment": 0.22,
-		"boom_satisfaction": 0.95,
+		"boom_satisfaction": 0.8,
 		"boom_unemployment": 0.05,
 		"cooldown_days": 45,
-		"keep": 600
+		"keep": 4000
 	},
 
 	"names": {

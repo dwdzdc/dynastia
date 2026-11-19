@@ -109,7 +109,7 @@ static func new_actor(w: EconWorld, city_id: int, family_id: int, last: String) 
 
 
 # Rodowe nazwisko w formie męskiej (do dziedziczenia przez dzieci obu płci).
-static func _family_last(a: EconActor) -> String:
+static func family_last(a: EconActor) -> String:
 	if a.female and a.last.ends_with("ska"):
 		return a.last.substr(0, a.last.length() - 1) + "i"
 	if a.female and a.last.ends_with("cka"):
@@ -128,7 +128,7 @@ static func die(w: EconWorld, a: EconActor) -> void:
 	var n := 2 if w.rng.chance(float(ap["split_heirs_chance"])) and a.businesses.size() >= 2 else 1
 	var heirs: Array[EconActor] = []
 	for i in n:
-		var h := new_actor(w, a.city_id, a.family_id, _family_last(a))
+		var h := new_actor(w, a.city_id, a.family_id, family_last(a))
 		h.parent_id = a.id
 		h.risk = clampf(a.risk + w.rng.next_float(-0.3, 0.3), 0.1, 1.0)
 		heirs.append(h)
@@ -152,4 +152,4 @@ static func die(w: EconWorld, a: EconActor) -> void:
 	if n == 1:
 		w.news.add("death", a.city_id, "Zmarł%s %s. Majątek (%.1f mln zł) przejmuje %s." % ["a" if a.female else "", a.full_name(), wealth / 1e6, heirs[0].full_name()], 1 if wealth > 1e6 else 0)
 	else:
-		w.news.add("death", a.city_id, "Zmarł%s %s. Majątek dzielą %s i %s – ród %s się rozdziela." % ["a" if a.female else "", a.full_name(), heirs[0].full_name(), heirs[1].full_name(), EconNames.family_genitive(_family_last(a))], 1)
+		w.news.add("death", a.city_id, "Zmarł%s %s. Majątek dzielą %s i %s – ród %s się rozdziela." % ["a" if a.female else "", a.full_name(), heirs[0].full_name(), heirs[1].full_name(), EconNames.family_genitive(family_last(a))], 1)

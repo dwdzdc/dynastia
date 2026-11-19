@@ -216,6 +216,7 @@ Pętla gry: ród Wilków (6 osób, 3 pokolenia) w chacie pod lasem. Co 5 dni czy
   - Bez skarbu państwa świat upada w rok (bezrobocie > 80%): zyski zbierają się u kapitalistów. Państwo to w tym modelu warunek życia gospodarki.
   - Otwarte: (1) ceny stale 2–3× nad bazą (inflacja wymaga przeskalowania bazowych cen albo wydajności); (2) ciężarówki często stoją bez paliwa (dowóz w kanistrach łata problem); (3) wydajność ok. 60 ms/dobę przy 1000+ firm.
 - [x] E9 Podgląd świata: mapa z miastami, drogami, jadącymi ciężarówkami, panelem miasta, kroniką i najbogatszymi → zrzut.
+- [x] E11 „Kurier Świata”: miesięczna gazeta składana z kroniki i stanu świata (nagłówek miesiąca, ceny, ludzie i firmy, drogi, najbogatsze rody); przycisk Kurier albo klawisz K w podglądzie → test + zrzut.
 - [ ] E10 Playtest autora.
 
 ## Iteracja 4 — czytelny interfejs (wstrzymana: zwrot na nowy core 19.11.2026)

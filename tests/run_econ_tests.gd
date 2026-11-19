@@ -44,6 +44,7 @@ func _run_all() -> void:
 	_test_actor_invests()
 	_test_fire_and_cause()
 	_test_road_closure_reroutes()
+	_test_gazette()
 
 
 # E1: sieć miast jest spójna, każdy zasób jest w kilku miastach.
@@ -217,3 +218,16 @@ func _test_road_closure_reroutes() -> void:
 	var around := EconMap.path(w, r.a, r.b)
 	check("E6 objazd nie używa zamkniętej drogi", not around.has(r.id))
 	check("E6 bez zamknięcia trasa bywa bezpośrednia", direct.size() >= 1)
+
+
+# Kurier: numer za miesiąc ma nagłówek i cztery kolumny, nic nie zmienia w świecie.
+func _test_gazette() -> void:
+	var w := _world(5)
+	for i in 65:
+		w.step_day()
+	var money := w.money_total()
+	var issue := EconGazette.issue(w, 60)
+	check("Kurier ma nagłówek", str(issue["headline"]) != "")
+	check("Kurier ma 4 kolumny", (issue["columns"] as Array).size() == 4)
+	check("Kurier: ranking rodów", ((issue["columns"] as Array)[3]["lines"] as Array).size() > 0)
+	check("Kurier nie zmienia świata", absf(w.money_total() - money) < 1e-6)

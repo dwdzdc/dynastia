@@ -46,4 +46,7 @@ func _shoot() -> void:
 	view.call("_on_mode", 2)
 	await _frames(5)
 	_save("e03_fuel_price.png")
+	view.call("_open_paper")
+	await _frames(5)
+	_save("e04_kurier.png")
 	quit(0)
