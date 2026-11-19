@@ -199,7 +199,21 @@ Pętla gry: ród Wilków (6 osób, 3 pokolenia) w chacie pod lasem. Co 5 dni czy
   - Wynik (seed 1, 02.11.2026, `tools/probe_village.gd -- 100 1`): ród gracza bez decyzji wygasa w 59. dobie (koniec sondy). Do tego czasu ludzi 22 → 9 (6 narodzin, 21 śmierci, około 23 lat życia), Wilkowie awansowali na „mistrzów i kupców” (6. doba), Nowakowie podupadli i sprzedali karczmę Bednarzom (18. doba), sołectwo przeszło na Bednarzy, pieniędzy we wsi przybyło (994 → 1957 zł), żadnej budowy AI.
   - **Otwarte:** (1) demografia — za mało ślubów i dzieci względem śmierci ze starości, biedne rody bez dachu się nie rozmnażają; (2) biedne rody AI dalej bez domu (problem z Q2); (3) AI nie zbudowało niczego (progi `found_cash` i braku towaru za wysokie albo nikt nie spełnia warunku).
 
-## Iteracja 5 — świat, który żyje sam (BIEŻĄCA)
+## Iteracja 6 — świat na mapie: RTS (BIEŻĄCA)
+
+Źródło: `docs/design/rts-world.md` (decyzje autora 1–3 z 19.11.2026, propozycje Claude'a 4–9 do potwierdzenia w playteście). Gospodarka z iteracji 5 zostaje silnikiem. Na wierzch dochodzi ciągła mapa 3D z jednostkami. Gracz jest jednym z aktorów. Kod: `sim/rts/` (gracz, jednostki, rozkazy), `game/rts/` (render i interfejs).
+
+- [ ] R1 Skala i drogi: zwarta mapa (km), drogi jako łamane, ciężarówki na łamanych, przyjazd w chwili dojazdu → testy econ + sonda 720 dób „żyje”.
+- [ ] R2 Czas ciągły i układ miast: `RtsWorld` przesuwa czas płynnie i liczy dobę gospodarki; działki firm i bloki mieszkalne w miastach (deterministycznie) → test.
+- [ ] R3 Mapa 3D: teren (pola, lasy), drogi, miasta z budynkami, jadące ciężarówki, kamera RTS (WASD, kółko, przeciąganie), nazwy miast → zrzut.
+- [ ] R4 Zaznaczanie i karta: klik w ciężarówkę, budynek albo miasto pokazuje kartę (firma, właściciel, ładunek, produkcja); minimapa; Kurier → zrzut.
+- [ ] R5 Gracz i jego ludzie: aktor-gracz z dwiema osobami; PPM idź, zadanie „pracuj w firmie” (idzie, pracuje, pensja do gracza) → test + zrzut.
+- [ ] R6 Firma gracza: menu budowy, miejsce w mieście, budowa z materiałów, zatrudnianie, wyniki w karcie → test.
+- [ ] R7 Ciężarówki gracza: kupno, rozkazy (handluj sam, trasa stała, jedź do, kup i sprzedaj tutaj) → test.
+- [ ] R8 Sonda: świat z graczem, który nic nie robi, żyje 720 dób; testy; dokumentacja.
+- [ ] R9 Playtest autora.
+
+## Iteracja 5 — świat, który żyje sam (zrobiona, czeka na playtest)
 
 Źródło: nowy core (`docs/design/vision.md`, 19.11.2026) i `docs/design/world-economy.md` (decyzje szkieletowe zatwierdzone przez autora 19.11.2026). Wielka gospodarka współczesnego świata bez gracza, czyli sieć miast, aktorzy z kapitałem, firmy, ciężarówki, wstrząsy i kronika. Gracza wpychamy w nią w następnej iteracji. Kod: `sim/econ/`, dane: `data/economy.json`, testy: `tests/run_econ_tests.gd`, sonda: `tools/probe_economy.gd`, podgląd: `game/economy_view.tscn`.
 
