@@ -2,8 +2,11 @@
 	"world": {
 		"seed": 7,
 		"city_count": 20,
-		"map_size": [1400, 900],
-		"min_city_distance": 140,
+		"map_size": [48, 32],
+		"min_city_distance": 5.5,
+		"map_margin": 0.05,
+		"road_bends": 3,
+		"road_wobble": 0.12,
 		"route_neighbors": 3,
 		"route_detour": 1.15,
 		"city_tiers": [
@@ -143,12 +146,12 @@
 
 	"transport": {
 		"truck_capacity": 5000,
-		"speed_km_per_day": 450,
-		"fuel_per_km": 0.25,
-		"tank_km": 4000,
-		"reserve_km": 1200,
+		"speed_km_per_day": 100,
+		"fuel_per_km": 7.0,
+		"tank_km": 140,
+		"reserve_km": 40,
 		"stuck_days_to_canister": 4,
-		"canister_fee_per_km": 2.0,
+		"canister_fee_per_km": 60.0,
 		"driver_wage_mult": 1.2,
 		"min_profit": 150,
 		"sell_discount": 0.9,
@@ -194,7 +197,7 @@
 		"growth_per_month": 0.002,
 		"prosperity_growth": 0.006,
 		"migration_share": 0.02,
-		"migration_max_km": 500
+		"migration_max_km": 18
 	},
 
 	"events": {

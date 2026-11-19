@@ -204,9 +204,8 @@ func truck_pos(tr: EconTruck, t: float) -> Vector2:
 	var cur := tr.city_id
 	for rid: int in tr.path:
 		var r: EconRoute = routes[rid]
-		var nxt := r.other(cur)
 		if target <= r.length:
-			return cities[cur].pos.lerp(cities[nxt].pos, target / maxf(r.length, 1e-6))
+			return r.point_at(cur, target)
 		target -= r.length
-		cur = nxt
+		cur = r.other(cur)
 	return cities[tr.to_city].pos

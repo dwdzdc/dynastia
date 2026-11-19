@@ -12,7 +12,7 @@ static func step(w: EconWorld) -> void:
 	var now := float(w.day)
 	# 1. Przyjazdy.
 	for tr: EconTruck in w.trucks.values():
-		if tr.moving and tr.arrive_time < now + 1.0:
+		if tr.moving and tr.arrive_time <= now:
 			_arrive(w, tr, tp)
 	# 2. Pensje kierowców.
 	for b: EconBusiness in w.businesses.values():

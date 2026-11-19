@@ -18,7 +18,7 @@ static func generate(w: EconWorld) -> void:
 			pops.append(roundf(w.rng.next_float(float(r[0]), float(r[1]))))
 	var count := mini(int(p["city_count"]), pops.size())
 	var min_d := float(p["min_city_distance"])
-	var margin := 60.0
+	var margin := minf(size.x, size.y) * float(p.get("map_margin", 0.05))
 	for i in count:
 		var pos := Vector2.ZERO
 		for attempt in 400:
@@ -32,6 +32,7 @@ static func generate(w: EconWorld) -> void:
 				break
 		w.cities.append(EconCity.new(i, str(names[i % names.size()]), pos, pops[i]))
 	_routes(w, int(p["route_neighbors"]), float(p["route_detour"]))
+	_bend_roads(w, int(p.get("road_bends", 0)), float(p.get("road_wobble", 0.0)))
 	_resources(w, p["resources"], int(p["min_cities_per_resource"]))
 	compute_distances(w)
 
@@ -75,6 +76,26 @@ static func _add_route(w: EconWorld, pairs: Dictionary, a: int, b: int, detour: 
 	w.routes.append(r)
 	w.cities[a].routes.append(r.id)
 	w.cities[b].routes.append(r.id)
+
+
+# Drogi jako łamane: kilka punktów pośrednich odsuniętych w bok (deterministycznie).
+# Długość drogi = długość łamanej.
+static func _bend_roads(w: EconWorld, bends: int, wobble: float) -> void:
+	for r: EconRoute in w.routes:
+		var a: Vector2 = w.cities[r.a].pos
+		var b: Vector2 = w.cities[r.b].pos
+		var side := (b - a).orthogonal().normalized()
+		var pts := PackedVector2Array([a])
+		for i in bends:
+			var t := float(i + 1) / float(bends + 1)
+			var off := w.rng.next_float(-wobble, wobble) * a.distance_to(b) * sin(t * PI)
+			pts.append(a.lerp(b, t) + side * off)
+		pts.append(b)
+		r.points = pts
+		var km := 0.0
+		for i in pts.size() - 1:
+			km += pts[i].distance_to(pts[i + 1])
+		r.length = km
 
 
 static func _find(parent: Array[int], i: int) -> int:
