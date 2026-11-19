@@ -2,6 +2,21 @@
 
 Najwyższe źródło prawdy o tym, czym ta gra jest. Kolejność pierwszeństwa: ten plik → `docs/design/family-dynamics.md` (model rodu) → `intro` (pierwotny szkic, nadal ważny tam, gdzie nic go nie nadpisuje).
 
+## Core (ustalenia z autorem, 19.11.2026)
+
+Ta sekcja ma pierwszeństwo przed wszystkim niżej. Po iteracji 4 autor uznał, że po drodze zgubiliśmy core: gra skupiła się na dynamice rodu, jednej epoce i życiu we wsi („można tylko mieszkać se w domku”). Pierwotny pomysł (inspiracje: X4 Foundations, Port Royale, Factorio, Foxhole, Cultures, Bannerlord) był inny.
+
+- **Jesteś małym trybikiem w wielkim, żywym świecie.** Świat działa bez gracza (X4, Port Royale). Gracz nie dowodzi jedną z czterech frakcji, tylko zostaje wrzucony w ten świat z grupką swoich ludzi. Może go zmienić trochę albo bardzo, ale nie musi.
+- **Frajda to wpięcie się w ten świat:** osiedlić się, rozbudować własny biznes i własne łańcuchy produkcji i logistyki, od robaka do imperium. To strategia, a nie symulator relacji.
+- **Skala jest duża.** Końcowy produkt to wiele regionów i miast, a nie jedna mapa. Gracz ma czuć, że jest robakiem, dopóki nie zbuduje swojego imperium. Demo może być na jednej mapie, ale model nie może tego zakładać. **Świat jest otwarty od początku, bez twardych limitów eksploracji** (jak w X4): gracz może od razu iść, gdzie chce. Barierą jest ryzyko i koszt, nie blokada. Za daleko są zbójcy, dzikie tereny, brak zapasów na drogę i obcy, którzy cię nie znają. Na bezpieczne dalekie wyprawy i trasy stać dopiero kogoś, kto ma ludzi, wozy i pieniądze. Architektura jest już w `intro` §10 (LOD, agregaty, materializacja na żądanie), ale LOD to wyłącznie technika liczenia (pełna symulacja tam, gdzie są ludzie gracza), a nie mechanika odblokowywania świata. Zdanie z `intro` §10 „awans społeczny = odblokowanie wyższego LOD” jest nieaktualne.
+- **Jedna epoka, na sztywno: dzisiejsze czasy.** Technika i realia się nie zmieniają, nie ma przechodzenia przez ery (jak w Transport Fever 2). Wiele epok odpada, bo każda mnoży całą zawartość gry. Średniowiecze (wieś, chrust, stragan) jest nieaktualne. Współczesność też hoduje swoich robaków: od zera do imperium jak Kulczyk.
+- **Ludzie przychodzą i odchodzą, pokolenia się zmieniają** (jak w Bannerlordzie). Rodzą się dzieci, starzy umierają, ktoś przejmuje interes. Nie ma stuletnich wampirów. Czas płynie dla ludzi, a świat techniki stoi.
+- **Etapy gry różnią się jak epoki w Cywilizacji, ale w ramach jednej epoki.** Etap wynika ze skali biznesu, a nie z przełączenia ery. Na początku jest kilku ludzi i pierwszy drobny interes. W środku: firma, najemni pracownicy, własny transport i trasy. Pod koniec: sieć w wielu miastach i wpływ na ceny i rynek. Minuta gry wygląda inaczej na każdym etapie.
+- **Wąski krąg i szara masa.** Gracz ma garstkę ludzi, którzy się liczą: jest ich mało, są nie do zastąpienia i mają własną wolę. Nie mogą być assetem do podbijania statów jak załoga w X4 albo córka-namiestnik w Bannerlordzie. Do tego dochodzą najemni, wymienni robotnicy, którzy mogą być albo nie. Ród (jak Kulczykowie czy Rothschildowie) to uzasadnienie, czemu krąg trzyma się razem, ale dynamika rodu służy interesowi (kto prowadzi którą gałąź, komu powierzyć kasę, kto przejmie firmę), a nie jest główną rozgrywką.
+- **Multiplayer to dodatek na później** (wielu graczy, każdy w innej dziedzinie, razem budują gospodarkę). Do tego czasu innych graczy zastępują rody-boty, które świat i tak ma.
+
+Konsekwencje dla reszty tego pliku: zdania „dynamika rodu jest rdzeniem”, „nie Settlers ani gra o optymalizacji osady” i „wiele epok” są nieaktualne. Rdzeniem jest biznes i logistyka w żywym świecie. Uwaga, więzi i pokolenia (`family-dynamics.md`) są wspierające. Nadal obowiązuje: świat nie zależy od gracza, monety tylko z procesu, proces w świecie zamiast funkcji, wiele dróg sukcesu.
+
 ## Skąd ta gra
 
 Autor jako dziecko grał w Cultures (8th Wonder of the World) i lubił wybrać jedną rodzinę w osadzie i śledzić jej losy. Było to trudne, bo w Cultures dorosły człowiek nie miał żadnego związku ze swoją rodziną. Dynastia ma drapać dokładnie to miejsce: **survival rodziny w społeczeństwie**. Blisko, ale nie w punkt, były Simsy, Bannerlord, RimWorld i klony Dwarf Fortress.
