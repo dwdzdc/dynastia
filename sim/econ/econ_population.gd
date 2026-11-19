@@ -5,6 +5,10 @@ class_name EconPopulation
 extends RefCounted
 
 
+const CROWD_PUSH := 1.0
+const RENT_PUSH := 0.05
+
+
 static func step(w: EconWorld) -> void:
 	for a: EconActor in w.actors.values().duplicate():
 		if a.alive and not a.is_player and w.day >= a.death_day:
@@ -23,11 +27,13 @@ static func step(w: EconWorld) -> void:
 static func _growth(w: EconWorld, pp: Dictionary) -> void:
 	for c: EconCity in w.cities:
 		var g := float(pp["growth_per_month"]) + float(pp["prosperity_growth"]) * (c.prosperity() - 0.7)
+		g -= float(w.data["housing"]["crowd_growth"]) * c.crowded / maxf(c.population, 1.0)  # brak mieszkań hamuje przyrost
 		c.population = maxf(100.0, c.population * (1.0 + g))
 
 
 static func _attract(c: EconCity) -> float:
-	return c.prosperity() + 0.002 * c.wage
+	# Ciasnota i drogi czynsz wypychają ludzi (CROWD_PUSH, RENT_PUSH — słabsze niż dobrobyt).
+	return c.prosperity() + 0.002 * c.wage - CROWD_PUSH * c.crowded / maxf(c.population, 1.0) - RENT_PUSH * (c.rent_mult - 1.0)
 
 
 static func _migration(w: EconWorld, pp: Dictionary) -> void:

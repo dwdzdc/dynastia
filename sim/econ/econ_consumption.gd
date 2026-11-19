@@ -10,13 +10,16 @@ const INCOME_EMA := 0.1
 
 
 static func step(w: EconWorld) -> void:
+	EconHousing.step(w)
 	var hp: Dictionary = w.data["households"]
 	var needs: Array = w.data["needs"]
+	var crowd_k := float(w.data["housing"]["crowd_satisfaction"])
 	for c: EconCity in w.cities:
 		c.income_ema = lerpf(c.income_ema, c.income_today, INCOME_EMA)
 		if c.population <= 0.0:
 			continue
-		var budget := minf(c.cash, c.income_ema * float(hp["spend_of_income"]) + c.cash * float(hp["spend_of_savings"]))
+		# Czynsz zapłacony dziś (EconHousing) zmniejsza to, co zostaje na koszyk.
+		var budget := minf(c.cash, c.income_ema * float(hp["spend_of_income"]) + c.cash * float(hp["spend_of_savings"]) - c.rent_paid_today)
 		var lux := (c.income_ema / c.population) / float(hp["reference_income"])
 		var met_w := 0.0
 		var all_w := 0.0
@@ -39,7 +42,8 @@ static func step(w: EconWorld) -> void:
 				all_w += weight
 				met_w += weight * clampf(got / maxf(base_need, 1e-6), 0.0, 1.0)
 		if all_w > 0.0:
-			c.satisfaction = lerpf(c.satisfaction, met_w / all_w, float(hp["satisfaction_ema"]))
+			var crowd := 1.0 - crowd_k * c.crowded / maxf(c.population, 1.0)
+			c.satisfaction = lerpf(c.satisfaction, met_w / all_w * crowd, float(hp["satisfaction_ema"]))
 	var share := float(w.data["actors"]["spend_of_wealth"])
 	var of_income := float(w.data["actors"]["spend_of_income"])
 	for a: EconActor in w.actors.values():

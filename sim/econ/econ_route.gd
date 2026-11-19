@@ -37,11 +37,14 @@ func point_at(from_id: int, km: float) -> Vector2:
 	return pts[pts.size() - 1]
 
 
+var _rev: PackedVector2Array = PackedVector2Array()   # łamana od b do a (liczona raz)
+
+
 func _reversed() -> PackedVector2Array:
-	var r := PackedVector2Array()
-	for i in range(points.size() - 1, -1, -1):
-		r.append(points[i])
-	return r
+	if _rev.size() != points.size():
+		_rev = points.duplicate()
+		_rev.reverse()
+	return _rev
 
 
 func is_closed(day: int) -> bool:

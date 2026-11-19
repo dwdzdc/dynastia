@@ -46,6 +46,7 @@ func _run_all() -> void:
 	_test_road_closure_reroutes()
 	_test_gazette()
 	_test_two_states()
+	_test_housing_and_land()
 
 
 # E1: sieć miast jest spójna, każdy zasób jest w kilku miastach.
@@ -280,3 +281,39 @@ func _test_two_states() -> void:
 	check("Państwa: wszystkie zbierają podatki", w.states.all(func(st: EconState) -> bool: return st.income_ema > 0.0))
 	check("Państwa: cła pobrane na granicach", float(w.stats.get("tariffs", 0.0)) > 0.0 and w.states.all(func(st: EconState) -> bool: return st.tariffs_total > 0.0))
 	check("Cło: w kraju 0, za granicą stawka państwa celu", w.tariff_rate(w.capitals[0], w.capitals[0]) == 0.0 and absf(w.tariff_rate(w.capitals[0], w.capitals[1]) - 0.12) < 1e-6)
+
+
+# Nieruchomości: działka droższa w dużym mieście i płacona państwu; czynsz z ciasnoty.
+func _test_housing_and_land() -> void:
+	var w := _world(14)
+	var order: Array = w.cities.duplicate()
+	order.sort_custom(func(a: EconCity, b: EconCity) -> bool: return a.population > b.population)
+	var big: EconCity = order[0]
+	var small: EconCity = order[order.size() - 1]
+	check("Działka: w dużym mieście droższa", EconHousing.land_cost(w, "bakery", big) > EconHousing.land_cost(w, "bakery", small) * 3.0)
+	check("Działka: pole za miastem tanie", EconHousing.land_cost(w, "grain_farm", big) < EconHousing.land_cost(w, "refinery", big))
+	var flats := w.businesses.values().filter(func(b: EconBusiness) -> bool: return b.type == "apartments" and b.city_id == big.id)
+	check("Mieszkania: kamienice na start", not flats.is_empty() and big.homes_owned > 0.0)
+	var money := w.money_total()
+	var st := w.state_of_city(big.id)
+	var a: EconActor = w.living_actors()[0]
+	a.cash += 500000.0
+	big.cash -= 500000.0
+	var st_cash := st.cash
+	var b := EconInvest.found(w, a, "bakery", big, EconInvest.build_cost(w, "bakery", big))
+	check("Działka: zapłacona państwu", st.cash - st_cash >= EconHousing.land_cost(w, "bakery", big) * 0.99 and b.status == "building")
+	w.step_day()
+	var rent_income := 0.0
+	for f: EconBusiness in flats:
+		rent_income += f.revenue_today
+	check("Mieszkania: czynsz płynie do kamienic", big.rent_paid_today > 0.0)
+	check("Mieszkania: pieniądze stałe", absf(w.money_total() - money) < money * 1e-7)
+	# Napływ ludzi bez nowych mieszkań: ciasnota i rosnący czynsz.
+	var r0 := big.rent_mult
+	big.population *= 1.3
+	for i in 30:
+		w.step_day()
+	check("Mieszkania: ciasnota po napływie", big.crowded > 0.0)
+	check("Mieszkania: czynsz rośnie przy ciasnocie", big.rent_mult > r0 + 0.1)
+	var crowded_news := w.news.entries.filter(func(e: Dictionary) -> bool: return e["kind"] == "housing" and e["city"] == big.id)
+	check("Mieszkania: kronika o braku mieszkań", not crowded_news.is_empty())

@@ -38,6 +38,7 @@ const PARTS := {
 	"iron_mine": [["cyl", Vector2(0, 0), Vector3(50, 10, 0), Color(0.48, 0.38, 0.3)], ["box", Vector2(40, 0), Vector3(20, 22, 20), Color(0.35, 0.35, 0.38)]],
 	"quarry": [["cyl", Vector2(0, 0), Vector3(70, 1.5, 0), Color(0.78, 0.76, 0.7)], ["box", Vector2(60, 0), Vector3(14, 8, 14), Color(0.5, 0.5, 0.5)]],
 	"logging_camp": [["box", Vector2(0, 0), Vector3(24, 8, 14), Color(0.48, 0.34, 0.22)], ["cyl", Vector2(22, 0), Vector3(5, 3, 0), Color(0.62, 0.46, 0.28)]],
+	"apartments": [["box", Vector2(0, 0), Vector3(30, 34, 16), Color(0.86, 0.78, 0.68)], ["box", Vector2(0, 22), Vector3(30, 26, 16), Color(0.8, 0.72, 0.64)]],
 	"haulage": [["box", Vector2(0, 0), Vector3(60, 10, 30), Color(0.3, 0.45, 0.7)], ["box", Vector2(0, 30), Vector3(70, 0.8, 30), Color(0.35, 0.35, 0.37)]],
 }
 
@@ -144,7 +145,7 @@ func refresh(force := false) -> void:
 				"field":
 					boxes.append([_xf(at, Vector3(dims.x * grow, dims.y, dims.z * grow), rot), col])
 				_:
-					var h := dims.y * (1.0 + 0.15 * (b.level - 1)) if b.type == "services" else dims.y
+					var h := dims.y * (1.0 + 0.15 * (b.level - 1)) if b.type == "services" else dims.y * (1.0 + 0.04 * (b.level - 1)) if b.type == "apartments" else dims.y
 					boxes.append([_xf(at, Vector3(dims.x * grow, h, dims.z * grow), rot), col])
 	_fill(_boxes.multimesh, boxes)
 	_fill(_cyls.multimesh, cyls)

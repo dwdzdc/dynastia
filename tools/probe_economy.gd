@@ -116,6 +116,8 @@ func _print_cities(w: EconWorld) -> void:
 	print("\nmiasta:")
 	for c: EconCity in w.cities:
 		var n := w.businesses.values().filter(func(b: EconBusiness) -> bool: return b.city_id == c.id and b.status != "closed").size()
+		var flats := w.businesses.values().filter(func(b: EconBusiness) -> bool: return b.city_id == c.id and b.type == "apartments" and b.is_open()).size()
+		print("      mieszkania: własne %6.0f  wynajem %6.0f/%6.0f  ciasnota %5.0f  czynsz %.2f (×%.2f)  kamienic %d  działka %.0f zł" % [c.homes_owned, c.renters, c.rental_capacity, c.crowded, c.rent, c.rent_mult, flats, EconHousing.land_price(w, c)])
 		print("  [%d] %-15s ludność %6.0f  bezrob %4.1f%%  potrzeby %4.0f%%  płaca %5.1f  kasa/os. %6.0f  firm %3d  złoża %s" % [c.state_id, c.name, c.population, c.unemployment() * 100.0, c.satisfaction * 100.0, c.wage, c.cash / maxf(c.population, 1.0), n, str(c.resources.keys())])
 
 

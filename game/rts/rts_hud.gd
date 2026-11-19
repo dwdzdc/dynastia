@@ -521,6 +521,11 @@ func _business_card(b: EconBusiness) -> void:
 	_row("stan", STATUS_PL.get(b.status, b.status) + ("" if b.project.is_empty() or b.status == "building" else " · rozbudowa"))
 	if b.type == "haulage":
 		_row("ciężarówki", str(b.trucks.size()))
+	elif EconHousing.is_housing(rts.econ, b.type):
+		var occ := c.renters / maxf(c.rental_capacity, 1.0)
+		_row("mieszkania", "%s miejsc (poziom %d) · zajęte %.0f%%" % [_thousands(EconHousing.capacity(rts.econ, b)), b.level, minf(occ, 1.0) * 100.0])
+		_row("czynsz", "%.2f zł za osobę dziennie (×%.2f zwykłego)" % [c.rent, c.rent_mult], WARN if c.rent_mult > 1.3 else TEXT)
+		_row("przychód", "%s zł dziennie" % _thousands(c.rent * EconHousing.capacity(rts.econ, b) * minf(occ, 1.0)))
 	else:
 		_row("poziom", "%d · ludzie %d / %d" % [b.level, int(b.workers + b.extra_workers), int(float(r["workers"]) * b.level)])
 		var out: String = r["out"]
@@ -549,7 +554,7 @@ func _business_card(b: EconBusiness) -> void:
 				rts.move_cash(b.id, -10000.0)
 				on_selection()),
 		])
-	if b.type != "haulage" and b.status == "active":
+	if b.type != "haulage" and not EconHousing.is_housing(rts.econ, b.type) and b.status == "active":
 		var btns: Array = []
 		for u: RtsUnit in rts.units.values():
 			btns.append(_button("Wyślij: %s" % u.first, func() -> void:
@@ -567,6 +572,8 @@ func _city_card(c: EconCity) -> void:
 	_row("państwo", "%s%s · cło przy wwozie %.0f%%" % [st.name, " (stolica)" if rts.econ.capitals[c.state_id] == c.id else "", st.import_rate() * 100.0] if c.state_id != mine_st else "%s%s (twoje)" % [st.name, " (stolica)" if rts.econ.capitals[c.state_id] == c.id else ""])
 	_row("bezrobocie", "%.0f%% · płaca %.0f zł" % [c.unemployment() * 100.0, c.wage], BAD if c.unemployment() > 0.15 else TEXT)
 	_row("potrzeby", "zaspokojone w %.0f%%" % (c.satisfaction * 100.0), BAD if c.satisfaction < 0.5 else TEXT)
+	_row("mieszkania", "własne %s · wynajem %s / %s · bez mieszkania %s" % [_thousands(c.homes_owned), _thousands(c.renters), _thousands(c.rental_capacity), _thousands(c.crowded)], BAD if c.crowded > c.population * 0.03 else TEXT)
+	_row("czynsz · działka", "%.2f zł/os. dziennie (×%.2f) · działka %s zł" % [c.rent, c.rent_mult, _thousands(EconHousing.land_price(rts.econ, c))])
 	var res: Array = c.resources.keys().filter(func(k: String) -> bool: return float(c.resources[k]) > 0.05)
 	_row("złoża", ", ".join(res.map(func(k: String) -> String: return RESOURCE_PL.get(k, k))) if not res.is_empty() else "brak")
 	var cheap: Array = []

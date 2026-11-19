@@ -23,6 +23,9 @@ static func populate(w: EconWorld) -> void:
 		c.labor_force = c.population * float(lp["participation"])
 	var req := _requirements(w)
 	_place_businesses(w, req, float(wp["start_coverage"]))
+	EconHousing.setup(w)
+	for c: EconCity in w.cities:
+		c.rent = EconHousing.base_rent(w, c)
 	for c: EconCity in w.cities:
 		c.employed = 0.0
 	_actors(w, wp)
@@ -60,7 +63,7 @@ static func _requirements(w: EconWorld) -> Dictionary:
 
 static func _place_businesses(w: EconWorld, req: Dictionary, coverage: float) -> void:
 	for rid: String in w.recipes.keys():
-		if rid == "haulage":
+		if rid == "haulage" or EconHousing.is_housing(w, rid):
 			continue
 		var r: Dictionary = w.recipes[rid]
 		var out: String = r["out"]
@@ -206,6 +209,8 @@ static func _money_and_stock(w: EconWorld, wp: Dictionary) -> void:
 		if b.type == "haulage":
 			continue
 		var out: String = w.recipe(b.type)["out"]
+		if out == "":
+			continue
 		if not producers.has(out):
 			producers[out] = []
 		(producers[out] as Array).append(b)

@@ -21,6 +21,8 @@ static func step(w: EconWorld) -> void:
 		# Płaca dąży do poziomu wynikającego z bezrobocia (stały punkt, nie całka).
 		var u := c.unemployment()
 		var goal := base * (1.0 + float(p["wage_slope"]) * (float(p["natural_unemployment"]) - u))
+		# Drogi czynsz: ludzie chcą więcej zarabiać (duże miasta są droższe dla firm).
+		goal *= 1.0 + float(w.data["housing"]["rent_wage_push"]) * (c.rent_mult - 1.0)
 		goal = clampf(goal, base * float(p["min_wage_mult"]), base * float(p["max_wage_mult"]))
 		c.wage = lerpf(c.wage, goal, float(p["wage_speed"]))
 

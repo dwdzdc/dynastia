@@ -30,6 +30,9 @@ static func step(w: EconWorld) -> void:
 				c.employed -= b.workers
 				b.workers = 0.0
 			continue
+		if EconHousing.is_housing(w, b.type):
+			EconHousing.upkeep(w, b, c)
+			continue
 		_produce(w, b, c)
 
 

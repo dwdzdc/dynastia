@@ -175,6 +175,8 @@ func order_work(unit_id: int, business_id: int) -> String:
 		return "nie ma takiej firmy"
 	if b.type == "haulage":
 		return "w firmie przewozowej pracują kierowcy ciężarówek"
+	if EconHousing.is_housing(econ, b.type):
+		return "w kamienicy nie ma pracy (tylko dozorcy)"
 	if b.status == "building":
 		return "firma jest jeszcze w budowie"
 	_leave(u)

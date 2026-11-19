@@ -28,11 +28,12 @@ static func _businesses(w: EconWorld, ep: Dictionary) -> void:
 			var days := _days(w, ep["fire_days"])
 			b.status = "burned"
 			b.status_until = w.day + days
-			var lost := c.market(out).take_from(b.id, c.market(out).stock_of(b.id) * float(ep["fire_stock_loss"]))
+			var lost := 0.0 if out == "" else c.market(out).take_from(b.id, c.market(out).stock_of(b.id) * float(ep["fire_stock_loss"]))
 			w.stats["fires"] += 1
 			var big := float(w.recipe(b.type)["build"]["money"]) >= 20000.0
 			w.news.add("fire", c.id, "Pożar: %s (%s) stoi przez %d dni, spłonęło %.0f j. towaru." % [b.name, c.name, days, lost], 2 if big else 0)
-			w.news.tag_shock(c, out, "po pożarze: %s" % b.name, days + 20)
+			if out != "":
+				w.news.tag_shock(c, out, "po pożarze: %s" % b.name, days + 20)
 		elif w.rng.chance(float(ep["strike_chance"]) * _strike_mood(w, b, c)):
 			var days := _days(w, ep["strike_days"])
 			var big := float(w.recipe(b.type)["build"]["money"]) >= 20000.0

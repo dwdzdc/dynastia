@@ -90,7 +90,8 @@ func _test_unit_works() -> void:
 	for i in 400:
 		w.advance(0.01)
 	check("R5 doszedł i pracuje", u.inside == job.id and job.extra_workers >= 1.0)
-	check("R5 zarabia dla rodu", w.player.cash > cash0 and u.earned > 0.0)
+	# Pensja trafia do kasy rodu (kasa może i tak spadać, bo ród codziennie płaci za życie).
+	check("R5 zarabia dla rodu", u.earned > 0.0 and job.extra_paid and w.player.cash > cash0 - w.family_cost_per_day() * 4.0 + u.earned * 0.5)
 	w.order_move(u.id, home.pos + Vector2(0.5, 0.0))
 	check("R5 nowy rozkaz zwalnia etat", u.inside == -1 and job.extra_workers == 0.0)
 

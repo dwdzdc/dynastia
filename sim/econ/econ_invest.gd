@@ -41,7 +41,9 @@ static func _accounting(w: EconWorld) -> void:
 				_remove(w, b)
 			continue
 		if (b.id + w.day) % div_every == 0 and owner != null:
-			var reserve := b.cost_ema * float(bp["reserve_days"])
+			# Dywidenda dopiero ponad to, co właściciel i tak by dopłacił (top_up chce mieć
+			# w firmie połowę working_need) — inaczej rozkręcająca się firma oddaje gotówkę i bankrutuje.
+			var reserve := maxf(b.cost_ema * float(bp["reserve_days"]), working_need(w, b) * 0.5 if b.status == "active" and b.type != "haulage" else 0.0)
 			if not b.project.is_empty():
 				reserve += float(b.project["money_per_day"]) * int(b.project["days"]) + build_cost(w, b.type, w.city_of(b))
 			var excess := b.cash - reserve
@@ -68,7 +70,7 @@ static func _has_lots(w: EconWorld, b: EconBusiness) -> bool:
 					return true
 		return false
 	var out: String = w.recipe(b.type)["out"]
-	return w.city_of(b).market(out).lots.has(b.id)
+	return out != "" and w.city_of(b).market(out).lots.has(b.id)
 
 
 static func _remove(w: EconWorld, b: EconBusiness) -> void:
@@ -85,7 +87,7 @@ static func _remove(w: EconWorld, b: EconBusiness) -> void:
 
 static func build_cost(w: EconWorld, type: String, c: EconCity) -> float:
 	var bd: Dictionary = w.recipe(type)["build"]
-	var cost := float(bd["money"])
+	var cost := float(bd["money"]) + EconHousing.land_cost(w, type, c)
 	for g: String in ["lumber", "cement", "steel"]:
 		cost += float(bd.get(g, 0.0)) * c.market(g).price
 	return cost
@@ -141,6 +143,8 @@ static func _buy_price(w: EconWorld, g: String, c: EconCity) -> float:
 # Szacunek dziennego zysku `levels` poziomów przepisu w mieście. Uwzględnia
 # nasycenie: jeśli świat już produkuje tyle, ile potrzebuje, nowa moc się nie sprzeda.
 static func estimate(w: EconWorld, type: String, c: EconCity, levels: int) -> float:
+	if EconHousing.is_housing(w, type):
+		return EconHousing.estimate(w, c, levels)
 	var r: Dictionary = w.recipe(type)
 	var res: String = r.get("resource", "")
 	if res != "" and float(c.resources.get(res, 0.0)) < 0.1:
@@ -180,7 +184,7 @@ static func _supply_cache(w: EconWorld) -> Dictionary:
 	w.supply_cache.clear()
 	w.supply_cache_day = w.day
 	for b: EconBusiness in w.businesses.values():
-		if b.type == "haulage" or not b.is_open():
+		if b.type == "haulage" or not b.is_open() or EconHousing.is_housing(w, b.type):
 			continue
 		var cap := _capacity(w, b)
 		w.supply_cache[b.type] = float(w.supply_cache.get(b.type, 0.0)) + cap
@@ -238,6 +242,8 @@ static func working_need(w: EconWorld, b: EconBusiness) -> float:
 	var c := w.city_of(b)
 	var r: Dictionary = w.recipe(b.type)
 	var workers := float(r["workers"]) * b.level
+	if EconHousing.is_housing(w, b.type):
+		return workers * c.wage * WORKING_DAYS
 	var eff := EconProduction.effective_per_worker(w, b.type, c)
 	var per_day := workers * c.wage
 	var ins: Dictionary = r["inputs"]
@@ -250,6 +256,8 @@ static func working_need(w: EconWorld, b: EconBusiness) -> float:
 static func viable(w: EconWorld, b: EconBusiness) -> bool:
 	if b.type == "haulage":
 		return w.truck_profit_ema > 0.0
+	if EconHousing.is_housing(w, b.type):
+		return EconHousing.viable(w, b)
 	var c := w.city_of(b)
 	var out: String = w.recipe(b.type)["out"]
 	var eff := EconProduction.effective_per_worker(w, b.type, c)
@@ -399,6 +407,17 @@ static func _invest(w: EconWorld, a: EconActor) -> void:
 		if roi > best_roi:
 			best_roi = roi
 			best = {"kind": "found", "type": type, "c": c, "cost": cost}
+	# Deweloper: kamienica tam, gdzie najciaśniej (brak mieszkań widać w kronice i w czynszu).
+	var tight: EconCity = null
+	for c: EconCity in w.cities:
+		if c.crowded > 0.0 and (tight == null or c.crowded / c.population > tight.crowded / tight.population):
+			tight = c
+	if tight != null:
+		var cost := build_cost(w, "apartments", tight)
+		var roi := estimate(w, "apartments", tight, 1) * float(ap["payback_horizon_days"]) / cost
+		if roi > best_roi and cost * 1.2 < a.cash:
+			best_roi = roi
+			best = {"kind": "found", "type": "apartments", "c": tight, "cost": cost}
 	# Firma przewozowa, gdy kursy się opłacają, a aktor jeszcze jej nie ma.
 	var has_haulage := a.businesses.any(func(id: int) -> bool:
 		var b: EconBusiness = w.business(id)
@@ -452,6 +471,12 @@ static func start_project(w: EconWorld, b: EconBusiness, a: EconActor, cost: flo
 	var fund := minf(a.cash, cost * 1.25)
 	a.cash -= fund
 	b.cash += fund
+	# Działka: kupiona od gminy (pieniądze do skarbu państwa) na starcie budowy.
+	var c := w.city_of(b)
+	var land := minf(EconHousing.land_cost(w, b.type, c), maxf(b.cash, 0.0))
+	b.cash -= land
+	b.cost_today += land
+	w.state_of_city(c.id).collect(land)
 
 
 # Budowa: najpierw materiały z lokalnego rynku (prawdziwy popyt na deski,

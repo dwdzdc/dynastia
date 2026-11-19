@@ -334,9 +334,16 @@ static func shop_spot(w: EconWorld, c: EconCity) -> Dictionary:
 
 # Odbiorca towaru w mieście: firma, która go przerabia (wg wielkości), a jak nikt — sklep.
 static func consumer_spot(w: EconWorld, c: EconCity, good: String) -> Dictionary:
+	var firms := w.firms_in(c.id)  # odświeża też consumer_cache raz na dobę
+	var key := "%d:%s" % [c.id, good]
+	if w.consumer_cache.has(key):
+		var hit: Array = w.consumer_cache[key]
+		if (hit[0] as Array).is_empty():
+			return shop_spot(w, c)
+		return EconLayout.spot_of(hit[0][EconSetup._pick(w, hit[1])])
 	var list: Array = []
 	var weights: Array = []
-	for b: EconBusiness in w.firms_in(c.id):
+	for b: EconBusiness in firms:
 		var uses := false
 		if good == "trucks":
 			uses = b.type == "haulage"
@@ -346,6 +353,7 @@ static func consumer_spot(w: EconWorld, c: EconCity, good: String) -> Dictionary
 		if uses:
 			list.append(b)
 			weights.append(float(maxi(b.level, 1)))
+	w.consumer_cache[key] = [list, weights]
 	if list.is_empty():
 		return shop_spot(w, c)
 	return EconLayout.spot_of(list[EconSetup._pick(w, weights)])

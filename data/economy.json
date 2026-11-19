@@ -110,7 +110,45 @@
 		"services":       {"name": "usługi",              "out": "services",   "per_worker": 12.0, "inputs": {}, "workers": 100, "max_level": 40,
 			"build": {"money": 4000,  "lumber": 10,  "cement": 14,  "steel": 2,   "days": 10}},
 		"haulage":        {"name": "firma przewozowa",    "out": "",           "per_worker": 0.0,  "inputs": {}, "workers": 0, "max_level": 1,
-			"build": {"money": 3000,  "lumber": 0,   "cement": 0,   "steel": 0,   "days": 3}}
+			"build": {"money": 3000,  "lumber": 0,   "cement": 0,   "steel": 0,   "days": 3}},
+		"apartments":     {"name": "kamienica",           "out": "",           "per_worker": 0.0,  "inputs": {}, "workers": 2, "max_level": 40, "housing": true,
+			"build": {"money": 60000, "lumber": 30,  "cement": 60,  "steel": 10,  "days": 40}}
+	},
+
+	"land": {
+		"urban_base": 2000,
+		"ref_pop": 50000,
+		"pop_exp": 0.8,
+		"rural": 100,
+		"default_plot": 2,
+		"plots": {"grain_farm": 10, "vegetable_farm": 8, "livestock_farm": 10, "oil_well": 2, "iron_mine": 6, "quarry": 6, "logging_camp": 4,
+			"refinery": 6, "chemical_plant": 5, "steelworks": 8, "cement_works": 5, "vehicle_plant": 8, "appliance_factory": 4,
+			"furniture_factory": 3, "mill": 2, "bakery": 1, "services": 1, "apartments": 2, "haulage": 2}
+	},
+
+	"housing": {
+		"homes_per_level": 300,
+		"owned_share": 0.6,
+		"start_vacancy": 0.04,
+		"start_level_max": 20,
+		"rent_of_wage": 0.06,
+		"full_occupancy": 0.97,
+		"rent_up": 4.0,
+		"rent_down": 2.0,
+		"rent_min_mult": 0.4,
+		"rent_max_mult": 3.0,
+		"rent_speed": 0.03,
+		"max_share_of_cash": 0.5,
+		"crowd_satisfaction": 0.6,
+		"crowd_growth": 0.05,
+		"crowd_migration": 1.0,
+		"rent_wage_push": 0.15,
+		"self_build_every": 30,
+		"self_build_share": 0.25,
+		"self_build_max_of_cash": 0.05,
+		"self_build_money": 120,
+		"self_build_plot": 0.005,
+		"self_build_materials": {"lumber": 0.12, "cement": 0.25, "steel": 0.03}
 	},
 
 	"needs": [

@@ -37,6 +37,7 @@ var fleet_use_cache: float = 1.0
 var fleet_use_day: int = -1
 var _firms_by_city: Array = []             # firmy wg miasta (odświeżane raz na dobę)
 var _firms_day: int = -1
+var consumer_cache: Dictionary = {}        # EconLogistics: "miasto:towar" -> [firmy, wagi] (na dobę)
 
 
 func _init(seed_: int, data_: Dictionary, warmup: bool = true) -> void:
@@ -157,6 +158,7 @@ func good_name(g: String) -> String:
 func firms_in(city_id: int) -> Array:
 	if _firms_day != day or _firms_by_city.size() != cities.size():
 		_firms_day = day
+		consumer_cache.clear()
 		_firms_by_city.clear()
 		for c: EconCity in cities:
 			_firms_by_city.append([])

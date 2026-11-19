@@ -24,6 +24,15 @@ var income_today: float = 0.0
 var income_ema: float = 0.0
 var satisfaction: float = 1.0     # EMA zaspokojenia potrzeb ważonych priorytetem (0..1)
 var harvest_mult: float = 1.0     # mnożnik plonów w tym sezonie (nieurodzaj / urodzaj)
+# Mieszkania (EconHousing): własne, w kamienicach na wynajem, ciasnota i czynsz za osobę na dobę.
+var homes_owned: float = 0.0
+var rental_capacity: float = 0.0
+var rental_pending: float = 0.0   # mieszkania w budowie (żeby inwestorzy nie budowali wszyscy naraz)
+var renters: float = 0.0
+var crowded: float = 0.0          # ludzie bez mieszkania (mieszkają kątem, w ciasnocie)
+var rent: float = 0.0
+var rent_mult: float = 1.0        # czynsz względem bazowego (z obłożenia)
+var rent_paid_today: float = 0.0
 var history: Dictionary = {}      # "population"/"unemployment"/"satisfaction" -> Array[float]
 
 
