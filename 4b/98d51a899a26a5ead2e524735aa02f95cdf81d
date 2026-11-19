@@ -1,0 +1,58 @@
+sim/rts/rts_unit.gd
+  s_b35b8f715f6824::t_682c68c2379eca 1-26
+sim/econ/econ_consumption.gd
+  s_b35b8f715f6824::t_61a68d0872d49a 48
+sim/econ/econ_invest.gd
+  s_b35b8f715f6824::t_61a68d0872d49a 17
+sim/econ/econ_population.gd
+  s_b35b8f715f6824::t_61a68d0872d49a 10,77
+tests/run_rts_tests.gd.uid
+  s_b35b8f715f6824::t_9d29e011dbf877 1
+sim/econ/econ_actor.gd
+  s_b35b8f715f6824::t_61a68d0872d49a 23
+sim/econ/econ_logistics.gd
+  s_b35b8f715f6824::t_b8dd61241fe39f 174,185,279-284
+  s_b35b8f715f6824::t_61a68d0872d49a 43
+progress.md
+  ai_agent 207
+sim/econ/econ_state.gd
+  s_b35b8f715f6824::t_1bd0894ef723e8 14,16-17
+sim/econ/econ_production.gd
+  s_b35b8f715f6824::t_61a68d0872d49a 36-52,90,92,104-107,126-127,131
+sim/econ/econ_business.gd
+  s_b35b8f715f6824::t_61a68d0872d49a 21-23
+data/economy.json
+  s_b35b8f715f6824::t_1bd0894ef723e8 190
+sim/rts/rts_layout.gd
+  s_b35b8f715f6824::t_682c68c2379eca 1-50
+sim/rts/rts_world.gd
+  s_b35b8f715f6824::t_375185c5c240f4 1-324
+tests/run_rts_tests.gd
+  s_b35b8f715f6824::t_61fbe95ec7d57d 1-139
+sim/rts/rts_layout.gd.uid
+  s_b35b8f715f6824::t_9d29e011dbf877 1
+sim/econ/econ_truck.gd
+  s_b35b8f715f6824::t_61a68d0872d49a 18-19
+data/rts.json
+  s_b35b8f715f6824::t_682c68c2379eca 1-24
+sim/rts/rts_unit.gd.uid
+  s_b35b8f715f6824::t_9d29e011dbf877 1
+sim/rts/rts_world.gd.uid
+  s_b35b8f715f6824::t_9d29e011dbf877 1
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "4b98d51a899a26a5ead2e524735aa02f95cdf81d",
+  "prompts": {},
+  "sessions": {
+    "s_b35b8f715f6824": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "8ea3f297-9483-40f4-a9c0-36a4b605ddb0",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Dawid Dziedzic <24682682+dwdzdc@users.noreply.github.com>"
+    }
+  }
+}
