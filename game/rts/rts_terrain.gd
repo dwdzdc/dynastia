@@ -22,6 +22,8 @@ const TREE_H := 18.0
 const ROAD_MIN_W := 14.0
 const ROAD_Y := 0.6
 const MARGIN_KM := 4.0
+const STATE_TINT := 0.07          # lekki odcień ziemi w barwach państwa
+const BORDER_MIX := 0.75          # granica państw: piksel w barwie sąsiada
 
 var w: EconWorld
 
@@ -81,6 +83,18 @@ func _ground() -> void:
 	var size := _size_km() + Vector2.ONE * MARGIN_KM * 2.0
 	var tex_h := int(TEX_W * size.y / size.x)
 	var img := Image.create(TEX_W, tex_h, false, Image.FORMAT_RGB8)
+	# Terytorium: państwo najbliższego miasta. Granica tam, gdzie sąsiedni piksel jest w innym.
+	var land := PackedInt32Array()
+	land.resize(TEX_W * tex_h)
+	for y in tex_h:
+		for x in TEX_W:
+			var p := Vector2(float(x) / TEX_W * size.x, float(y) / tex_h * size.y) - Vector2.ONE * MARGIN_KM
+			var best := INF
+			for c: EconCity in w.cities:
+				var d := p.distance_squared_to(c.pos)
+				if d < best:
+					best = d
+					land[y * TEX_W + x] = c.state_id
 	for y in tex_h:
 		for x in TEX_W:
 			var p := Vector2(float(x) / TEX_W * size.x, float(y) / tex_h * size.y) - Vector2.ONE * MARGIN_KM
@@ -94,6 +108,15 @@ func _ground() -> void:
 				col = FIELD_COLORS[int(k.substr(6))]
 			else:
 				col = GRASS_A.lerp(GRASS_B, float(k.substr(6)))
+			var st := land[y * TEX_W + x]
+			col = col.lerp(EconMapCanvas.state_color(st), STATE_TINT)
+			var other := -1
+			if x + 1 < TEX_W and land[y * TEX_W + x + 1] != st:
+				other = land[y * TEX_W + x + 1]
+			elif y + 1 < tex_h and land[(y + 1) * TEX_W + x] != st:
+				other = land[(y + 1) * TEX_W + x]
+			if other != -1:
+				col = col.lerp(EconMapCanvas.state_color(st).darkened(0.3), BORDER_MIX)
 			img.set_pixel(x, y, col)
 	var mat := StandardMaterial3D.new()
 	mat.albedo_texture = ImageTexture.create_from_image(img)

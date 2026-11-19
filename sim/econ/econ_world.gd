@@ -30,6 +30,7 @@ var stats: Dictionary = {}                 # liczniki do sondy i kroniki
 var truck_profit_ema: float = 0.0          # średni zysk z kursu (decyzje o kupnie ciężarówek)
 var last_money: float = 0.0
 var states: Array[EconState] = []          # państwa (polityki z data/economy.json → "states")
+var capitals: Array[int] = []              # stolica każdego państwa (id miasta)
 var supply_cache: Dictionary = {}          # EconInvest: moc produkcyjna (liczona raz na dobę)
 var supply_cache_day: int = -1
 var fleet_use_cache: float = 1.0
@@ -115,6 +116,13 @@ func pay_seller(seller_id: int, amount: float) -> void:
 
 func state_of_city(city_id: int) -> EconState:
 	return states[cities[city_id].state_id]
+
+
+# Cło przy wwozie z miasta `from_id` do miasta `to_id` (stawka od wartości; 0 w kraju).
+func tariff_rate(from_id: int, to_id: int) -> float:
+	var a := cities[from_id].state_id
+	var b := cities[to_id].state_id
+	return 0.0 if a == b else states[b].import_rate()
 
 
 # Skarb wszystkich państw (do sondy i podglądu).

@@ -243,18 +243,31 @@ func _test_gazette() -> void:
 	check("Kurier nie zmienia świata", absf(w.money_total() - money) < 1e-6)
 
 
-# Państwa: polityki z danych, dwa państwa w jednym świecie, pieniądze się zgadzają.
+# Państwa: trzy z danych, zwarte obszary, cła na granicy, pieniądze się zgadzają.
 func _test_two_states() -> void:
 	var d2: Dictionary = data.duplicate(true)
-	var second: Dictionary = (d2["states"][0] as Dictionary).duplicate(true)
-	second["name"] = "Księstwo"
-	second["policies"] = [{"type": "dividend_tax", "rate": 0.05}, {"type": "pensions", "share": "rest"}]
-	(d2["states"] as Array).append(second)
+	(d2["states"][1] as Dictionary)["policies"] = [{"type": "dividend_tax", "rate": 0.3}, {"type": "import_tariff", "rate": 0.12}, {"type": "pensions", "share": "rest"}]
 	var w := EconWorld.new(12, d2, false)
-	for i in w.cities.size():
-		if i % 2 == 1:
-			w.cities[i].state_id = 1
-	check("Państwa: dwa z danych", w.states.size() == 2 and w.states[1].policies.size() == 2)
+	check("Państwa: trzy z danych", w.states.size() == 3 and w.capitals.size() == 3)
+	var count := [0, 0, 0]
+	for c: EconCity in w.cities:
+		count[c.state_id] += 1
+	check("Państwa: każde ma kilka miast %s" % str(count), count.min() >= 4)
+	# Zwartość: z każdego miasta da się dojść do stolicy, nie wychodząc z państwa.
+	var compact := true
+	for i in 3:
+		var seen := {w.capitals[i]: true}
+		var queue: Array = [w.capitals[i]]
+		while not queue.is_empty():
+			var cid: int = queue.pop_back()
+			for rid: int in w.cities[cid].routes:
+				var o := w.routes[rid].other(cid)
+				if w.cities[o].state_id == i and not seen.has(o):
+					seen[o] = true
+					queue.append(o)
+		if seen.size() != count[i]:
+			compact = false
+	check("Państwa: zwarte obszary", compact)
 	var money := w.money_total()
 	for i in 60:
 		w.step_day()
@@ -264,4 +277,6 @@ func _test_two_states() -> void:
 		if c.state_id == 1:
 			public_in_second += c.public_workers
 	check("Państwa: bez budżetówki w państwie bez tej polityki", public_in_second == 0.0)
-	check("Państwa: oba zbierają podatki", w.states[0].income_ema > 0.0 and w.states[1].income_ema > 0.0)
+	check("Państwa: wszystkie zbierają podatki", w.states.all(func(st: EconState) -> bool: return st.income_ema > 0.0))
+	check("Państwa: cła pobrane na granicach", float(w.stats.get("tariffs", 0.0)) > 0.0 and w.states.all(func(st: EconState) -> bool: return st.tariffs_total > 0.0))
+	check("Cło: w kraju 0, za granicą stawka państwa celu", w.tariff_rate(w.capitals[0], w.capitals[0]) == 0.0 and absf(w.tariff_rate(w.capitals[0], w.capitals[1]) - 0.12) < 1e-6)

@@ -92,6 +92,14 @@ static func _ramp(t: float) -> Color:
 	return bad.lerp(mid, t * 2.0) if t < 0.5 else mid.lerp(good, (t - 0.5) * 2.0)
 
 
+# Barwy państw (mapa, minimapa, granice).
+const STATE_COLORS := [Color(0.85, 0.25, 0.25), Color(0.25, 0.5, 0.9), Color(0.95, 0.75, 0.2), Color(0.45, 0.8, 0.4), Color(0.7, 0.4, 0.85)]
+
+
+static func state_color(id: int) -> Color:
+	return STATE_COLORS[id % STATE_COLORS.size()]
+
+
 func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO, size), BG)
 	if w == null:
@@ -128,7 +136,7 @@ func _draw() -> void:
 			draw_arc(p, rad + 6.0 + (1.0 - k) * 14.0, 0.0, TAU, 32, Color(1, 1, 1, k * 0.8), 2.0)
 		if c.id == selected:
 			draw_circle(p, rad + 5.0, SELECT)
-		draw_circle(p, rad + 1.5, BG)
+		draw_circle(p, rad + 2.5, state_color(c.state_id))  # obwódka w barwach państwa
 		draw_circle(p, rad, city_color(c))
 		if not show_labels:
 			continue

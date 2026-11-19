@@ -119,7 +119,8 @@ static func _sell_price(w: EconWorld, g: String, c: EconCity) -> float:
 		return best
 	for d: EconCity in w.cities:
 		if d.id != c.id:
-			best = maxf(best, (d.market(g).price - transport_unit(w, g, c.id, d.id)) * 0.9)
+			var p := d.market(g).price * (1.0 - w.tariff_rate(c.id, d.id))
+			best = maxf(best, (p - transport_unit(w, g, c.id, d.id)) * 0.9)
 	return best
 
 
@@ -130,7 +131,8 @@ static func _buy_price(w: EconWorld, g: String, c: EconCity) -> float:
 	if g in w.tradable:
 		for d: EconCity in w.cities:
 			if d.id != c.id and d.market(g).stock() > 1.0:
-				best = minf(best, d.market(g).price + transport_unit(w, g, d.id, c.id))
+				var duty := c.market(g).price * w.tariff_rate(d.id, c.id)
+				best = minf(best, d.market(g).price + transport_unit(w, g, d.id, c.id) + duty)
 	if best == INF:
 		best = m.price * 1.5
 	return best

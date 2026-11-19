@@ -106,10 +106,17 @@ func _print_state(w: EconWorld) -> void:
 
 
 func _print_cities(w: EconWorld) -> void:
+	print("\npaństwa:")
+	for st: EconState in w.states:
+		var pop := st.population(w)
+		var unemp := 0.0
+		for c: EconCity in st.cities_of(w):
+			unemp += c.unemployment() * c.population
+		print("  %-20s stolica %-14s miast %2d  ludność %7.0f  bezrob %4.1f%%  skarb %8.0f tys.  cła łącznie %7.0f tys.  stawka %2.0f%%" % [st.name, w.cities[w.capitals[st.id]].name, st.cities_of(w).size(), pop, unemp / maxf(pop, 1.0) * 100.0, st.cash / 1000.0, st.tariffs_total / 1000.0, st.import_rate() * 100.0])
 	print("\nmiasta:")
 	for c: EconCity in w.cities:
 		var n := w.businesses.values().filter(func(b: EconBusiness) -> bool: return b.city_id == c.id and b.status != "closed").size()
-		print("  %-15s ludność %6.0f  bezrob %4.1f%%  potrzeby %4.0f%%  płaca %5.1f  kasa/os. %6.0f  firm %3d  złoża %s" % [c.name, c.population, c.unemployment() * 100.0, c.satisfaction * 100.0, c.wage, c.cash / maxf(c.population, 1.0), n, str(c.resources.keys())])
+		print("  [%d] %-15s ludność %6.0f  bezrob %4.1f%%  potrzeby %4.0f%%  płaca %5.1f  kasa/os. %6.0f  firm %3d  złoża %s" % [c.state_id, c.name, c.population, c.unemployment() * 100.0, c.satisfaction * 100.0, c.wage, c.cash / maxf(c.population, 1.0), n, str(c.resources.keys())])
 
 
 func _print_richest(w: EconWorld) -> void:

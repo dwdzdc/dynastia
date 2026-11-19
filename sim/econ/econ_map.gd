@@ -35,6 +35,7 @@ static func generate(w: EconWorld) -> void:
 	_bend_roads(w, int(p.get("road_bends", 0)), float(p.get("road_wobble", 0.0)))
 	_resources(w, p["resources"], int(p["min_cities_per_resource"]))
 	compute_distances(w)
+	_states(w, (w.data["states"] as Array).size())
 
 
 static func _routes(w: EconWorld, k: int, detour: float) -> void:
@@ -128,6 +129,69 @@ static func _resources(w: EconWorld, table: Dictionary, min_cities: int) -> void
 			if not c.resources.has(res):
 				c.resources[res] = w.rng.next_float(float(rich[0]), float(rich[1]))
 				have += 1
+
+
+# Podział na państwa: stolice to duże miasta daleko od siebie, a potem państwa po
+# kolei zajmują najbliższe sąsiednie miasto (po drogach) — wychodzą zwarte obszary
+# o podobnej liczbie miast. EconCity.state_id; stolica: w.capitals[state].
+static func _states(w: EconWorld, n: int) -> void:
+	w.capitals.clear()
+	if n <= 1:
+		for c: EconCity in w.cities:
+			c.state_id = 0
+		if not w.cities.is_empty():
+			w.capitals.append(_largest(w.cities))
+		return
+	var order: Array = w.cities.duplicate()
+	order.sort_custom(func(a: EconCity, b: EconCity) -> bool: return a.population > b.population)
+	w.capitals.append((order[0] as EconCity).id)
+	while w.capitals.size() < n:
+		var best := -1
+		var best_score := -1.0
+		for c: EconCity in w.cities:
+			if c.id in w.capitals:
+				continue
+			var near := INF
+			for cap: int in w.capitals:
+				near = minf(near, w.dist[cap][c.id])
+			var score := near * pow(c.population, 0.35)
+			if score > best_score:
+				best_score = score
+				best = c.id
+		w.capitals.append(best)
+	for c: EconCity in w.cities:
+		c.state_id = -1
+	for i in n:
+		w.cities[w.capitals[i]].state_id = i
+	var left := w.cities.size() - n
+	var guard := 0
+	while left > 0 and guard < 1000:
+		guard += 1
+		for i in n:
+			var pick := -1
+			var pick_d := INF
+			for c: EconCity in w.cities:
+				if c.state_id != i:
+					continue
+				for rid: int in c.routes:
+					var o: EconCity = w.cities[w.routes[rid].other(c.id)]
+					if o.state_id == -1 and w.routes[rid].length < pick_d:
+						pick_d = w.routes[rid].length
+						pick = o.id
+			if pick != -1:
+				w.cities[pick].state_id = i
+				left -= 1
+	for c: EconCity in w.cities:
+		if c.state_id == -1:
+			c.state_id = 0
+
+
+static func _largest(list: Array) -> int:
+	var best: EconCity = list[0]
+	for c: EconCity in list:
+		if c.population > best.population:
+			best = c
+	return best.id
 
 
 # Odległości drogowe między wszystkimi parami (Floyd–Warshall; zamknięcia dróg

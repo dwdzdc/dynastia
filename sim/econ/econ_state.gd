@@ -13,6 +13,7 @@ const POLICIES := {
 	"public_jobs": preload("res://sim/econ/policies/public_jobs.gd"),
 	"unemployment_benefit": preload("res://sim/econ/policies/unemployment_benefit.gd"),
 	"pensions": preload("res://sim/econ/policies/pensions.gd"),
+	"import_tariff": preload("res://sim/econ/policies/import_tariff.gd"),
 }
 
 var id: int
@@ -68,6 +69,27 @@ func tax_dividend(w: EconWorld, amount: float) -> float:
 	tax = minf(tax, amount)
 	collect(tax)
 	return tax
+
+
+# Stawka cła przy wwozie (suma polityk celnych).
+func import_rate() -> float:
+	var r := 0.0
+	for p: EconPolicy in policies:
+		r += p.import_rate()
+	return r
+
+
+var tariffs_today: float = 0.0
+var tariffs_total: float = 0.0
+
+
+# Cło od wwiezionego towaru: zwraca, ile pobrano (płacący sam zdejmuje to ze swojej kasy).
+func charge_import(value: float, can_pay: float) -> float:
+	var duty := minf(value * import_rate(), maxf(can_pay, 0.0))
+	if duty > 0.0:
+		collect(duty)
+		tariffs_total += duty
+	return duty
 
 
 # Doba państwa: podatki, potem wydatki wg udziałów polityk ("rest" dostaje resztę).

@@ -73,6 +73,15 @@ static func _arrive(w: EconWorld, tr: EconTruck, tp: Dictionary) -> void:
 				break
 			cur = r.other(cur)
 	var expected := 0.0
+	if m != null and not robbed and w.tariff_rate(tr.city_id, tr.to_city) > 0.0:
+		# Granica: cło od wartości ładunku do skarbu państwa docelowego.
+		var comp: EconBusiness = w.business(tr.company_id)
+		if comp != null:
+			var duty := w.state_of_city(tr.to_city).charge_import(tr.qty * m.price, comp.cash)
+			comp.cash -= duty
+			comp.cost_today += duty
+			tr.cost_basis += duty
+			w.stats["tariffs"] = float(w.stats.get("tariffs", 0.0)) + duty
 	if m != null and not robbed:
 		var own: EconBusiness = w.business(tr.deliver_to)
 		if own != null and own.is_open() and (w.recipe(own.type)["inputs"] as Dictionary).has(tr.good):
@@ -117,7 +126,14 @@ static func _targets(w: EconWorld, tp: Dictionary) -> Dictionary:
 			var md := d.market(w.tradable[gi])
 			sell[d.id * gn + gi] = md.price * discount
 			room[d.id * gn + gi] = md.demand_ema * max_days - md.stock() - md.incoming
-	return {"sell": sell, "room": room, "gn": gn}
+	# Cło u celu dla kursu z każdego państwa: duty[skąd_państwo * n + cel].
+	var n := w.cities.size()
+	var duty := PackedFloat32Array()
+	duty.resize(w.states.size() * n)
+	for si in w.states.size():
+		for d: EconCity in w.cities:
+			duty[si * n + d.id] = 0.0 if d.state_id == si else w.states[d.state_id].import_rate()
+	return {"sell": sell, "room": room, "gn": gn, "duty": duty}
 
 
 # Najlepszy kurs z miasta c: [zysk, towar, cel, ilość]. exclude = własna firma.
@@ -130,6 +146,9 @@ static func _best_trip(w: EconWorld, c: EconCity, exclude: int, cash: float, tp:
 	var gn: int = tg["gn"]
 	var row: PackedFloat32Array = w.dist[c.id]
 	var n := w.cities.size()
+	var duty: PackedFloat32Array = tg["duty"]
+	var drow := c.state_id * n
+	var inv_disc := 1.0 / float(tp["sell_discount"])
 	for gi in gn:
 		var g: String = w.tradable[gi]
 		var m := c.market(g)
@@ -141,6 +160,7 @@ static func _best_trip(w: EconWorld, c: EconCity, exclude: int, cash: float, tp:
 		for d in n:
 			var idx := d * gn + gi
 			var margin := sell[idx] - p
+			margin -= sell[idx] * duty[drow + d] * inv_disc  # cło od wartości u celu
 			if margin <= 0.0 or d == c.id:
 				continue
 			var r := room[idx]

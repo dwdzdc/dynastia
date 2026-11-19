@@ -562,6 +562,9 @@ func _business_card(b: EconBusiness) -> void:
 func _city_card(c: EconCity) -> void:
 	_card_box.add_child(_label(c.name, HEAD, GOLD if c.id == rts.player.city_id else TEXT))
 	_row("ludność", _thousands(c.population))
+	var st: EconState = rts.econ.states[c.state_id]
+	var mine_st := rts.home_city().state_id
+	_row("państwo", "%s%s · cło przy wwozie %.0f%%" % [st.name, " (stolica)" if rts.econ.capitals[c.state_id] == c.id else "", st.import_rate() * 100.0] if c.state_id != mine_st else "%s%s (twoje)" % [st.name, " (stolica)" if rts.econ.capitals[c.state_id] == c.id else ""])
 	_row("bezrobocie", "%.0f%% · płaca %.0f zł" % [c.unemployment() * 100.0, c.wage], BAD if c.unemployment() > 0.15 else TEXT)
 	_row("potrzeby", "zaspokojone w %.0f%%" % (c.satisfaction * 100.0), BAD if c.satisfaction < 0.5 else TEXT)
 	var res: Array = c.resources.keys().filter(func(k: String) -> bool: return float(c.resources[k]) > 0.05)

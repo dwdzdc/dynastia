@@ -204,7 +204,8 @@ Pętla gry: ród Wilków (6 osób, 3 pokolenia) w chacie pod lasem. Co 5 dni czy
 Źródło: rozmowa z autorem z 19.11.2026 („logistyka jest pomiędzy firmami, budynkami, a nie centrami miast”, „nieruchomości dawaj”, „państw niech będzie 3”). Decyzje: `docs/design/rts-world.md` (4–6, 10), modele: `docs/design/world-economy.md`.
 
 - [x] L1 Kursy od budynku do budynku: miejsca firm i dojazdy w gospodarce (`EconLayout`), trasa kursu przez dojazdy, obwodnice i drogi, odbiór u sprzedawcy, dostawa do odbiorcy; rozkazy gracza firma → firma (jednorazowo i trasa stała, dostawa prosto do magazynu własnej firmy), PPM na budynek → testy econ i RTS + sonda 720 dób „żyje” + zrzut.
-- [ ] P1 Trzy państwa: podział miast (stolice daleko od siebie, miasta do najbliższej stolicy po drogach), polityki każdego państwa w danych, cło przy wwozie (nowy zaczep polityki), granice na mapie i minimapie → test + sonda + zrzut.
+- [x] P1 Trzy państwa: podział miast (stolice daleko od siebie, miasta do najbliższej stolicy po drogach), polityki każdego państwa w danych, cło przy wwozie (nowy zaczep polityki), granice na mapie i minimapie → test + sonda + zrzut.
+  - Wynik (seedy 7 i 21, 720 dób): świat żyje, każde państwo ma 6–8 miast, cła zasilają skarby (ok. 70–100 mln zł na państwo w 2 lata). Seed 21 ma po 2 latach ok. 20% bezrobocia, ale tak samo było przed zmianami (sprawdzone na poprzedniej wersji), czyli to nie skutek ceł. Doba liczy się teraz ok. 125 ms (wcześniej 86 ms) przez dłuższe kursy od budynku do budynku.
 - [ ] N1 Nieruchomości: cena działki zależna od wielkości miasta (płacona gminie, czyli państwu, przy budowie i rozbudowie), mieszkania na wynajem jako firmy aktorów (czynsz z ciasnoty, przeludnienie hamuje przyrost i wypycha ludzi, czynsz podnosi płace) → test + sonda + zrzut.
 
 ## Iteracja 6 — świat na mapie: RTS (zrobiona, czeka na playtest)
