@@ -16,6 +16,7 @@ var good: String = ""
 var qty: float = 0.0
 var cost_basis: float = 0.0       # ile kosztował ładunek + paliwo (zysk z kursu)
 var tank: float = 0.0             # paliwo w baku (tankuje do pełna tam, gdzie jest)
+var next_plan_day: int = 0        # po nieudanym szukaniu kursu czeka kilka dób
 var stuck_days: int = 0           # ile dób stoi bez paliwa
 var retire_day: int = 0
 var trips: int = 0

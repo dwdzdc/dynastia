@@ -34,6 +34,8 @@ var state_income_today: float = 0.0
 var state_income_ema: float = 0.0
 var supply_cache: Dictionary = {}          # EconInvest: moc produkcyjna (liczona raz na dobę)
 var supply_cache_day: int = -1
+var fleet_use_cache: float = 1.0
+var fleet_use_day: int = -1
 
 
 func _init(seed_: int, data_: Dictionary, warmup: bool = true) -> void:
@@ -142,12 +144,28 @@ func total_population() -> float:
 # --- doba --------------------------------------------------------------------
 
 func step_day() -> void:
-	EconEvents.step(self)
-	EconLabor.step(self)
-	EconState.step(self)
-	EconProduction.step(self)
-	EconLogistics.step(self)
-	EconConsumption.step(self)
+	for ph: Array in phases():
+		(ph[1] as Callable).call()
+	day += 1
+
+
+# Fazy doby w kolejności (sonda mierzy ich czas tą samą listą).
+func phases() -> Array:
+	return [
+		["events", func() -> void: EconEvents.step(self)],
+		["labor", func() -> void: EconLabor.step(self)],
+		["state", func() -> void: EconState.step(self)],
+		["production", func() -> void: EconProduction.step(self)],
+		["logistics", func() -> void: EconLogistics.step(self)],
+		["consumption", func() -> void: EconConsumption.step(self)],
+		["markets", _end_markets],
+		["invest", func() -> void: EconInvest.step(self)],
+		["population", func() -> void: EconPopulation.step(self)],
+		["news", func() -> void: news.step()],
+	]
+
+
+func _end_markets() -> void:
 	var mp: Dictionary = data["market"]
 	var record := day % int(mp["history_every"]) == 0
 	for c: EconCity in cities:
@@ -155,10 +173,6 @@ func step_day() -> void:
 			m.end_day(mp, record)
 		if record:
 			_record_city(c, int(mp["history_len"]))
-	EconInvest.step(self)
-	EconPopulation.step(self)
-	news.step()
-	day += 1
 
 
 func _record_city(c: EconCity, keep: int) -> void:

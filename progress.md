@@ -211,8 +211,11 @@ Pętla gry: ród Wilków (6 osób, 3 pokolenia) w chacie pod lasem. Co 5 dni czy
 - [x] E6 Wstrząsy (pożar, strajk, nieurodzaj, zamknięta droga, zbójcy, złoża) i migracja → test.
 - [x] E7 Kronika świata z przyczynami → test.
 - Uwagi z wykonania (19.11.2026): ceny jak w Port Royale (z pokrycia zapasu w dobach, a nie narastające), usługi i żywność się psują, ciężarówki mają bak (tankują do pełna, gdy w mieście brakuje paliwa, dowóz w kanistrach), właściciel dokłada kapitał obrotowy, gdy produkcja opłaca się przy dzisiejszych cenach, a firmy upadłego przewoźnika idą do innych przewoźników. Dodano skarb państwa (`sim/econ/econ_state.gd`): podatek od dywidend i majątku, pensje budżetówki, zasiłki i emerytury. Bez niego zyski zbierały się u kapitalistów, a ludność biedniała.
-- [ ] E8 Sonda i balans: kryteria „żyje” z `world-economy.md` na kilku seedach → wynik tutaj.
-- [ ] E9 Podgląd świata: mapa z miastami, drogami, jadącymi ciężarówkami, panelem miasta, kroniką i najbogatszymi → zrzut.
+- [x] E8 Sonda i balans: kryteria „żyje” z `world-economy.md` na kilku seedach → wynik tutaj.
+  - Wynik (19.11.2026, `tools/probe_economy.gd -- 1080 <seed>`, seedy 7 i 21): oba światy żyją 3 lata. Wszystkie kryteria spełnione: pieniądze stałe co do grosza, ludność rośnie o 6–8%, ponad 1000 firm założonych, ok. 280 upadłych, ok. 500 przejęć, setki tysięcy kursów, flota rośnie z 340 do 800–1000 ciężarówek. Bezrobocie po pierwszym roku 5–10%, zaspokojenie potrzeb 60–66%, a ceny stoją 2–3× nad bazową, bo świat ogranicza siła robocza.
+  - Bez skarbu państwa świat upada w rok (bezrobocie > 80%): zyski zbierają się u kapitalistów. Państwo to w tym modelu warunek życia gospodarki.
+  - Otwarte: (1) ceny stale 2–3× nad bazą (inflacja wymaga przeskalowania bazowych cen albo wydajności); (2) ciężarówki często stoją bez paliwa (dowóz w kanistrach łata problem); (3) wydajność ok. 60 ms/dobę przy 1000+ firm.
+- [x] E9 Podgląd świata: mapa z miastami, drogami, jadącymi ciężarówkami, panelem miasta, kroniką i najbogatszymi → zrzut.
 - [ ] E10 Playtest autora.
 
 ## Iteracja 4 — czytelny interfejs (wstrzymana: zwrot na nowy core 19.11.2026)

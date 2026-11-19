@@ -11,7 +11,8 @@ var good: String
 var base: float
 var spoil: float = 0.0           # jaka część zapasu psuje się / przepada co dobę (usługi: całość)
 var price: float
-var lots: Dictionary = {}        # id sprzedawcy (firmy) -> ilość
+var lots: Dictionary = {}        # id sprzedawcy (firmy) -> ilość (zmieniać tylko metodami: suma w _total)
+var _total: float = 0.0          # suma partii (stock() bez przeliczania)
 var demand_today: float = 0.0    # ile chciano kupić dziś
 var sold_today: float = 0.0
 var short_today: float = 0.0     # ile zabrakło na półkach (popyt z pieniędzmi, bez towaru)
@@ -35,10 +36,7 @@ func _init(good_: String, base_: float, spoil_: float = 0.0) -> void:
 
 
 func stock() -> float:
-	var s := 0.0
-	for q: float in lots.values():
-		s += q
-	return s
+	return maxf(_total, 0.0)
 
 
 func stock_of(seller_id: int) -> float:
@@ -49,6 +47,7 @@ func add(seller_id: int, qty: float) -> void:
 	if qty <= 0.0:
 		return
 	lots[seller_id] = float(lots.get(seller_id, 0.0)) + qty
+	_total += qty
 	supplied_today += qty
 
 
@@ -58,8 +57,10 @@ func take_from(seller_id: int, qty: float) -> float:
 	var got := minf(have, qty)
 	if have - got <= 1e-6:
 		lots.erase(seller_id)
+		_total -= have
 	else:
 		lots[seller_id] = have - got
+		_total -= got
 	return got
 
 
@@ -93,8 +94,10 @@ func buy(qty: float, budget: float, pay: Callable, exclude: int = -1, is_trade: 
 		taken += take
 		if q - take <= 1e-6:
 			lots.erase(s)
+			_total -= q
 		else:
 			lots[s] = q - take
+			_total -= take
 		pay.call(s, amount)
 	sold_today += taken
 	return [taken, cost]
@@ -143,6 +146,10 @@ func end_day(p: Dictionary, record: bool) -> void:
 				lots.erase(sid)
 			else:
 				lots[sid] = left
+	# Raz na dobę liczymy sumę od nowa (bez narastania błędów zaokrągleń).
+	_total = 0.0
+	for q: float in lots.values():
+		_total += q
 	demand_today = 0.0
 	use_today = 0.0
 	short_today = 0.0

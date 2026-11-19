@@ -69,23 +69,7 @@ func _price_index(w: EconWorld, g: String) -> float:
 
 
 func _step_profiled(w: EconWorld, timing: Dictionary) -> void:
-	var parts := [
-		["events", func() -> void: EconEvents.step(w)],
-		["labor", func() -> void: EconLabor.step(w)],
-		["production", func() -> void: EconProduction.step(w)],
-		["logistics", func() -> void: EconLogistics.step(w)],
-		["consumption", func() -> void: EconConsumption.step(w)],
-		["markets", func() -> void:
-			var mp: Dictionary = w.data["market"]
-			var record := w.day % int(mp["history_every"]) == 0
-			for c: EconCity in w.cities:
-				for m: EconMarket in c.markets.values():
-					m.end_day(mp, record)],
-		["invest", func() -> void: EconInvest.step(w)],
-		["population", func() -> void: EconPopulation.step(w)],
-		["news", func() -> void: w.news.step()],
-	]
-	for p: Array in parts:
+	for p: Array in w.phases():
 		var t := Time.get_ticks_usec()
 		(p[1] as Callable).call()
 		timing[p[0]] = float(timing.get(p[0], 0.0)) + (Time.get_ticks_usec() - t) / 1000.0

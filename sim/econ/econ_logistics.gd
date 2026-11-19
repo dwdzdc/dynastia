@@ -26,9 +26,10 @@ static func step(w: EconWorld) -> void:
 		EconLabor.pay_wages(c, paid)
 		b.broke_days = b.broke_days + 1 if paid < bill else 0
 	# 3. Najlepszy kurs z każdego miasta (do jazdy na pusto).
+	var tg := _targets(w, tp)
 	var best_from: Array = []
 	for c: EconCity in w.cities:
-		best_from.append(_best_trip(w, c, -1, INF, tp))
+		best_from.append(_best_trip(w, c, -1, INF, tp, tg))
 	# 4. Wolne ciężarówki.
 	for tr: EconTruck in w.trucks.values().duplicate():
 		if tr.moving:
@@ -39,9 +40,11 @@ static func step(w: EconWorld) -> void:
 		if w.day >= tr.retire_day:
 			scrap(w, tr)
 			continue
-		if comp.status != "active":
+		if comp.status != "active" or w.day < tr.next_plan_day:
 			continue
-		_plan(w, tr, comp, best_from, tp)
+		if not _plan(w, tr, comp, best_from, tp, tg):
+			var wait: Array = tp["idle_wait_days"]
+			tr.next_plan_day = w.day + w.rng.next_int(int(wait[0]), int(wait[1]))
 
 
 static func _arrive(w: EconWorld, tr: EconTruck, tp: Dictionary) -> void:
@@ -83,54 +86,72 @@ static func fuel_price(c: EconCity) -> float:
 	return c.market("fuel").price
 
 
-# Najlepszy kurs z miasta c: [zysk, towar, cel, ilość]. exclude = własna firma.
-static func _best_trip(w: EconWorld, c: EconCity, exclude: int, cash: float, tp: Dictionary) -> Array:
-	var best: Array = [0.0, "", -1, 0.0]
-	var cap := float(tp["truck_capacity"])
-	var fp := fuel_price(c)
-	var per_km := float(tp["fuel_per_km"]) * fp
-	var speed := float(tp["speed_km_per_day"])
-	var driver := c.wage * float(tp["driver_wage_mult"])
+# Tablice celów na dobę: cena sprzedaży (po upuście) i wolne miejsce na rynku
+# celu dla każdej pary (miasto, towar). Miejsce maleje, gdy ciężarówka wyrusza.
+static func _targets(w: EconWorld, tp: Dictionary) -> Dictionary:
+	var gn := w.tradable.size()
+	var sell := PackedFloat32Array()
+	var room := PackedFloat32Array()
+	sell.resize(w.cities.size() * gn)
+	room.resize(w.cities.size() * gn)
 	var discount := float(tp["sell_discount"])
 	var max_days := float(tp["max_days_of_demand"])
-	for g: String in w.tradable:
+	for d: EconCity in w.cities:
+		for gi in gn:
+			var md := d.market(w.tradable[gi])
+			sell[d.id * gn + gi] = md.price * discount
+			room[d.id * gn + gi] = md.demand_ema * max_days - md.stock() - md.incoming
+	return {"sell": sell, "room": room, "gn": gn}
+
+
+# Najlepszy kurs z miasta c: [zysk, towar, cel, ilość]. exclude = własna firma.
+static func _best_trip(w: EconWorld, c: EconCity, exclude: int, cash: float, tp: Dictionary, tg: Dictionary) -> Array:
+	var best: Array = [0.0, "", -1, 0.0]
+	var cap := float(tp["truck_capacity"])
+	var per_km := float(tp["fuel_per_km"]) * fuel_price(c) + c.wage * float(tp["driver_wage_mult"]) / float(tp["speed_km_per_day"])
+	var sell: PackedFloat32Array = tg["sell"]
+	var room: PackedFloat32Array = tg["room"]
+	var gn: int = tg["gn"]
+	var row: PackedFloat32Array = w.dist[c.id]
+	var n := w.cities.size()
+	for gi in gn:
+		var g: String = w.tradable[gi]
 		var m := c.market(g)
 		var avail := m.stock() - m.stock_of(exclude)
 		if avail < 1.0:
 			continue
 		var p := m.price
-		var units_cap := cap / float(w.goods[g]["weight"])
-		var by_cash := cash * 0.9 / p
-		for d: EconCity in w.cities:
-			if d.id == c.id:
+		var qty_cap := minf(minf(cap / float(w.goods[g]["weight"]), avail), cash * 0.9 / p)
+		for d in n:
+			var idx := d * gn + gi
+			var margin := sell[idx] - p
+			if margin <= 0.0 or d == c.id:
 				continue
-			var km: float = w.dist[c.id][d.id]
-			if km == INF:
+			var r := room[idx]
+			if r <= 1.0:
 				continue
-			var md := d.market(g)
-			var sell := md.price * discount
-			if sell <= p:
-				continue
-			var room := md.demand_ema * max_days - md.stock() - md.incoming
-			if room <= 1.0:
-				continue
-			var qty := minf(minf(units_cap, avail), minf(room, by_cash))
-			var gain := qty * (sell - p) - km * per_km - km / speed * driver
-			if gain > best[0]:
-				best = [gain, g, d.id, qty]
+			var qty := minf(qty_cap, r)
+			var gain := qty * margin - row[d] * per_km
+			if gain > float(best[0]):
+				best = [gain, g, d, qty]
 	return best
 
 
-static func _plan(w: EconWorld, tr: EconTruck, comp: EconBusiness, best_from: Array, tp: Dictionary) -> void:
+static func _plan(w: EconWorld, tr: EconTruck, comp: EconBusiness, best_from: Array, tp: Dictionary, tg: Dictionary) -> bool:
 	var c: EconCity = w.cities[tr.city_id]
 	# Na ładunek idzie tylko część kasy: reszta na paliwo i pensje pozostałych ciężarówek
 	# (pieniądze wracają dopiero, gdy towar się sprzeda).
 	var reserve := comp.trucks.size() * c.wage * float(tp["driver_wage_mult"]) * 10.0
 	var budget := maxf(0.0, comp.cash - reserve) / maxf(1.0, comp.trucks.size() * 0.5)
-	var best := _best_trip(w, c, comp.id, budget, tp)
+	var best := _best_trip(w, c, comp.id, budget, tp, tg)
 	if float(best[0]) > float(tp["min_profit"]):
 		if _depart(w, tr, comp, int(best[2]), str(best[1]), float(best[3]), tp):
-			return
+			# Miejsce na rynku celu zajęte przez ten ładunek.
+			var idx := int(best[2]) * int(tg["gn"]) + w.tradable.find(str(best[1]))
+			var room: PackedFloat32Array = tg["room"]
+			room[idx] -= tr.qty
+			tg["room"] = room
+			return true
 	# Na pusto tam, skąd jest lepszy kurs.
 	var per_km := float(tp["fuel_per_km"]) * fuel_price(c)
 	var go := -1
@@ -146,7 +167,8 @@ static func _plan(w: EconWorld, tr: EconTruck, comp: EconBusiness, best_from: Ar
 			go_gain = g
 			go = d.id
 	if go != -1:
-		_depart(w, tr, comp, go, "", 0.0, tp)
+		return _depart(w, tr, comp, go, "", 0.0, tp)
+	return false
 
 
 static func _depart(w: EconWorld, tr: EconTruck, comp: EconBusiness, to_id: int, good: String, qty: float, tp: Dictionary) -> bool:

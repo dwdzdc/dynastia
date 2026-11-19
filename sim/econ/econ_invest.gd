@@ -272,9 +272,17 @@ static func _maybe_buy_trucks(w: EconWorld, a: EconActor, comp: EconBusiness) ->
 		if c.market("trucks").stock() >= 1.0:
 			price = minf(price, c.market("trucks").price)
 	# Zysk ciężarówki na dobę ≈ średni zysk z kursu (kurs ~1,5 doby) minus kierowca.
-	var daily := w.truck_profit_ema / 1.5 - w.city_of(comp).wage * float(w.data["transport"]["driver_wage_mult"])
+	var daily := w.truck_profit_ema / 1.5 * fleet_use(w) - w.city_of(comp).wage * float(w.data["transport"]["driver_wage_mult"])
 	var roi := daily * float(ap["payback_horizon_days"]) / price
 	if roi < float(ap["truck_purchase_roi"]) / lerpf(0.8, 1.2, a.risk) and not comp.trucks.is_empty():
+		return
+	# Własne ciężarówki stoją: po co kolejna.
+	var idle := 0
+	for tid: int in comp.trucks:
+		var tr: EconTruck = w.trucks.get(tid)
+		if tr != null and not tr.moving:
+			idle += 1
+	if comp.trucks.size() > 0 and float(idle) / comp.trucks.size() > float(ap["max_idle_fleet"]):
 		return
 	var budget := comp.cash + a.cash * 0.5
 	if budget < price * 1.3:
@@ -284,6 +292,18 @@ static func _maybe_buy_trucks(w: EconWorld, a: EconActor, comp: EconBusiness) ->
 		a.cash -= need
 		comp.cash += need
 	EconLogistics.buy_truck(w, comp)
+
+
+# Jaka część wszystkich ciężarówek jest w drodze (liczone raz na dobę).
+static func fleet_use(w: EconWorld) -> float:
+	if w.fleet_use_day != w.day:
+		w.fleet_use_day = w.day
+		var moving := 0
+		for tr: EconTruck in w.trucks.values():
+			if tr.moving:
+				moving += 1
+		w.fleet_use_cache = float(moving) / maxf(1.0, w.trucks.size())
+	return w.fleet_use_cache
 
 
 static func _buy_listed(w: EconWorld, a: EconActor) -> void:
@@ -384,7 +404,7 @@ static func _invest(w: EconWorld, a: EconActor) -> void:
 		return b != null and b.type == "haulage" and b.is_open())
 	if not has_haulage:
 		var price := float(w.goods["trucks"]["base"]) * 1.4
-		var daily := w.truck_profit_ema / 1.5 - float(w.data["labor"]["base_wage"]) * 1.2
+		var daily := w.truck_profit_ema / 1.5 * fleet_use(w) - float(w.data["labor"]["base_wage"]) * 1.2
 		var roi := daily * float(ap["payback_horizon_days"]) / price
 		if roi > best_roi and a.cash > price * 1.5:
 			best = {"kind": "found", "type": "haulage", "c": w.cities[a.city_id], "cost": price}
